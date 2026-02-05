@@ -1,0 +1,21 @@
+@import 'tailwindcss' source(none);
+
+@import '../../../../vendor/filament/support/resources/css/index.css';
+@import '../../../../vendor/filament/actions/resources/css/index.css';
+@import '../../../../vendor/filament/forms/resources/css/index.css';
+@import '../../../../vendor/filament/infolists/resources/css/index.css';
+@import '../../../../vendor/filament/notifications/resources/css/index.css';
+@import '../../../../vendor/filament/schemas/resources/css/index.css';
+@import '../../../../vendor/filament/tables/resources/css/index.css';
+@import '../../../../vendor/filament/widgets/resources/css/index.css';
+
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer components {
+    .mobile-platform .fi-no {
+        padding-bottom: calc(2rem + var(--inset-bottom, 0px));
+    }
+}

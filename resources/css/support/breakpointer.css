@@ -1,0 +1,33 @@
+:root {
+    --breakpoint: base;
+}
+@media (min-width: 40rem) {
+    /* * >= 640px */
+    :root {
+        --breakpoint: sm;
+    }
+}
+@media (min-width: 48rem) {
+    /* * >= 768px */
+    :root {
+        --breakpoint: md;
+    }
+}
+@media (min-width: 64rem) {
+    /* * >= 1024px */
+    :root {
+        --breakpoint: lg;
+    }
+}
+@media (min-width: 80rem) {
+    /* * >= 1280px */
+    :root {
+        --breakpoint: xl;
+    }
+}
+@media (min-width: 96rem) {
+    /* * >= 1536px */
+    :root {
+        --breakpoint: 2xl;
+    }
+}

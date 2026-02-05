@@ -1,0 +1,33 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "format:blade": "blade-formatter --write --config .bladeformatterrc \"resources/views/**/*.blade.php\"",
+        "format:prettier": "prettier --write --config .prettierrc \"resources/{css,js}/**/*.{css,js}\"",
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@openai/codex": "^0.97.0",
+        "@tailwindcss/vite": "^4.1.18",
+        "blade-formatter": "^1.44.2",
+        "concurrently": "^9.0.1",
+        "eslint": "^9.39.2",
+        "eslint-plugin-unused-imports": "^4.3.0",
+        "laravel-vite-plugin": "^2.0.0",
+        "playwright": "^1.58.1",
+        "prettier": "^3.7.4",
+        "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "@ryangjchandler/alpine-hooks": "^1.0.0",
+        "@tailwindcss/forms": "^0.5.11",
+        "@tailwindcss/typography": "^0.5.19",
+        "animejs": "^4.2.2",
+        "color": "^5.0.3",
+        "fitty": "^2.4.2",
+        "tailwindcss": "^4.1.18",
+        "tippy.js": "^6.3.7"
+    }
+}

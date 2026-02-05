@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+@import './support/breakpointer.css';
+
+@import './core/filament/components.css';
+
+@import './packages/tippy.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@font-face {
+    font-family: 'Cairo';
+    src: url('../fonts/cairo/Cairo-VariableFont_slnt,wght.ttf') format('truetype');
+    font-weight: 200 1000;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Readex Pro';
+    src: url('../fonts/readex-pro/ReadexPro-VariableFont_HEXP,wght.ttf') format('truetype');
+    font-weight: 200 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Scheherazade New';
+    src: url('../fonts/scheherazade-new/ScheherazadeNew-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    ascent-override: 90%;
+    descent-override: 20%;
+    line-gap-override: 0%;
+}
+
+@theme {
+    --background: #fef7ff;
+    --background-dark: #201f25;
+    --foreground: #201f25;
+    --foreground-dark: #fef7ff;
+    /* --background-2: var(--gray-100);
+    --background-dark-2: var(--gray-900);
+    --primary-dark-50: oklch(0.975 0.021 26.5);
+    --primary-dark-100: oklch(0.94 0.045 27);
+    --primary-dark-200: oklch(0.88 0.085 27.2);
+    --primary-dark-300: oklch(0.81 0.135 27.5);
+    --primary-dark-400: oklch(0.73 0.182 27.6);
+    --primary-dark-500: oklch(0.67 0.215 27.7);
+    --primary-dark-600: oklch(0.56 0.184 27.8);
+    --primary-dark-700: oklch(0.46 0.153 27.9);
+    --primary-dark-800: oklch(0.36 0.115 28);
+    --primary-dark-900: oklch(0.27 0.08 27.5);
+    --primary-dark-950: oklch(0.18 0.045 26.8); */
+    --font-arabic-sans:
+        'Readex Pro', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-arabic-serif:
+        'Scheherazade New', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-english-sans:
+        'Cairo', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,22 @@
+*.log
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+/.phpunit.cache
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/android-hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+
+# Custom
+/.certs
+/build
+/public/css
+/public/fonts
+/public/js
