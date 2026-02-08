@@ -48,7 +48,7 @@
 
         .athkar-gate-wrap:not(.is-enhanced) .athkar-gate__divider,
         .athkar-gate-wrap:not(.is-enhanced) .athkar-gate__veil {
-            mix-blend-mode: normal;
+            /* mix-blend-mode: normal; */
         }
 
         .athkar-gate-wrap:not(.is-enhanced) .athkar-gate__divider-glow,
@@ -75,11 +75,11 @@
                     rgba(125, 211, 252, 0.45),
                     rgba(148, 163, 184, 0.2)) border-box;
             box-shadow:
-                0 45px 80px rgba(15, 23, 42, 0.28),
+                0 36px 64px rgba(15, 23, 42, 0.26),
                 inset 0 1px 0 rgba(255, 255, 255, 0.35),
-                inset 0 -30px 60px rgba(15, 23, 42, 0.06);
-            backdrop-filter: blur(var(--gate-blur, 26px));
-            -webkit-backdrop-filter: blur(var(--gate-blur, 26px));
+                inset 0 -20px 40px rgba(15, 23, 42, 0.05);
+            backdrop-filter: blur(var(--gate-blur, 20px));
+            -webkit-backdrop-filter: blur(var(--gate-blur, 20px));
             overflow: hidden;
             isolation: isolate;
             z-index: 2;
@@ -93,7 +93,7 @@
                     rgba(56, 189, 248, 0.35),
                     rgba(30, 41, 59, 0.4)) border-box;
             box-shadow:
-                0 50px 90px rgba(2, 6, 23, 0.7),
+                0 40px 70px rgba(2, 6, 23, 0.65),
                 inset 0 1px 0 rgba(226, 232, 240, 0.18);
         }
 
@@ -191,7 +191,7 @@
 
         .athkar-gate__veil--morning {
             background: linear-gradient(140deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
-            mix-blend-mode: screen;
+            /* mix-blend-mode: screen; */
         }
 
         .athkar-gate__divider {
@@ -205,8 +205,8 @@
                     rgba(255, 255, 255, 0.12),
                     rgba(226, 232, 240, 0.85));
             opacity: 0.95;
-            filter: blur(0.1px) drop-shadow(0 8px 12px rgba(15, 23, 42, 0.2));
-            mix-blend-mode: screen;
+            filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.16));
+            /* mix-blend-mode: screen; */
             clip-path: polygon(calc(var(--split-top) - var(--divider-width)) 0,
                     calc(var(--split-top) + var(--divider-width)) 0,
                     calc(var(--split-bottom) + var(--divider-width)) 100%,
@@ -226,8 +226,8 @@
                     rgba(125, 211, 252, 0.45),
                     rgba(255, 255, 255, 0.05),
                     rgba(186, 230, 253, 0.25));
-            opacity: 0.85;
-            filter: blur(var(--divider-glow-blur, 14px));
+            opacity: 0.72;
+            filter: blur(var(--divider-glow-blur, 10px));
             clip-path: polygon(calc(var(--split-top) - var(--divider-glow-width)) 0,
                     calc(var(--split-top) + var(--divider-glow-width)) 0,
                     calc(var(--split-bottom) + var(--divider-glow-width)) 100%,
@@ -247,9 +247,9 @@
             padding: 0.45rem 1.1rem;
             border-radius: 999px;
             border: 1px solid rgba(255, 255, 255, 0.22);
-            text-shadow: 0 12px 25px rgba(2, 6, 23, 0.35);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            text-shadow: 0 8px 18px rgba(2, 6, 23, 0.32);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
             transition: transform 500ms ease, opacity 500ms ease, background-color 500ms ease;
             opacity: 0.72;
         }
@@ -305,7 +305,7 @@
             pointer-events: none;
             z-index: 0;
             opacity: var(--spill-opacity, 0);
-            filter: blur(var(--spill-blur, 18px)) saturate(1.02);
+            filter: blur(var(--spill-blur, 14px)) saturate(1.02);
             transition: opacity var(--spill-transition, 200ms) ease;
         }
 
@@ -385,11 +385,11 @@
                 '--spill-opacity': spillOpacity,
                 '--spill-transition': `${spillTransitionMs}ms`,
                 '--spill-inset': isEnhanced ? '-28vmax' : '-40vmax',
-                '--spill-blur': isEnhanced ? '8px' : '3px',
+                '--spill-blur': isEnhanced ? '6px' : '2px',
                 '--spill-scale': isEnhanced ? '1.06' : '1.01',
                 '--spill-split': `${splitValue}%`,
-                '--gate-blur': isEnhanced ? '18px' : '3px',
-                '--divider-glow-blur': isEnhanced ? '8px' : '3px',
+                '--gate-blur': isEnhanced ? '14px' : '2px',
+                '--divider-glow-blur': isEnhanced ? '6px' : '2px',
             }"
             x-effect="syncPerfProfile(); syncSpillState(views['athkar-app-gate'].isOpen);"
             x-on:click.outside="handleOutsideActivation()"

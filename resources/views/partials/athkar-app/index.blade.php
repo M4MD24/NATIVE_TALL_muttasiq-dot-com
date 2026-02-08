@@ -1,11 +1,9 @@
 @assets
     <style>
         .athkar-shift-away {
-            transform: translate3d(
-                var(--athkar-shift-x, 0px),
-                var(--athkar-shift-y, 1.5rem),
-                0
-            );
+            transform: translate3d(var(--athkar-shift-x, 0px),
+                    var(--athkar-shift-y, 1.5rem),
+                    0);
         }
 
         .athkar-shift-center {

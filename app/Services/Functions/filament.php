@@ -11,7 +11,7 @@ if (! function_exists('notify')) {
             // ->color(is_dark_mode_on() ? 'white' : 'warning')
             ->warning()
             ->icon($iconName)
-            ->iconColor(is_dark_mode_on() ? 'white' : 'warning')
+            ->iconColor(is_dark_mode_on() ? 'white' : 'primary')
             ->title($title)
             ->body($body)
             ->send();

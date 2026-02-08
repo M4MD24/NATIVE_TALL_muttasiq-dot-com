@@ -20,7 +20,7 @@ class HomeController extends Controller
                 ->map(
                     fn (\App\Models\Thikr $thikr): array => [
                         'id' => $thikr->id,
-                        'time' => $thikr->time?->value ?? $thikr->time,
+                        'time' => $thikr->time->value,
                         'text' => $thikr->text,
                         'count' => $thikr->count,
                     ],
