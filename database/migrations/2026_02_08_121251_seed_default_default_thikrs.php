@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Services\Enums\ThikrTime;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,19 +18,26 @@ return new class extends Migration
         $endingCharacter = '﴾';
         $now = now();
         $thikrs = $this->thikrData();
+        $hasOrderColumn = Schema::hasColumn('thikrs', 'order');
 
-        foreach ($thikrs as $thikr) {
+        foreach ($thikrs as $index => $thikr) {
             $text = ($thikr['is_quran'] ?? false)
                 ? $beginningCharacter.$thikr['text'].$endingCharacter
                 : $thikr['text'];
 
+            $payload = [
+                'count' => $thikr['count'],
+                'updated_at' => $now,
+                'created_at' => $now,
+            ];
+
+            if ($hasOrderColumn) {
+                $payload['order'] = $index + 1;
+            }
+
             DB::table('thikrs')->updateOrInsert(
                 ['time' => $thikr['time']->value, 'text' => $text],
-                [
-                    'count' => $thikr['count'],
-                    'updated_at' => $now,
-                    'created_at' => $now,
-                ],
+                $payload,
             );
         }
     }

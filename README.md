@@ -5,7 +5,8 @@
 
 تطبيق يهدف للاتساق مع الإسلام لله رب العالمين، خطوة بخطوة، وبيسر وسهولة بإذن الله. تطبيق بترميز واحد لكل المنصات، مصنوع بتقنات حديثة، ومصمم بواجهة جذابة؛ ولا حول ولا قوة إلا بالله...
 
-(فيديو ورابط للقناة)
+أفكار المشروع مستعرضة عن طريق فيديو في [منشور التليجرام]() هذا:<br> 
+(رابط للقناة على صورة للفيديو أيضا)
 
 
 ### المتصفح
@@ -20,7 +21,7 @@ https://muttasiq.com
 
 ### الأندرويد
 
-(رابط التحميل)
+قريبًا، بإذن الله... (الشرح في فيديو التليجرام [في الأعلى](#متسق))
 
 <img src=".assets/images/screenshots/android/athkar-app-gate-light-notification.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
 <span>&nbsp;&nbsp;</span>
@@ -158,6 +159,8 @@ The assets used for the app so far can be found in this [Penpot](https://penpot.
 ## Credits
 
 ### Contributors
+
+- [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله، محمد بن أحمد الحاسوبي)
 
 ### Assets
 

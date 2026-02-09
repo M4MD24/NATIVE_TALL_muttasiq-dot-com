@@ -288,8 +288,8 @@ document.addEventListener('alpine:init', () => {
         pulseDurationMs: 520,
         lastSeenDay: window.Alpine.$persist(null).as('athkar-last-day'),
         progress: window.Alpine.$persist({
-            sabah: { index: 0, counts: [] },
-            masaa: { index: 0, counts: [] },
+            sabah: { index: 0, counts: [], ids: [], activeId: null },
+            masaa: { index: 0, counts: [], ids: [], activeId: null },
         }).as('athkar-progress-v1'),
         completedOn: window.Alpine.$persist({
             sabah: null,
@@ -406,6 +406,8 @@ document.addEventListener('alpine:init', () => {
                 this.activeIndex > this.maxNavigableIndex
             ) {
                 this.progress[this.activeMode].index = this.maxNavigableIndex;
+                this.progress[this.activeMode].activeId =
+                    this.activeList[this.maxNavigableIndex]?.id ?? null;
             }
 
             if (this.shouldSkipNoticePanels()) {
@@ -469,6 +471,8 @@ document.addEventListener('alpine:init', () => {
             this.progress[this.activeMode].counts = this.activeList.map((_, index) =>
                 this.requiredCount(index),
             );
+            this.progress[this.activeMode].ids = this.activeList.map((item) => item?.id ?? null);
+            this.progress[this.activeMode].activeId = this.activeList[this.activeIndex]?.id ?? null;
             const nextTotal = this.totalCompletedCount;
             this.triggerTotalPulse(previousTotal, nextTotal);
 
@@ -477,20 +481,28 @@ document.addEventListener('alpine:init', () => {
         ensureState() {
             if (!this.progress || typeof this.progress !== 'object') {
                 this.progress = {
-                    sabah: { index: 0, counts: [] },
-                    masaa: { index: 0, counts: [] },
+                    sabah: { index: 0, counts: [], ids: [], activeId: null },
+                    masaa: { index: 0, counts: [], ids: [], activeId: null },
                 };
             }
 
             ['sabah', 'masaa'].forEach((mode) => {
                 if (!this.progress[mode] || typeof this.progress[mode] !== 'object') {
-                    this.progress[mode] = { index: 0, counts: [] };
+                    this.progress[mode] = { index: 0, counts: [], ids: [], activeId: null };
 
                     return;
                 }
 
                 if (!Array.isArray(this.progress[mode].counts)) {
                     this.progress[mode].counts = [];
+                }
+
+                if (!Array.isArray(this.progress[mode].ids)) {
+                    this.progress[mode].ids = [];
+                }
+
+                if (!('activeId' in this.progress[mode])) {
+                    this.progress[mode].activeId = null;
                 }
 
                 if (!Number.isFinite(this.progress[mode].index)) {
@@ -546,14 +558,18 @@ document.addEventListener('alpine:init', () => {
         },
         resetProgress(mode) {
             const list = this.athkarFor(mode);
+            const listIds = list.map((item) => item?.id ?? null);
 
             this.progress[mode] = {
                 index: 0,
                 counts: Array.from({ length: list.length }, () => 0),
+                ids: listIds,
+                activeId: listIds[0] ?? null,
             };
         },
         ensureProgress(mode) {
             const list = this.athkarFor(mode);
+            const listIds = list.map((item) => item?.id ?? null);
 
             if (!this.progress[mode]) {
                 this.resetProgress(mode);
@@ -564,25 +580,57 @@ document.addEventListener('alpine:init', () => {
             const counts = Array.isArray(this.progress[mode].counts)
                 ? this.progress[mode].counts
                 : [];
+            const storedIds = Array.isArray(this.progress[mode].ids) ? this.progress[mode].ids : [];
+            const hasStoredIds = storedIds.length > 0;
+            const countForId = new Map();
 
-            if (counts.length !== list.length) {
-                this.progress[mode].counts = Array.from({ length: list.length }, () => 0);
-            } else {
-                this.progress[mode].counts = counts.map((value, _index) => {
-                    const count = Number(value ?? 0);
-
-                    if (!Number.isFinite(count) || count < 0) {
-                        return 0;
+            if (hasStoredIds) {
+                storedIds.forEach((id, index) => {
+                    if (id === null || id === undefined) {
+                        return;
                     }
 
-                    return count;
+                    countForId.set(id, counts[index]);
                 });
             }
 
-            const maxIndex = Math.max(list.length - 1, 0);
-            const currentIndex = Number(this.progress[mode].index ?? 0);
+            const normalizeCount = (value) => {
+                const count = Number(value ?? 0);
 
-            this.progress[mode].index = Math.min(Math.max(currentIndex, 0), maxIndex);
+                if (!Number.isFinite(count) || count < 0) {
+                    return 0;
+                }
+
+                return count;
+            };
+
+            this.progress[mode].counts = listIds.map((id, index) => {
+                if (hasStoredIds && id !== null && id !== undefined && countForId.has(id)) {
+                    return normalizeCount(countForId.get(id));
+                }
+
+                if (!hasStoredIds) {
+                    return normalizeCount(counts[index]);
+                }
+
+                return 0;
+            });
+
+            this.progress[mode].ids = listIds;
+
+            const maxIndex = Math.max(list.length - 1, 0);
+            const activeId = this.progress[mode].activeId;
+            const currentIndex = Number(this.progress[mode].index ?? 0);
+            const nextIndexById =
+                activeId !== null && activeId !== undefined ? listIds.indexOf(activeId) : -1;
+
+            if (nextIndexById >= 0) {
+                this.progress[mode].index = nextIndexById;
+            } else {
+                this.progress[mode].index = Math.min(Math.max(currentIndex, 0), maxIndex);
+            }
+
+            this.progress[mode].activeId = listIds[this.progress[mode].index] ?? null;
         },
         isModeLocked(mode) {
             if (!this.shouldPreventSwitching()) {
@@ -612,6 +660,7 @@ document.addEventListener('alpine:init', () => {
 
             if (currentIndex < targetIndex) {
                 this.progress[this.activeMode].index = targetIndex;
+                this.progress[this.activeMode].activeId = this.activeList[targetIndex]?.id ?? null;
             }
         },
         activateMode(mode, { updateHash = false, respectLock = true } = {}) {
@@ -635,6 +684,8 @@ document.addEventListener('alpine:init', () => {
 
             if (this.shouldPreventSwitching() && this.activeIndex > this.maxNavigableIndex) {
                 this.progress[this.activeMode].index = this.maxNavigableIndex;
+                this.progress[this.activeMode].activeId =
+                    this.activeList[this.maxNavigableIndex]?.id ?? null;
             }
 
             this.resetNavState();
@@ -1171,6 +1222,7 @@ document.addEventListener('alpine:init', () => {
 
             const previousPage = currentIndex + 1;
             this.progress[this.activeMode].index = nextIndex;
+            this.progress[this.activeMode].activeId = this.activeList[nextIndex]?.id ?? null;
             const direction = nextIndex > currentIndex ? 'next' : 'prev';
             const nextPage = nextIndex + 1;
 

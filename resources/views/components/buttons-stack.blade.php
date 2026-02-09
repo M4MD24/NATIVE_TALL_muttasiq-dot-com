@@ -141,9 +141,9 @@
     
             if (button) {
                 button.blur();
-                const data = window.Alpine?.$data
-                    ? window.Alpine.$data(button)
-                    : (button.__x?.$data ?? null);
+                const data = window.Alpine?.$data ?
+                    window.Alpine.$data(button) :
+                    (button.__x?.$data ?? null);
                 if (data && typeof data === 'object' && 'hovered' in data) {
                     data.hovered = false;
                 }
