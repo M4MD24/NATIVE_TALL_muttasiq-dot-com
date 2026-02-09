@@ -9,7 +9,7 @@ on:
       - 'composer.lock'
       - 'phpunit.xml'
   pull_request:
-    branches: [dev]
+    branches: [dev, main]
   workflow_dispatch:
 
 concurrency:
