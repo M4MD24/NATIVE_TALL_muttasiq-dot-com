@@ -14,6 +14,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
@@ -61,9 +62,10 @@ class FilamentServiceProvider extends PanelProvider
             ]);
     }
 
-    public function boot()
+    public function boot(): void
     {
         FilamentColor::register(config('app.custom.colors'));
+        FilamentAsset::registerCssVariables($this->filamentBackgroundCssVariables());
 
         Notifications::alignment(Alignment::End);
         Notifications::verticalAlignment(VerticalAlignment::End);
@@ -72,5 +74,49 @@ class FilamentServiceProvider extends PanelProvider
             PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('@ineresh'),
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function filamentBackgroundCssVariables(): array
+    {
+        $shellLight = $this->resolveFilamentBackground(
+            key: 'shell.light',
+            fallback: $this->themeBackgroundFallback(name: 'background', fallback: '#fef7ff'),
+        );
+        $shellDark = $this->resolveFilamentBackground(
+            key: 'shell.dark',
+            fallback: $this->themeBackgroundFallback(name: 'background-dark', fallback: '#201f25'),
+        );
+
+        return [
+            'fi-shell-bg-light' => $shellLight,
+            'fi-shell-bg-dark' => $shellDark,
+            'fi-surface-bg-light' => $this->resolveFilamentBackground('surface.light', $shellLight),
+            'fi-surface-bg-dark' => $this->resolveFilamentBackground('surface.dark', $shellDark),
+            'fi-surface-muted-bg-light' => $this->resolveFilamentBackground('surface_muted.light', $shellLight),
+            'fi-surface-muted-bg-dark' => $this->resolveFilamentBackground('surface_muted.dark', $shellDark),
+        ];
+    }
+
+    protected function resolveFilamentBackground(string $key, string $fallback): string
+    {
+        $background = config("app.custom.filament.background_colors.{$key}");
+
+        return is_string($background) && $background !== '' ? $background : $fallback;
+    }
+
+    protected function themeBackgroundFallback(string $name, string $fallback): string
+    {
+        if (! function_exists('theme_color')) {
+            return $fallback;
+        }
+
+        try {
+            return theme_color($name, $fallback);
+        } catch (\Throwable) {
+            return $fallback;
+        }
     }
 }

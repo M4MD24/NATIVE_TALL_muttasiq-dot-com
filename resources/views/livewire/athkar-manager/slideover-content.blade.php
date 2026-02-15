@@ -44,7 +44,7 @@
 
         .dark .athkar-manager-card {
             border-color: color-mix(in srgb, var(--primary-400) 45%, transparent);
-            background: color-mix(in srgb, var(--primary-950) 74%, transparent);
+            background: color-mix(in srgb, #2b2a30 74%, transparent);
         }
 
         .athkar-manager-card__click {

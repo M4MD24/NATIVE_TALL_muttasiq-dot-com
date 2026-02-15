@@ -55,6 +55,23 @@ return [
             'danger' => \Filament\Support\Colors\Color::Rose,
         ],
 
+        'filament' => [
+            'background_colors' => [
+                'shell' => [
+                    'light' => null,
+                    'dark' => '#505358',
+                ],
+                'surface' => [
+                    'light' => '#F7F7FA',
+                    'dark' => '#201f25',
+                ],
+                'surface_muted' => [
+                    'light' => null,
+                    'dark' => null,
+                ],
+            ],
+        ],
+
     ],
 
     /*
