@@ -1,5 +1,7 @@
 @php
-    $resolveFilamentBackground = static fn ($value, string $fallback): string => is_string($value) && $value !== '' ? $value : $fallback;
+    $resolveFilamentBackground = static fn($value, string $fallback): string => is_string($value) && $value !== ''
+        ? $value
+        : $fallback;
 
     $fiShellBackgroundLight = $resolveFilamentBackground(
         config('app.custom.filament.background_colors.shell.light'),

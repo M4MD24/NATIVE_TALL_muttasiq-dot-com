@@ -24,18 +24,34 @@
     :where(.dark, .dark *) .fi-simple-main,
     :where(.dark, .dark *) .fi-modal > .fi-modal-window-ctn > .fi-modal-window,
     :where(.dark, .dark *) .fi-section:not(.fi-section-not-contained):not(.fi-aside),
-    :where(.dark, .dark *) .fi-section:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+    :where(.dark, .dark *)
+        .fi-section:not(.fi-section-not-contained).fi-aside
+        > .fi-section-content-ctn,
     :where(.dark, .dark *) .fi-dropdown-panel {
         background-color: var(--fi-surface-bg-dark);
     }
 
-    .fi-modal.fi-modal-has-sticky-header > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header,
-    .fi-modal.fi-modal-has-sticky-footer > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
+    .fi-modal.fi-modal-has-sticky-header
+        > .fi-modal-window-ctn
+        > .fi-modal-window
+        > .fi-modal-header,
+    .fi-modal.fi-modal-has-sticky-footer
+        > .fi-modal-window-ctn
+        > .fi-modal-window
+        > .fi-modal-footer {
         background-color: var(--fi-surface-bg-light);
     }
 
-    :where(.dark, .dark *) .fi-modal.fi-modal-has-sticky-header > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-header,
-    :where(.dark, .dark *) .fi-modal.fi-modal-has-sticky-footer > .fi-modal-window-ctn > .fi-modal-window > .fi-modal-footer {
+    :where(.dark, .dark *)
+        .fi-modal.fi-modal-has-sticky-header
+        > .fi-modal-window-ctn
+        > .fi-modal-window
+        > .fi-modal-header,
+    :where(.dark, .dark *)
+        .fi-modal.fi-modal-has-sticky-footer
+        > .fi-modal-window-ctn
+        > .fi-modal-window
+        > .fi-modal-footer {
         background-color: var(--fi-surface-bg-dark);
     }
 
@@ -46,7 +62,9 @@
     }
 
     :where(.dark, .dark *) .fi-section:not(.fi-section-not-contained).fi-secondary,
-    :where(.dark, .dark *) .fi-section:not(.fi-section-not-contained).fi-aside.fi-secondary > .fi-section-content-ctn,
+    :where(.dark, .dark *)
+        .fi-section:not(.fi-section-not-contained).fi-aside.fi-secondary
+        > .fi-section-content-ctn,
     :where(.dark, .dark *) .fi-ta-panel {
         background-color: var(--fi-surface-muted-bg-dark);
     }
