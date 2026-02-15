@@ -98,7 +98,7 @@
         ],
         "testcov": [
             "@optimize",
-            ".scripts/run-tests-clean.sh vendor/bin/pest --coverage --exclude-group=browser"
+            ".scripts/testcov.sh"
         ],
         "testbrowser": [
             "@optimize",

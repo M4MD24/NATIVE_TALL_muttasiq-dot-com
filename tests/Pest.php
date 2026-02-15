@@ -27,9 +27,11 @@ pest()
         assertBrowserAssetsReady();
     });
 
-pest()
-    ->browser()
-    ->timeout((int) env('PEST_BROWSER_TIMEOUT_MS', 1500));
+if (isBrowserPluginEnabled()) {
+    pest()
+        ->browser()
+        ->timeout((int) env('PEST_BROWSER_TIMEOUT_MS', 1500));
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -68,12 +70,17 @@ if (! defined('SIGTERM')) {
     define('SIGTERM', PLAYWRIGHT_SIGTERM_FALLBACK);
 }
 
-if (! Parallel::isWorker()) {
+if (! Parallel::isWorker() && isBrowserPluginEnabled()) {
     runPlaywrightBrowserPreflight();
 
     register_shutdown_function(static function (): void {
         runPlaywrightBrowserPreflight();
     });
+}
+
+function isBrowserPluginEnabled(): bool
+{
+    return filter_var(env('PEST_ENABLE_BROWSER_PLUGIN', true), FILTER_VALIDATE_BOOL);
 }
 
 function runPlaywrightBrowserPreflight(): void
