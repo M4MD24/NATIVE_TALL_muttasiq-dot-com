@@ -258,7 +258,7 @@
 
     <!-- Panel -->
     <section
-        class="athkar-notice relative z-10 flex max-h-[75svh] sm:max-h-[65svh] md:max-h-[75svh] flex-col gap-4 overflow-hidden text-center sm:gap-6"
+        class="athkar-notice relative z-10 flex max-h-[75svh] flex-col gap-4 overflow-hidden text-center sm:max-h-[65svh] sm:gap-6 md:max-h-[75svh]"
         role="dialog"
         aria-live="polite"
     >
@@ -278,7 +278,7 @@
                     {{-- data-athkar-notice-box --}}
                 >
                     <p
-                        class="px-5 sm:text-[1.25rem] md:text-[1.35rem] lg:text-[1.45rem] leading-loose max-sm:mb-0 max-sm:text-[0.875rem] sm:mt-5"
+                        class="px-5 leading-loose max-sm:mb-0 max-sm:text-[0.875rem] sm:mt-5 sm:text-[1.25rem] md:text-[1.35rem] lg:text-[1.45rem]"
                         {{-- data-athkar-notice-text --}}
                     >
                         هذه الآيات لم يرد عن النبي صلى الله عليه وسلم أنه قالها، ولكن ورد عنه

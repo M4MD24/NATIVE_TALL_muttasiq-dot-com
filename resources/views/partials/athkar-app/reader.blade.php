@@ -32,6 +32,9 @@
             --athkar-text-shimmer: white;
             --athkar-text-shimmer-strong: white;
             --athkar-text-base: var(--primary-950);
+            --athkar-scrollbar-track: color-mix(in srgb, var(--warning-100) 35%, transparent);
+            --athkar-scrollbar-thumb: color-mix(in srgb, var(--warning-200) 80%, transparent);
+            --athkar-scrollbar-thumb-hover: color-mix(in srgb, var(--warning-300) 80%, transparent);
         }
 
         .dark .athkar-reader {
@@ -66,6 +69,9 @@
             --athkar-text-shimmer: white;
             --athkar-text-shimmer-strong: white;
             --athkar-text-base: var(--primary-50);
+            --athkar-scrollbar-track: color-mix(in srgb, var(--warning-900) 45%, transparent);
+            --athkar-scrollbar-thumb: color-mix(in srgb, var(--warning-300) 74%, transparent);
+            --athkar-scrollbar-thumb-hover: color-mix(in srgb, var(--warning-200) 72%, transparent);
         }
 
         .athkar-panel {
@@ -377,6 +383,61 @@
             opacity: 0 !important;
         }
 
+        .athkar-text-box--touch-scroll {
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            scrollbar-width: thin;
+            scrollbar-color: var(--athkar-scrollbar-thumb) var(--athkar-scrollbar-track);
+            scrollbar-gutter: stable;
+            padding-inline-end: 0.4rem;
+        }
+
+        .athkar-text-box--touch-scroll {
+            justify-content: flex-start !important;
+            align-items: stretch;
+        }
+
+        .athkar-text-box--touch-scroll::-webkit-scrollbar {
+            width: 0.46rem;
+        }
+
+        .athkar-text-box--touch-scroll::-webkit-scrollbar-track {
+            border-radius: 999px;
+            background: var(--athkar-scrollbar-track);
+            margin-block: 0.5rem;
+        }
+
+        .athkar-text-box--touch-scroll::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            min-height: 2.2rem;
+            border: 1px solid color-mix(in srgb, var(--warning-300) 35%, transparent);
+            background: linear-gradient(180deg,
+                    var(--athkar-scrollbar-thumb),
+                    color-mix(in srgb, var(--athkar-scrollbar-thumb) 78%, var(--background-dark) 22%));
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning-300) 22%, transparent);
+        }
+
+        .athkar-text-box--touch-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg,
+                    var(--athkar-scrollbar-thumb-hover),
+                    color-mix(in srgb, var(--athkar-scrollbar-thumb-hover) 80%, var(--background-dark) 20%));
+        }
+
+        .athkar-text-box--touch-scroll.athkar-text-box--origin-scroll .athkar-origin-text {
+            position: static;
+            inset: auto;
+            align-items: flex-start;
+            justify-content: center;
+            padding-block: 0;
+        }
+
+        .athkar-text-box--touch-scroll.athkar-text-box--origin-scroll .athkar-text--muted {
+            display: none;
+        }
+
         .athkar-origin-text {
             position: absolute;
             inset: 0;
@@ -451,8 +512,8 @@
         }
 
         /* .athkar-origin-indicator:hover {
-                transform: translateY(-1px);
-            } */
+                    transform: translateY(-1px);
+                } */
         .athkar-origin-indicator.is-active {
             color: var(--warning-700);
         }
@@ -1091,6 +1152,22 @@
                                     class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-4 md:px-10 transition-opacity') }}"
                                     data-athkar-text-box
                                     dir="rtl"
+                                    x-on:pointerdown="
+                                        beginTextScroll($event);
+                                    "
+                                    x-on:pointermove="
+                                        moveTextScroll($event);
+                                    "
+                                    x-on:pointerup="endTextScroll()"
+                                    x-on:pointercancel="endTextScroll()"
+                                    x-on:touchstart="
+                                        beginTextScroll($event);
+                                    "
+                                    x-on:touchmove="
+                                        moveTextScroll($event);
+                                    "
+                                    x-on:touchend="endTextScroll()"
+                                    x-on:touchcancel="endTextScroll()"
                                 >
                                     <p
                                         class="athkar-text athkar-shimmer font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"

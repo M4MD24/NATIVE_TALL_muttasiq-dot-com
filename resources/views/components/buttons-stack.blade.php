@@ -106,7 +106,7 @@
                     this.hasPendingLayout = true;
                     return;
                 }
-
+    
                 if (!this.hasRelevantMutation(mutations)) {
                     return;
                 }
@@ -129,11 +129,11 @@
             if (mutation.type === 'attributes') {
                 return this.isStackItemElement(mutation.target);
             }
-
+    
             if (mutation.type !== 'childList') {
                 return false;
             }
-
+    
             return this.containsStackItem(mutation.target) ||
                 Array.from(mutation.addedNodes).some((node) => this.containsStackItem(node)) ||
                 Array.from(mutation.removedNodes).some((node) => this.containsStackItem(node));
@@ -145,7 +145,7 @@
             if (!(node instanceof Element)) {
                 return false;
             }
-
+    
             return this.isStackItemElement(node) || node.querySelector('[data-stack-item]') !== null;
         },
         bindClickHandler() {
@@ -253,11 +253,11 @@
             const finishUpdate = () => {
                 requestAnimationFrame(() => {
                     this.isUpdatingLayout = false;
-
+    
                     if (!this.hasPendingLayout) {
                         return;
                     }
-
+    
                     this.hasPendingLayout = false;
                     this.refreshItems();
                     this.updateLayout();
@@ -286,7 +286,7 @@
             if (this.activeIndex > visibleItems.length - 1) {
                 this.activeIndex = Math.max(visibleItems.length - 1, 0);
             }
-
+    
             const visibleCount = visibleItems.length;
     
             const anchorSide = this.vertical === 'bottom' ? 'bottom' : 'top';

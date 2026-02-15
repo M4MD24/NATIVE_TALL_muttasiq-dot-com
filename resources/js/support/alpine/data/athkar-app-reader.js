@@ -35,9 +35,18 @@ document.addEventListener('alpine:init', () => {
             active: false,
             ignoreClick: false,
             startedOnTap: false,
+            startedInScrollableText: false,
             pointerId: null,
             pointerType: null,
             source: null,
+        },
+        textScroll: {
+            active: false,
+            source: null,
+            startY: 0,
+            startScrollTop: 0,
+            pointerId: null,
+            element: null,
         },
         nav: {
             isActive: false,
@@ -85,7 +94,7 @@ document.addEventListener('alpine:init', () => {
         textFit: {
             raf: null,
             resizeObserver: null,
-            minSize: 12,
+            minSize: 14,
             minOriginSize: 8,
             maxScale: 1.2,
             originMaxScale: 1.05,
@@ -1663,9 +1672,13 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            let textOverflow = false;
+            let originOverflow = false;
+
             if (text) {
                 text.classList.remove('is-fit');
                 this.fitTextInBox(text, box);
+                textOverflow = this.isTextOverflowingInBox(text, box);
             }
 
             if (originText) {
@@ -1676,9 +1689,14 @@ document.addEventListener('alpine:init', () => {
                     this.textFit.minOriginSize,
                     this.textFit.originMaxScale,
                 );
+                originOverflow = this.isTextOverflowingInBox(originText, box);
             }
 
-            requestAnimationFrame(() => this.setupTextShimmer(text));
+            this.syncActiveTextOverflowState(box, { textOverflow, originOverflow });
+            requestAnimationFrame(() => {
+                this.refreshActiveTextOverflowState();
+                this.setupTextShimmer(text);
+            });
         },
         fitTextInBox(text, box, minSizeOverride = null, maxScaleOverride = null) {
             const minSize = Number.isFinite(minSizeOverride)
@@ -1697,6 +1715,171 @@ document.addEventListener('alpine:init', () => {
                 safePaddingY: this.textFit.safePaddingY,
                 shouldApplyFittyClass: true,
             });
+        },
+        isTouchReaderContext() {
+            const bp = this.$store?.bp;
+            const isNarrowReaderViewport =
+                typeof bp?.is === 'function' ? bp.is('base') || bp.is('sm') : false;
+            const isMobileWidth = this.isMobileViewport();
+
+            if (typeof bp?.isTouch === 'function') {
+                return bp.isTouch() || isNarrowReaderViewport || isMobileWidth;
+            }
+
+            if (typeof bp?.hasTouch === 'boolean') {
+                return bp.hasTouch || isNarrowReaderViewport || isMobileWidth;
+            }
+
+            return (
+                Number(navigator.maxTouchPoints ?? 0) > 0 || isNarrowReaderViewport || isMobileWidth
+            );
+        },
+        isTextOverflowingInBox(text, box) {
+            if (!text || !box) {
+                return false;
+            }
+
+            const availableWidth = Math.max(0, box.clientWidth - this.textFit.safePaddingX);
+            const availableHeight = Math.max(0, box.clientHeight - this.textFit.safePaddingY);
+            const tolerance = 1;
+
+            if (!availableWidth || !availableHeight) {
+                return false;
+            }
+
+            return (
+                text.scrollHeight > availableHeight + tolerance ||
+                text.scrollWidth > availableWidth + tolerance
+            );
+        },
+        shouldAllowTouchScrollForBox(box) {
+            if (!box || !this.isTouchReaderContext()) {
+                return false;
+            }
+
+            const slide = box.closest?.('[data-athkar-slide]');
+            if (!slide || slide.dataset.active !== 'true') {
+                return false;
+            }
+
+            const isOriginActive = this.isOriginVisible(this.activeIndex);
+            const text = slide.querySelector('[data-athkar-text]');
+            const originText = slide.querySelector('[data-athkar-origin-text]');
+
+            if (isOriginActive) {
+                return this.isTextOverflowingInBox(originText, box);
+            }
+
+            return this.isTextOverflowingInBox(text, box);
+        },
+        syncActiveTextOverflowState(box, { textOverflow = false, originOverflow = false } = {}) {
+            if (!box) {
+                return;
+            }
+
+            const isOriginActive = this.isOriginVisible(this.activeIndex);
+            const activeOverflow = isOriginActive ? originOverflow : textOverflow;
+            const shouldEnableTouchScroll = this.isTouchReaderContext() && activeOverflow;
+            const nextTarget = isOriginActive ? 'origin' : 'text';
+            const previousEnabled = box.dataset.athkarTouchScroll === 'true';
+            const previousTarget = box.dataset.athkarScrollTarget ?? 'text';
+
+            box.dataset.athkarTouchScroll = shouldEnableTouchScroll ? 'true' : 'false';
+            box.dataset.athkarTouchOverflow = shouldEnableTouchScroll ? 'true' : 'false';
+            box.dataset.athkarTextOverflow = textOverflow ? 'true' : 'false';
+            box.dataset.athkarOriginOverflow = originOverflow ? 'true' : 'false';
+            box.dataset.athkarScrollTarget = nextTarget;
+            box.classList.toggle('athkar-text-box--touch-scroll', shouldEnableTouchScroll);
+            box.classList.toggle(
+                'athkar-text-box--origin-scroll',
+                shouldEnableTouchScroll && isOriginActive,
+            );
+
+            if (!shouldEnableTouchScroll || !previousEnabled || previousTarget !== nextTarget) {
+                box.scrollTop = 0;
+            }
+        },
+        refreshActiveTextOverflowState() {
+            const slide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = slide?.querySelector('[data-athkar-text-box]');
+
+            if (!slide || !box) {
+                return;
+            }
+
+            const text = slide.querySelector('[data-athkar-text]');
+            const originText = slide.querySelector('[data-athkar-origin-text]');
+
+            this.syncActiveTextOverflowState(box, {
+                textOverflow: this.isTextOverflowingInBox(text, box),
+                originOverflow: this.isTextOverflowingInBox(originText, box),
+            });
+        },
+        beginTextScroll(event) {
+            const box = event?.currentTarget;
+
+            if (!box || !this.isTouchReaderContext()) {
+                return;
+            }
+
+            if (!this.shouldAllowTouchScrollForBox(box)) {
+                return;
+            }
+
+            const point = this.swipePoint(event);
+
+            if (!point) {
+                return;
+            }
+
+            this.textScroll.active = true;
+            this.textScroll.source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
+            this.textScroll.startY = point.y;
+            this.textScroll.startScrollTop = box.scrollTop;
+            this.textScroll.pointerId = point.pointerId;
+            this.textScroll.element = box;
+
+            event.stopPropagation();
+        },
+        moveTextScroll(event) {
+            if (!this.textScroll.active || !this.textScroll.element) {
+                return;
+            }
+
+            const source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
+
+            if (this.textScroll.source && source !== this.textScroll.source) {
+                return;
+            }
+
+            const point = this.swipePoint(event);
+
+            if (!point) {
+                return;
+            }
+
+            if (
+                this.textScroll.pointerId !== null &&
+                point.pointerId !== this.textScroll.pointerId
+            ) {
+                return;
+            }
+
+            const deltaY = point.y - this.textScroll.startY;
+            this.textScroll.element.scrollTop = this.textScroll.startScrollTop - deltaY;
+
+            event.stopPropagation();
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+        },
+        endTextScroll() {
+            this.textScroll.active = false;
+            this.textScroll.source = null;
+            this.textScroll.startY = 0;
+            this.textScroll.startScrollTop = 0;
+            this.textScroll.pointerId = null;
+            this.textScroll.element = null;
         },
         setupTextShimmer(text = null) {
             const target =
@@ -1837,6 +2020,16 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            const textBox = event.target?.closest?.('[data-athkar-text-box]');
+            if (
+                this.isTouchReaderContext() &&
+                textBox &&
+                this.shouldAllowTouchScrollForBox(textBox)
+            ) {
+                this.swipeCancel();
+                return;
+            }
+
             const source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
 
             if (this.swipe.source && this.swipe.source !== source) {
@@ -1870,6 +2063,11 @@ document.addEventListener('alpine:init', () => {
             this.swipe.pointerId = point.pointerId;
             this.swipe.pointerType = point.pointerType;
             this.swipe.startedOnTap = Boolean(event.target?.closest?.('[data-athkar-tap]'));
+            this.swipe.startedInScrollableText = Boolean(
+                event.target?.closest?.(
+                    '[data-athkar-text-box][data-athkar-touch-overflow="true"]',
+                ),
+            );
         },
         swipeEnd(event) {
             if (!this.swipe.active) {
@@ -1897,11 +2095,13 @@ document.addEventListener('alpine:init', () => {
             const absX = Math.abs(deltaX);
             const absY = Math.abs(deltaY);
             const isTouchLike = (point.pointerType ?? 'mouse') !== 'mouse';
+            const startedInScrollableText = this.swipe.startedInScrollableText;
 
             this.swipe.active = false;
             this.swipe.pointerId = null;
             this.swipe.pointerType = null;
             this.swipe.source = null;
+            this.swipe.startedInScrollableText = false;
 
             if (this.isNoticeVisible) {
                 if (absX < 40 || absX < absY) {
@@ -1915,6 +2115,13 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 this.swipe.ignoreClick = true;
+                return;
+            }
+
+            if (startedInScrollableText && absY >= 12 && absY > absX) {
+                this.swipe.startedOnTap = false;
+                this.swipe.ignoreClick = true;
+
                 return;
             }
 
@@ -1987,6 +2194,8 @@ document.addEventListener('alpine:init', () => {
             this.swipe.pointerId = null;
             this.swipe.pointerType = null;
             this.swipe.source = null;
+            this.swipe.startedInScrollableText = false;
+            this.endTextScroll();
         },
         buildDigitMorphSegments(previousValue, nextValue) {
             const previous = String(previousValue ?? '');

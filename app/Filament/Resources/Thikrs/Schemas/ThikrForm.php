@@ -74,7 +74,7 @@ class ThikrForm
             Toggle::make('is_aayah')
                 ->label('آيات')
                 ->live()
-                ->hint(fn(Get $get): ?string => $get('is_aayah') ? '' : null)
+                ->hint(fn (Get $get): ?string => $get('is_aayah') ? '' : null)
                 ->helperText('هذا الخيار يضيف أقواس البداية والنهاية تلقائيًا حول النص. استخدم هذا الرمز ۝ للفصل بين الآيات.')
                 ->columnSpanFull()
                 ->default(false),

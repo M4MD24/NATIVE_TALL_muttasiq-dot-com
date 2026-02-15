@@ -1,12 +1,12 @@
 <div>
     <div
         class="sm:start-26 fixed start-10 top-7 z-30 sm:top-5 md:top-8"
+        data-stack-item
         x-data="{
             managerModalId: @js('fi-' . $this->getId() . '-action-0'),
         }"
         x-transition
         x-cloak
-        data-stack-item
         x-show="!isSettingsOpen && !isAthkarManagerOpen && views['athkar-app-gate'].isOpen"
         x-on:x-modal-opened.window="if ($event.detail?.id === managerModalId) isAthkarManagerOpen = true;"
         x-on:close-modal.window="if ($event.detail?.id === managerModalId) isAthkarManagerOpen = false;"

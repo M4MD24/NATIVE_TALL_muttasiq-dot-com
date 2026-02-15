@@ -1065,6 +1065,141 @@ JS, ['selector' => $selector]));
     );
 });
 
+it('enables touch-only scrolling for overflowing athkar text', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableTabletContext($page);
+    waitForReaderVisible($page);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = Array.from(
+  { length: 140 },
+  () => 'سبحان الله والحمد لله ولا إله إلا الله والله أكبر'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const bp = window.Alpine?.store?.('bp');
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+
+  if (!box) {
+    return false;
+  }
+
+  const isTouch = bp?.hasTouch ?? bp?.isTouch?.();
+  const styles = getComputedStyle(box);
+
+  if (isTouch !== true || !document.documentElement.classList.contains('has-touch')) {
+    return false;
+  }
+
+  if (!box.classList.contains('athkar-text-box--touch-scroll')) {
+    return false;
+  }
+
+  if (box.dataset.athkarTouchScroll !== 'true') {
+    return false;
+  }
+
+  if (styles.overflowY !== 'auto') {
+    return false;
+  }
+
+  if (box.scrollHeight <= box.clientHeight + 1) {
+    return false;
+  }
+
+  box.scrollTop = Math.min(180, box.scrollHeight - box.clientHeight);
+
+  return box.scrollTop > 0;
+})()
+JS,
+        true,
+    );
+});
+
+it('applies scrollability per active layer between text and origin', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableTabletContext($page);
+    waitForReaderVisible($page);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير';
+data.activeList[activeIndex].origin = Array.from(
+  { length: 130 },
+  () => 'حدثنا عبد الله بن مسلمة عن مالك عن سمي عن أبي صالح'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const box = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text-box]');
+  if (!box) {
+    return false;
+  }
+
+  return (
+    box.dataset.athkarTextOverflow === 'false' &&
+    box.dataset.athkarOriginOverflow === 'true' &&
+    box.dataset.athkarTouchScroll === 'false' &&
+    !box.classList.contains('athkar-text-box--touch-scroll')
+  );
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const box = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text-box]');
+  if (!box) {
+    return false;
+  }
+
+  return (
+    box.dataset.athkarScrollTarget === 'origin' &&
+    box.dataset.athkarTouchScroll === 'true' &&
+    box.classList.contains('athkar-text-box--touch-scroll') &&
+    box.classList.contains('athkar-text-box--origin-scroll') &&
+    box.scrollHeight > box.clientHeight + 1
+  );
+})()
+JS,
+        true,
+    );
+});
+
 it('tracks progress by letters and counters by counts while updating page position', function () {
     $page = visit('/');
 
