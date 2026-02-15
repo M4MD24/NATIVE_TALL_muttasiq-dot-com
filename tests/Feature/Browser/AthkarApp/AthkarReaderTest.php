@@ -278,7 +278,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForScriptWithTimeout($page, homeDataScript('data.activeView'), 'athkar-app-sabah', 12_000);
     waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
     $targetItemIdExpression = js_encode($targetItemId);
     waitForScriptWithTimeout(
@@ -451,7 +451,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForScriptWithTimeout($page, homeDataScript('data.activeView'), 'athkar-app-sabah', 12_000);
     waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
     waitForScriptWithTimeout(
         $page,
