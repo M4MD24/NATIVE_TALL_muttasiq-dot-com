@@ -4,7 +4,7 @@
 ])
 
 <div
-    class="end-26 fixed bottom-11 z-30 sm:bottom-12"
+    class="end-26 fixed bottom-11 z-30 sm:bottom-7 md:bottom-12"
     data-stack-item
     x-transition
     x-cloak

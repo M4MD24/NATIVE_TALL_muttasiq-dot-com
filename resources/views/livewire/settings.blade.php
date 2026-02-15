@@ -1,6 +1,6 @@
 <div>
     <div
-        class="fixed end-10 top-7 z-30 sm:top-8"
+        class="fixed end-10 top-7 z-30 sm:top-5 md:top-8"
         data-stack-item
         wire:ignore
         x-transition

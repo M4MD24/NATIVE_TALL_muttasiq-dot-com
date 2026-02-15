@@ -21,6 +21,7 @@
         observer: null,
         attributeObserver: null,
         isUpdatingLayout: false,
+        hasPendingLayout: false,
         stackTransitionMs: 200,
         shouldManageDisplay(item) {
             if (!item) {
@@ -100,8 +101,13 @@
             });
         },
         observeItems() {
-            this.observer = new MutationObserver(() => {
+            this.observer = new MutationObserver((mutations) => {
                 if (this.isUpdatingLayout) {
+                    this.hasPendingLayout = true;
+                    return;
+                }
+
+                if (!this.hasRelevantMutation(mutations)) {
                     return;
                 }
     
@@ -113,8 +119,34 @@
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['class', 'style', 'hidden', 'x-cloak'],
+                attributeFilter: ['style', 'hidden', 'x-cloak'],
             });
+        },
+        hasRelevantMutation(mutations) {
+            return mutations.some((mutation) => this.isRelevantMutation(mutation));
+        },
+        isRelevantMutation(mutation) {
+            if (mutation.type === 'attributes') {
+                return this.isStackItemElement(mutation.target);
+            }
+
+            if (mutation.type !== 'childList') {
+                return false;
+            }
+
+            return this.containsStackItem(mutation.target) ||
+                Array.from(mutation.addedNodes).some((node) => this.containsStackItem(node)) ||
+                Array.from(mutation.removedNodes).some((node) => this.containsStackItem(node));
+        },
+        isStackItemElement(node) {
+            return node instanceof Element && node.matches('[data-stack-item]');
+        },
+        containsStackItem(node) {
+            if (!(node instanceof Element)) {
+                return false;
+            }
+
+            return this.isStackItemElement(node) || node.querySelector('[data-stack-item]') !== null;
         },
         bindClickHandler() {
             this.handleClick = (event) => {
@@ -198,8 +230,8 @@
     
             return this.activeGap;
         },
-        offsetFromAnchor(index) {
-            const lastIndex = this.visibleItems().length - 1;
+        offsetFromAnchor(index, visibleCount) {
+            const lastIndex = visibleCount - 1;
             let total = 0;
     
             for (let i = index; i < lastIndex; i += 1) {
@@ -221,6 +253,14 @@
             const finishUpdate = () => {
                 requestAnimationFrame(() => {
                     this.isUpdatingLayout = false;
+
+                    if (!this.hasPendingLayout) {
+                        return;
+                    }
+
+                    this.hasPendingLayout = false;
+                    this.refreshItems();
+                    this.updateLayout();
                 });
             };
     
@@ -246,6 +286,8 @@
             if (this.activeIndex > visibleItems.length - 1) {
                 this.activeIndex = Math.max(visibleItems.length - 1, 0);
             }
+
+            const visibleCount = visibleItems.length;
     
             const anchorSide = this.vertical === 'bottom' ? 'bottom' : 'top';
             const anchorOpposite = this.vertical === 'bottom' ? 'top' : 'bottom';
@@ -253,7 +295,7 @@
             this.items.forEach((item) => this.resetItem(item));
     
             visibleItems.forEach((item, index) => {
-                const translateX = this.offsetFromAnchor(index).toFixed(2);
+                const translateX = this.offsetFromAnchor(index, visibleCount).toFixed(2);
     
                 item.style.position = 'absolute';
                 item.style[anchorSide] = '0';

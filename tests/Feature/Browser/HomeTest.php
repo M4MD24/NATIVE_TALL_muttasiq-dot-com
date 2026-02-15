@@ -152,3 +152,133 @@ JS);
     expect((float) ($snapshot['maxOffset'] ?? 0.0))
         ->toBeLessThanOrEqual((float) ($snapshot['expectedMaxOffset'] ?? 0.0) + 0.15);
 });
+
+it('recomputes quick-stack positions when visibility changes during a layout pass', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+
+    $prepared = (bool) $page->script(<<<'JS'
+(() => {
+  const bp = window.Alpine?.store?.('bp');
+  const stackRoot = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
+
+  if (!bp || !stackRoot) {
+    return false;
+  }
+
+  document.documentElement.style.setProperty('--breakpoint', 'base');
+  bp.current = 'base';
+  stackRoot.dataset.respectingStack = 'true';
+  window.dispatchEvent(new Event('resize'));
+
+  const allItems = Array.from(document.querySelectorAll('[data-stack-item]'));
+  if (allItems.length < 4) {
+    return false;
+  }
+
+  const stackData = window.Alpine?.$data
+    ? window.Alpine.$data(stackRoot)
+    : (stackRoot.__x?.$data ?? null);
+
+  if (!stackData || typeof stackData.setRespectingStack !== 'function' || typeof stackData.updateLayout !== 'function') {
+    return false;
+  }
+
+  stackData.setRespectingStack();
+  stackData.updateLayout();
+
+  allItems[1].hidden = true;
+
+  return true;
+})()
+JS);
+
+    expect($prepared)->toBeTrue();
+
+    $snapshot = null;
+    $lastResult = null;
+
+    for ($attempt = 1; $attempt <= 10; $attempt++) {
+        /** @var array<string, mixed>|null $result */
+        $result = $page->script(<<<'JS'
+(() => {
+  const visibleItems = Array.from(document.querySelectorAll('[data-stack-item]')).filter((item) => {
+    const styles = getComputedStyle(item);
+    return !item.hidden && styles.display !== 'none' && styles.visibility !== 'hidden';
+  });
+
+  if (visibleItems.length < 2) {
+    return { ready: false, reason: 'not-enough-visible-items', visibleCount: visibleItems.length };
+  }
+
+  const transforms = visibleItems.map((item) => {
+    const value = String(item.style.transform ?? '');
+    const match = value.match(/translateX\((-?\d+(?:\.\d+)?)rem\)/);
+
+    return match ? Number(match[1]) : null;
+  });
+
+  if (transforms.some((value) => value === null)) {
+    return { ready: false, reason: 'missing-transform' };
+  }
+
+  const maxOffset = Math.max(...transforms.map((value) => Math.abs(value)));
+  const expectedMaxOffset = (visibleItems.length - 1) * 1.2;
+
+  return {
+    ready: true,
+    visibleCount: visibleItems.length,
+    maxOffset,
+    expectedMaxOffset,
+  };
+})()
+JS);
+
+        $lastResult = $result;
+
+        if (is_array($result) && ($result['ready'] ?? false) === true) {
+            $snapshot = $result;
+
+            break;
+        }
+
+        usleep(200_000);
+    }
+
+    expect($snapshot)->toBeArray('Last snapshot payload: '.var_export($lastResult, true));
+    expect((bool) ($snapshot['ready'] ?? false))->toBeTrue();
+    expect((float) ($snapshot['maxOffset'] ?? 0.0))
+        ->toBeLessThanOrEqual((float) ($snapshot['expectedMaxOffset'] ?? 0.0) + 0.15);
+});
+
+it('can return to the main menu after toggle-color-scheme resets the hash', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+    openAthkarGate($page, true);
+
+    hashAction($page, '#toggle-color-scheme', false);
+
+    waitForScript($page, 'window.location.hash === "" || window.location.hash === "#"', true);
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
+
+    $clicked = (bool) $page->script(<<<'JS'
+(() => {
+  const button = document.querySelector("div[data-stack-item][x-show*=\"!views['main-menu']\"] button");
+  if (!button) {
+    return false;
+  }
+
+  button.click();
+  button.click();
+
+  return true;
+})()
+JS);
+
+    expect($clicked)->toBeTrue();
+
+    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($page, 'window.location.hash', '#main-menu');
+});

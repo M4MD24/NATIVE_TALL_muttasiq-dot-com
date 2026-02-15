@@ -85,7 +85,7 @@ document.addEventListener('alpine:init', () => {
         textFit: {
             raf: null,
             resizeObserver: null,
-            minSize: 14,
+            minSize: 12,
             minOriginSize: 8,
             maxScale: 1.2,
             originMaxScale: 1.05,

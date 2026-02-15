@@ -20,10 +20,24 @@ class ThikrForm
     /**
      * @return array<int, SchemaComponent>
      */
-    public static function components(bool $withOrder = false, bool $fromManager = false): array
+    public static function components(bool $fromManager = false): array
     {
         $baseComponents = [
-            self::orderInput()->columnSpanFull(),
+            Grid::make()
+                ->columns(3)
+                ->columnSpanFull()
+                ->schema([
+                    TextInput::make('order')
+                        ->label('الترتيب')
+                        ->required()
+                        ->type('number')
+                        ->inputMode('numeric')
+                        ->step(1)
+                        ->integer()
+                        ->minValue(1)
+                        ->rules(['required', 'integer', 'min:1'])
+                        ->columnSpan(1),
+                ]),
 
             Grid::make()
                 ->columns(3)
@@ -45,13 +59,22 @@ class ThikrForm
                         ->default(ThikrType::Glorification->value)
                         ->columnSpan(1),
 
-                    self::countInput()->columnSpan(1),
+                    TextInput::make('count')
+                        ->label('العدد')
+                        ->required()
+                        ->type('number')
+                        ->inputMode('numeric')
+                        ->step(1)
+                        ->integer()
+                        ->minValue(1)
+                        ->rules(['required', 'integer', 'min:1'])
+                        ->columnSpan(1),
                 ]),
 
             Toggle::make('is_aayah')
                 ->label('آيات')
                 ->live()
-                ->hint(fn (Get $get): ?string => $get('is_aayah') ? '' : null)
+                ->hint(fn(Get $get): ?string => $get('is_aayah') ? '' : null)
                 ->helperText('هذا الخيار يضيف أقواس البداية والنهاية تلقائيًا حول النص. استخدم هذا الرمز ۝ للفصل بين الآيات.')
                 ->columnSpanFull()
                 ->default(false),
@@ -89,31 +112,5 @@ class ThikrForm
         return $schema
             ->columns(2)
             ->components(self::components());
-    }
-
-    private static function orderInput(): TextInput
-    {
-        return TextInput::make('order')
-            ->label('الترتيب')
-            ->required()
-            ->type('number')
-            ->inputMode('numeric')
-            ->step(1)
-            ->integer()
-            ->minValue(1)
-            ->rules(['required', 'integer', 'min:1']);
-    }
-
-    private static function countInput(): TextInput
-    {
-        return TextInput::make('count')
-            ->label('العدد')
-            ->required()
-            ->type('number')
-            ->inputMode('numeric')
-            ->step(1)
-            ->integer()
-            ->minValue(1)
-            ->rules(['required', 'integer', 'min:1']);
     }
 }

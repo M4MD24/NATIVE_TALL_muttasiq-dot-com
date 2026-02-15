@@ -321,6 +321,23 @@
             transition: opacity 250ms ease;
         }
 
+        @media (min-width: 640px) {
+            .athkar-text {
+                font-size: 1.3rem;
+                line-height: 2.05;
+            }
+        }
+
+        .athkar-origin-text .athkar-text {
+            line-height: 1.85;
+        }
+
+        @media (min-width: 640px) {
+            .athkar-origin-text .athkar-text {
+                line-height: 2.05;
+            }
+        }
+
         .athkar-text.athkar-shimmer {
             position: relative;
             z-index: 0;
@@ -433,10 +450,9 @@
             block-size: 3.05rem;
         }
 
-        .athkar-origin-indicator:hover {
-            transform: translateY(-1px);
-        }
-
+        /* .athkar-origin-indicator:hover {
+                transform: translateY(-1px);
+            } */
         .athkar-origin-indicator.is-active {
             color: var(--warning-700);
         }
@@ -470,13 +486,6 @@
             box-shadow:
                 0 0 0 1px color-mix(in srgb, var(--warning-400) 50%, transparent),
                 0 0 0 0 color-mix(in srgb, var(--warning-400) 30%, transparent);
-        }
-
-        @media (min-width: 640px) {
-            .athkar-text {
-                font-size: 1.3rem;
-                line-height: 2.05;
-            }
         }
 
         .athkar-complete-badge {
@@ -662,7 +671,7 @@
     x-transition:leave-end="opacity-0! blur-[2px] athkar-shift-away"
 >
     <section
-        class="athkar-reader relative flex h-full min-h-0 w-full max-w-5xl flex-col justify-center gap-4 sm:h-auto sm:gap-6"
+        class="athkar-reader relative flex h-full min-h-0 w-full max-w-5xl flex-col justify-end gap-4 pb-5 pt-10 sm:h-auto sm:justify-center sm:gap-6 sm:py-10 md:py-5 lg:py-0"
     >
         <div
             class="athkar-panel athkar-panel-actions flex flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap sm:gap-4 sm:px-4 sm:py-3">
@@ -747,7 +756,7 @@
         </div>
 
         <div
-            class="athkar-panel Xoutline-primary-500/80 dark:Xoutline-primary-200/25 Xoutline-offset-[-0.75rem] sm:Xoutline-4 relative flex max-h-[60svh] min-h-0 flex-1 touch-pan-y flex-col overflow-hidden transition-all focus:outline-none active:outline-none sm:max-h-[60svh]"
+            class="athkar-panel Xoutline-primary-500/80 dark:Xoutline-primary-200/25 Xoutline-offset-[-0.75rem] sm:Xoutline-4 Xmax-h-[70svh] relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-hidden transition-all focus:outline-none active:outline-none sm:max-h-[55svh] md:max-h-[58svh] lg:max-h-[60svh]"
             role="region"
             aria-roledescription="carousel"
             tabindex="0"
@@ -1068,7 +1077,7 @@
 
                             <!-- Althikr -->
                             <button
-                                class="athkar-tap group relative mt-[2.1rem] flex min-h-0 w-full flex-1 touch-manipulation flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-transparent px-2 py-3 text-center transition sm:mt-0 sm:px-4 sm:py-6"
+                                class="athkar-tap group relative mt-[2.1rem] flex min-h-0 w-full flex-1 touch-manipulation flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-transparent px-2 py-1.5 text-center transition sm:mt-0 sm:px-4 sm:py-6"
                                 data-athkar-tap
                                 type="button"
                                 x-on:click="handleTap()"
@@ -1079,7 +1088,7 @@
                                 }"
                             >
                                 <div
-                                    class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-10 transition-opacity') }}"
+                                    class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-4 md:px-10 transition-opacity') }}"
                                     data-athkar-text-box
                                     dir="rtl"
                                 >

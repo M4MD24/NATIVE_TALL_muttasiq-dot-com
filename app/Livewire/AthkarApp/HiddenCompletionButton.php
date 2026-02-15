@@ -45,8 +45,8 @@ class HiddenCompletionButton extends Component implements HasActions, HasSchemas
             })
             ->modalIconColor('warning')
             ->label('إتمام الذكر')
-            ->modalDescription('هل تريد تعليم هذا الذكر كمكتمل بضغطة واحدة؟')
-            ->modalSubmitActionLabel('نعم، أكمل الذكر')
+            ->modalDescription('هل أتممت قراءة هذا الذكر بعدده كاملا؟')
+            ->modalSubmitActionLabel('نعم، أكملت قراءته')
             ->modalCancelActionLabel('إلغاء');
     }
 

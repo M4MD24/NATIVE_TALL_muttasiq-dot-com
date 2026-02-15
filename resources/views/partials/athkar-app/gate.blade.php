@@ -455,7 +455,7 @@
             x-on:click.outside="handleOutsideActivation()"
         >
             <div
-                class="athkar-gate-shell relative z-10 h-[min(92vw,760px)] max-h-[55svh] w-[min(92vw,920px)] sm:max-h-[75svh]"
+                class="athkar-gate-shell relative z-10 h-[min(92vw,760px)] max-h-[55svh] w-[min(92vw,920px)] sm:max-h-[65svh] md:max-h-[70svh] lg:max-h-[75svh]"
                 x-ref="gate"
                 x-bind:class="{
                     'is-hovering': isHovering,
