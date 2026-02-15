@@ -511,9 +511,6 @@
             block-size: 3.05rem;
         }
 
-        /* .athkar-origin-indicator:hover {
-                    transform: translateY(-1px);
-                } */
         .athkar-origin-indicator.is-active {
             color: var(--warning-700);
         }
