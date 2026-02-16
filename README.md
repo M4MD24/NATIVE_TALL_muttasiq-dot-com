@@ -24,9 +24,9 @@ https://muttasiq.com
 
 قريبًا، بإذن الله... (الشرح في فيديو التليجرام [في الأعلى](#مُتَّسِق))
 
-<img src=".assets/images/screenshots/android/athkar-app-gate-light-notification.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
+<img src=".assets/images/screenshots/android/athkar-app-reader-dark.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
 <span>&nbsp;&nbsp;</span>
-<img src=".assets/images/screenshots/android/athkar-app-reader-dark.jpg" alt="Athkar app reader - dark mode" height="400"/>
+<img src=".assets/images/screenshots/android/athkar-app-gate-light-notification.jpg" alt="Athkar app reader - dark mode" height="400"/>
 
 
 ## المهام
@@ -82,9 +82,62 @@ https://muttasiq.com
 
 وكذلك تستطيع دعم تطوير وصيانة المشروع هذا عن طريق الاشتراك ([بمبلغ شهري](https://github.com/sponsors/GoodM4ven))، أو عن طريق التبرّع [لمرّة واحدة](https://github.com/sponsors/GoodM4ven?frequency=one-time&sponsor=GoodM4ven)، وذلك في المنصات التالية:
 
-- [جيتهاب | Github](https://github.com/sponsors/GoodM4ven)
-- [باتريون | Patreon](https://patreon.com/GoodM4ven)
-- [باي مي كوفي | BuyMeCoffee](https://buymeacoffee.com/goodm4ven)
+</div>
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/sponsors/GoodM4ven">
+        <strong>جيتهاب | Github</strong>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/sponsors/GoodM4ven">
+        <img src=".assets/images/support/github.png" width="200" alt="Github Sponsor"/>
+      </a>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://patreon.com/GoodM4ven">
+        <strong>باتريون | Patreon</strong>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://patreon.com/GoodM4ven">
+        <img src=".assets/images/support/patreon.png" width="200" alt="Patreon"/>
+      </a>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://buymeacoffee.com/goodm4ven">
+        <strong>باي مي كوفي | BuyMeCoffee</strong>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://buymeacoffee.com/goodm4ven">
+        <img src=".assets/images/support/buymeacoffee.png" width="200" alt="Buy Me a Coffee"/>
+      </a>
+    </td>
+  </tr>
+</table>
+
+</div>
+<div align="right">
 
 وإن كنت مطوّرًا أو مصمّمًا، وتودّ دعم هذا المشروع، فقم بِتَفَقُّد القسم المخصص في الأسفل.
 
@@ -133,6 +186,7 @@ https://muttasiq.com
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
    - The process includes running [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only, not in `--parallel`, because the current [Playwright](https://playwright.dev) and PestPHP integration is buggy, including direct mobile emulation support. **This means tests may take a longer time in this mode** but at least they work! This doesn't apply to CI, because it's ephemeral in there.
+   - If you have any idea how to fix [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), please PR. Otherwise, **rebooting your system** if it gets wild is the way to go!
 4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
 
 ### Tools and Guides
