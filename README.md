@@ -168,7 +168,7 @@ https://muttasiq.com
 
 **The native apps**, are built using [NativePHP](https://nativephp.com). And with their new mobile builder, all platforms are covered. It relies on a wide ecosystem of technologies — without requiring YOU to directly interact with them.
 - Check out their [desktop](https://nativephp.com/docs/desktop) AND [mobile](https://nativephp.com/docs/mobile) documentation please.
-- If you have experience with [Kotlin](https://kotlinlang.org/) or [Swift](https://www.swift.org/), [electronJS](https://www.electronjs.org/) is communicating with them under the hood in NativePHP. You can implement those changes as PHP [plugins](https://nativephp.com/plugins) of course, and even make them paid to support yourself!
+- If you have experience with Kotlin or Swift, ElectronJS is communicating with them under the hood in NativePHP. You can implement those changes as PHP [plugins](https://nativephp.com/plugins) of course, and even make them paid to support yourself!
 
 </div>
 
@@ -191,7 +191,7 @@ https://muttasiq.com
 
 ### Tools and Guides
 
-- Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
+- Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI [Bash](https://www.gnu.org/software/bash) scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
 - For reproducing the [favicon](./resources/views/partials/favicon.blade.php) variences, use this [favycon](https://github.com/ruisaraiva19/favycon) tool.
 - [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_WEB_tall-standards) wikipedia contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
 
