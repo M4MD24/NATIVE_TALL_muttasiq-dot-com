@@ -10,63 +10,6 @@ import {
 } from '../athkar-app-overrides';
 import { fitTextInBox as fitAthkarTextInBox } from '../../../packages/fitty';
 
-const mainTextMinSizeSettingKey = 'minimum_main_text_size';
-const mainTextMaxSizeSettingKey = 'maximum_main_text_size';
-const mainTextMinSizeMinimum = 10;
-const mainTextMinSizeMaximum = 20;
-const mainTextMinSizeDefault = 16;
-const mainTextMaxSizeMinimum = 10;
-const mainTextMaxSizeMaximum = 20;
-const mainTextMaxSizeDefault = 20;
-
-const normalizeMainTextSize = (
-    value,
-    { fallback, minimum, maximum } = {
-        fallback: mainTextMinSizeDefault,
-        minimum: mainTextMinSizeMinimum,
-        maximum: mainTextMinSizeMaximum,
-    },
-) => {
-    const numeric = Number.isFinite(Number(value)) ? Number(value) : Number(fallback ?? 0);
-    const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
-    const nextMinimum = Number.isFinite(Number(minimum))
-        ? Number(minimum)
-        : Number.NEGATIVE_INFINITY;
-    const nextMaximum = Number.isFinite(Number(maximum))
-        ? Number(maximum)
-        : Number.POSITIVE_INFINITY;
-
-    return Math.min(nextMaximum, Math.max(nextMinimum, rounded));
-};
-
-const resolveMainTextSizing = (settings) => {
-    const minimumMainTextSize = normalizeMainTextSize(settings?.[mainTextMinSizeSettingKey], {
-        fallback: mainTextMinSizeDefault,
-        minimum: mainTextMinSizeMinimum,
-        maximum: mainTextMinSizeMaximum,
-    });
-    const maximumMainTextSize = normalizeMainTextSize(settings?.[mainTextMaxSizeSettingKey], {
-        fallback: mainTextMaxSizeDefault,
-        minimum: mainTextMaxSizeMinimum,
-        maximum: mainTextMaxSizeMaximum,
-    });
-
-    return {
-        minimum: Math.min(minimumMainTextSize, maximumMainTextSize),
-        maximum: Math.max(maximumMainTextSize, minimumMainTextSize),
-    };
-};
-
-const resolveMainTextFitMinSize = (settings) => {
-    return Math.max(8, resolveMainTextSizing(settings).minimum - 6);
-};
-
-const resolveMainTextFitMaxScale = (settings) => {
-    const mainTextSizing = resolveMainTextSizing(settings);
-
-    return Math.max(1, mainTextSizing.maximum / Math.max(1, mainTextSizing.minimum));
-};
-
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppReader', (config) => ({
         defaultAthkar: normalizeAthkarDefaults(config.athkar),
@@ -151,10 +94,10 @@ document.addEventListener('alpine:init', () => {
         textFit: {
             raf: null,
             resizeObserver: null,
-            minSize: resolveMainTextFitMinSize(config.athkarSettings),
-            minOriginSize: resolveMainTextFitMinSize(config.athkarSettings),
-            maxScale: resolveMainTextFitMaxScale(config.athkarSettings),
-            originMaxScale: resolveMainTextFitMaxScale(config.athkarSettings),
+            minSize: 14,
+            minOriginSize: 8,
+            maxScale: 1.2,
+            originMaxScale: 1.05,
             step: 0.5,
             safePaddingX: 6,
             safePaddingY: 4,
@@ -349,14 +292,6 @@ document.addEventListener('alpine:init', () => {
             };
 
             this.settings = writeAthkarSettingsToStorage(mergedSettings, this.settingsDefaults);
-            this.textFit.minSize = this.mainTextFitMinSizeSettingValue();
-            this.textFit.minOriginSize = this.mainTextFitMinSizeSettingValue();
-            this.textFit.maxScale = this.mainTextFitMaxScaleSettingValue();
-            this.textFit.originMaxScale = this.mainTextFitMaxScaleSettingValue();
-            this.$nextTick(() => {
-                this.queueTextFit();
-                this.queueReaderTextFit();
-            });
 
             this.ensureProgress('sabah');
             this.ensureProgress('masaa');
@@ -372,9 +307,6 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (this.shouldSkipNoticePanels()) {
-                this.closeHint();
-                this.hideCompletionHack({ force: true });
-
                 if (this.isNoticeVisible) {
                     this.confirmNotice();
                 }
@@ -397,11 +329,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
         toggleHint(index) {
-            if (this.shouldSkipNoticePanels()) {
-                this.closeHint();
-                return;
-            }
-
             const nextIndex = this.hintIndex === index ? null : index;
             this.hintIndex = nextIndex;
             this.setMobileCounterOpen(nextIndex !== null);
@@ -881,11 +808,6 @@ document.addEventListener('alpine:init', () => {
             return this.transitionStyles();
         },
         showCompletionHack({ pinned = false, armed = null } = {}) {
-            if (this.shouldSkipNoticePanels()) {
-                this.hideCompletionHack({ force: true });
-                return;
-            }
-
             this.completionHack.isVisible = true;
             this.completionHack.isPinned = pinned;
             if (!this.completionHack.canHover) {
@@ -921,11 +843,6 @@ document.addEventListener('alpine:init', () => {
             this.completionHack.isArmed = false;
         },
         toggleCompletionHack() {
-            if (this.shouldSkipNoticePanels()) {
-                this.markAllActiveModeComplete();
-                return;
-            }
-
             if (this.completionHack.canHover) {
                 return;
             }
@@ -997,12 +914,6 @@ document.addEventListener('alpine:init', () => {
             const normalizedIndex = Number(index ?? -1);
 
             if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
-                return;
-            }
-
-            if (this.shouldSkipNoticePanels()) {
-                this.completeThikr(normalizedIndex);
-                this.closeHint();
                 return;
             }
 
@@ -1133,32 +1044,6 @@ document.addEventListener('alpine:init', () => {
             }
 
             return fallback;
-        },
-        settingNumberValue(
-            name,
-            fallback,
-            { minimum = Number.NEGATIVE_INFINITY, maximum = Number.POSITIVE_INFINITY } = {},
-        ) {
-            const value = this.settings?.[name];
-            const numeric = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
-            const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
-
-            return Math.min(maximum, Math.max(minimum, rounded));
-        },
-        mainTextMinSizeSettingValue() {
-            return resolveMainTextSizing(this.settings).minimum;
-        },
-        mainTextMaxSizeSettingValue() {
-            return resolveMainTextSizing(this.settings).maximum;
-        },
-        mainTextFitMinSizeSettingValue() {
-            return Math.max(8, this.mainTextMinSizeSettingValue() - 6);
-        },
-        mainTextFitMaxScaleSettingValue() {
-            return Math.max(
-                1,
-                this.mainTextMaxSizeSettingValue() / Math.max(1, this.mainTextMinSizeSettingValue()),
-            );
         },
         shouldPreventSwitching() {
             return this.settingValue('does_prevent_switching_athkar_until_completion', true);
@@ -1766,13 +1651,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             text.classList.remove('is-fit');
-            this.fitTextInBox(
-                text,
-                box,
-                this.mainTextFitMinSizeSettingValue(),
-                this.textFit.maxScale,
-                this.mainTextMinSizeSettingValue(),
-            );
+            this.fitTextInBox(text, box, 14, 1.8);
         },
         fitActiveThikrText() {
             if (!this.activeMode) {
@@ -1798,13 +1677,7 @@ document.addEventListener('alpine:init', () => {
 
             if (text) {
                 text.classList.remove('is-fit');
-                this.fitTextInBox(
-                    text,
-                    box,
-                    this.textFit.minSize,
-                    this.textFit.maxScale,
-                    this.mainTextMinSizeSettingValue(),
-                );
+                this.fitTextInBox(text, box);
                 textOverflow = this.isTextOverflowingInBox(text, box);
             }
 
@@ -1815,7 +1688,6 @@ document.addEventListener('alpine:init', () => {
                     box,
                     this.textFit.minOriginSize,
                     this.textFit.originMaxScale,
-                    this.mainTextMinSizeSettingValue(),
                 );
                 originOverflow = this.isTextOverflowingInBox(originText, box);
             }
@@ -1826,13 +1698,7 @@ document.addEventListener('alpine:init', () => {
                 this.setupTextShimmer(text);
             });
         },
-        fitTextInBox(
-            text,
-            box,
-            minSizeOverride = null,
-            maxScaleOverride = null,
-            baseSizeOverride = null,
-        ) {
+        fitTextInBox(text, box, minSizeOverride = null, maxScaleOverride = null) {
             const minSize = Number.isFinite(minSizeOverride)
                 ? minSizeOverride
                 : this.textFit.minSize;
@@ -1844,9 +1710,6 @@ document.addEventListener('alpine:init', () => {
                 maxScale: Number.isFinite(maxScaleOverride)
                     ? maxScaleOverride
                     : this.textFit.maxScale,
-                baseSizeOverride: Number.isFinite(baseSizeOverride)
-                    ? baseSizeOverride
-                    : this.mainTextMinSizeSettingValue(),
                 step: this.textFit.step,
                 safePaddingX: this.textFit.safePaddingX,
                 safePaddingY: this.textFit.safePaddingY,
