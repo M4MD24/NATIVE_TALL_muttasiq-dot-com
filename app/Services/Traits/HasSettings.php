@@ -57,7 +57,8 @@ trait HasSettings
                             ])
                             ->step(1)
                             ->tooltips()
-                            ->fillTrack([false, true, false]),
+                            ->fillTrack([false, true, false])
+                            ->pips(),
 
                         Components\Checkbox::make('does_skip_notice_panels')
                             ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))

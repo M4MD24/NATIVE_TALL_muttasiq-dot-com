@@ -72,7 +72,7 @@ class Setting extends Model
             ],
             'does_skip_notice_panels' => [
                 'default' => false,
-                'label' => '3. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'label' => '2. تجاوز رسائل التعريف أو التهنئة وما شابه.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],

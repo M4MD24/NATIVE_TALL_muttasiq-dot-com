@@ -437,7 +437,7 @@
         .athkar-text-box--touch-scroll.athkar-text-box--origin-scroll .athkar-origin-text {
             position: static;
             inset: auto;
-            align-items: flex-start;
+            /* align-items: flex-start; */
             justify-content: center;
             padding-block: 0;
         }
@@ -462,7 +462,7 @@
         .athkar-text-box--touch-scroll:not(.athkar-text-box--origin-scroll) .athkar-main-text {
             position: static;
             inset: auto;
-            align-items: flex-start;
+            /* align-items: flex-start; */
             justify-content: center;
             padding-block: 0;
         }
