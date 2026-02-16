@@ -1,34 +1,143 @@
 const athkarSettingsStorageKey = 'athkar-settings-v1';
 const athkarOverridesStorageKey = 'athkar-overrides-v1';
+const minMainTextSizeSettingKey = 'minimum_main_text_size';
+const maxMainTextSizeSettingKey = 'maximum_main_text_size';
+const minMainTextSizeMinimum = 10;
+const minMainTextSizeMaximum = 20;
+const minMainTextSizeDefault = 16;
+const maxMainTextSizeMinimum = 10;
+const maxMainTextSizeMaximum = 20;
+const maxMainTextSizeDefault = 20;
+
+const normalizeBooleanSetting = (value, fallback) => {
+    if (typeof value === 'boolean') {
+        return value;
+    }
+
+    if (value === 1 || value === '1') {
+        return true;
+    }
+
+    if (value === 0 || value === '0') {
+        return false;
+    }
+
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+
+        if (normalized === 'true') {
+            return true;
+        }
+
+        if (normalized === 'false') {
+            return false;
+        }
+    }
+
+    return Boolean(fallback);
+};
+
+const normalizeIntegerSetting = (
+    value,
+    {
+        fallback = minMainTextSizeDefault,
+        minimum = minMainTextSizeMinimum,
+        maximum = minMainTextSizeMaximum,
+    } = {},
+) => {
+    const numeric = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
+    const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
+    const nextMinimum = Number.isFinite(Number(minimum)) ? Number(minimum) : minMainTextSizeMinimum;
+    const nextMaximum = Number.isFinite(Number(maximum)) ? Number(maximum) : minMainTextSizeMaximum;
+
+    return Math.min(nextMaximum, Math.max(nextMinimum, rounded));
+};
+
+const normalizeSettingValue = (key, value, fallback) => {
+    if (key === minMainTextSizeSettingKey) {
+        return normalizeIntegerSetting(value, {
+            fallback,
+            minimum: minMainTextSizeMinimum,
+            maximum: minMainTextSizeMaximum,
+        });
+    }
+
+    if (key === maxMainTextSizeSettingKey) {
+        return normalizeIntegerSetting(value, {
+            fallback,
+            minimum: maxMainTextSizeMinimum,
+            maximum: maxMainTextSizeMaximum,
+        });
+    }
+
+    if (typeof fallback === 'number') {
+        return normalizeIntegerSetting(value, {
+            fallback,
+        });
+    }
+
+    return normalizeBooleanSetting(value, fallback);
+};
+
+const normalizeMainTextSizeBounds = (settings) => {
+    const normalized = { ...(settings ?? {}) };
+    const minimumMainTextSize = normalizeIntegerSetting(normalized[minMainTextSizeSettingKey], {
+        fallback: minMainTextSizeDefault,
+        minimum: minMainTextSizeMinimum,
+        maximum: minMainTextSizeMaximum,
+    });
+    const maximumMainTextSize = normalizeIntegerSetting(normalized[maxMainTextSizeSettingKey], {
+        fallback: maxMainTextSizeDefault,
+        minimum: maxMainTextSizeMinimum,
+        maximum: maxMainTextSizeMaximum,
+    });
+
+    normalized[minMainTextSizeSettingKey] = Math.min(minimumMainTextSize, maximumMainTextSize);
+    normalized[maxMainTextSizeSettingKey] = Math.max(
+        maximumMainTextSize,
+        normalized[minMainTextSizeSettingKey],
+    );
+
+    return normalized;
+};
 
 const normalizeAthkarSettings = (settings, defaults) => {
     if (!defaults || typeof defaults !== 'object' || Object.keys(defaults).length === 0) {
         if (!settings || typeof settings !== 'object') {
-            return {};
+            return normalizeMainTextSizeBounds({});
         }
 
         const normalized = {};
 
         Object.keys(settings).forEach((key) => {
-            normalized[key] = Boolean(settings[key]);
+            const fallback =
+                key === minMainTextSizeSettingKey
+                    ? minMainTextSizeDefault
+                    : key === maxMainTextSizeSettingKey
+                      ? maxMainTextSizeDefault
+                      : false;
+            normalized[key] = normalizeSettingValue(key, settings[key], fallback);
         });
 
-        return normalized;
+        return normalizeMainTextSizeBounds(normalized);
     }
 
     const normalized = { ...defaults };
 
     if (!settings || typeof settings !== 'object') {
-        return normalized;
+        return normalizeMainTextSizeBounds(normalized);
     }
 
     Object.keys(defaults).forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(settings, key)) {
-            normalized[key] = Boolean(settings[key]);
+            normalized[key] = normalizeSettingValue(key, settings[key], defaults[key]);
+            return;
         }
+
+        normalized[key] = normalizeSettingValue(key, defaults[key], defaults[key]);
     });
 
-    return normalized;
+    return normalizeMainTextSizeBounds(normalized);
 };
 
 const resolveAthkarSettingsDefaults = () => {

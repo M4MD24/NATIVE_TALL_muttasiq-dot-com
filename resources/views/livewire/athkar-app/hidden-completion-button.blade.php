@@ -1,6 +1,17 @@
 <div
     x-data="{ tip: null }"
-    x-on:athkar-open-single-completion.window="$wire.mountAction('singleThikrCompletion', { index: Number($event.detail?.index ?? -1) })"
+    x-on:athkar-open-single-completion.window="
+        const index = Number($event.detail?.index ?? -1);
+        if (!Number.isFinite(index) || index < 0) {
+            return;
+        }
+        if (shouldSkipNoticePanels()) {
+            completeThikr(index);
+            closeHint();
+            return;
+        }
+        $wire.mountAction('singleThikrCompletion', { index });
+    "
 >
     <button
         class="bg-success-500/90 absolute -top-3 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-opacity duration-300"
@@ -17,6 +28,7 @@
             tip?.hide();
             if (!completionHack.isVisible) { showCompletionHack({ pinned: true, armed: true }); return; }
             if (!completionHack.canHover && !completionHack.isArmed) { completionHack.isArmed = true; return; }
+            if (shouldSkipNoticePanels()) { markAllActiveModeComplete(); return; }
             $wire.mountAction('completion');
         "
     >

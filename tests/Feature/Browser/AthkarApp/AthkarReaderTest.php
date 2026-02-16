@@ -830,6 +830,145 @@ JS,
     );
 });
 
+it('re-fits active thikr and origin text immediately when max main text size changes with a fixed min size', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    waitForReaderVisible($page);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const index = data.activeIndex;
+if (!data.activeList?.[index]) {
+  return;
+}
+
+data.activeList[index].text = 'لا إله إلا الله وحده لا شريك له';
+data.activeList[index].origin = 'رواه البخاري';
+data.activeList[index].count = 1;
+if (Array.isArray(data.progress?.[data.activeMode]?.counts)) {
+  data.progress[data.activeMode].counts[index] = 0;
+}
+data.originToggle = { mode: data.activeMode, index };
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(text).fontSize);
+
+  return Number.isFinite(size) && size > 0;
+})()
+JS,
+        true,
+    );
+
+    setAthkarSettings($page, [
+        'minimum_main_text_size' => 16,
+        'maximum_main_text_size' => 16,
+    ]);
+    waitForAthkarSettings($page, [
+        'minimum_main_text_size' => 16,
+        'maximum_main_text_size' => 16,
+    ]);
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!text || !origin) {
+    return null;
+  }
+
+  const textSize = Number.parseFloat(getComputedStyle(text).fontSize);
+  const originSize = Number.parseFloat(getComputedStyle(origin).fontSize);
+
+  return Number.isFinite(textSize) &&
+    Number.isFinite(originSize) &&
+    textSize > 0 &&
+    originSize > 0 &&
+    textSize <= 16.5 &&
+    originSize <= 16.5;
+})()
+JS);
+
+    $fontAtMaxSixteen = $page->script(<<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return null;
+  }
+
+  return Number.parseFloat(getComputedStyle(text).fontSize);
+})()
+JS);
+
+    $originFontAtMaxSixteen = $page->script(<<<'JS'
+(() => {
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!origin) {
+    return null;
+  }
+
+  return Number.parseFloat(getComputedStyle(origin).fontSize);
+})()
+JS);
+
+    expect($fontAtMaxSixteen)->toBeNumeric()->toBeGreaterThan(0);
+    expect($originFontAtMaxSixteen)->toBeNumeric()->toBeGreaterThan(0);
+
+    setAthkarSettings($page, ['maximum_main_text_size' => 20]);
+    waitForAthkarSettings($page, ['maximum_main_text_size' => 20]);
+
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(text).fontSize);
+
+  return Number.isFinite(size) && size >= Number({{min}});
+})()
+JS,
+            ['min' => $fontAtMaxSixteen + 0.5],
+        ),
+        true,
+    );
+
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!origin) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(origin).fontSize);
+
+  return Number.isFinite(size) && size >= Number({{min}});
+})()
+JS,
+            ['min' => $originFontAtMaxSixteen + 0.5],
+        ),
+        true,
+    );
+});
+
 it('restores the notice on reload and allows continuing to the reader when notice panels are enabled', function () {
     $page = visit('/');
 
@@ -920,6 +1059,53 @@ JS,
 
     waitForScript($page, 'window.location.hash', '#athkar-app-sabah');
     waitForNoticeVisible($page);
+});
+
+it('bypasses hint and completion popups when setting 4 is enabled', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    $settings = [
+        'does_skip_notice_panels' => true,
+        'does_prevent_switching_athkar_until_completion' => false,
+        'does_automatically_switch_completed_athkar' => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $multiIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => Number(item.count ?? 1) > 1)',
+        ),
+    );
+
+    expect($multiIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(
+        athkarReaderCommandScript(
+            "data.setActiveIndex({$multiIndex}); data.setCount({$multiIndex}, 0);",
+        ),
+    );
+
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
+
+    $page->script(athkarReaderCommandScript("data.toggleHint({$multiIndex});"));
+    waitForScript($page, athkarReaderDataScript('data.hintIndex'), null);
+
+    $page->script(
+        athkarReaderCommandScript("data.requestSingleThikrCompletion({$multiIndex});"),
+    );
+
+    waitForScript(
+        $page,
+        athkarReaderDataScript(
+            "data.countAt({$multiIndex}) === data.requiredCount({$multiIndex})",
+        ),
+        true,
+    );
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', false);
 });
 
 it('executes hidden completion buttons on desktop for single thikr and all athkar', function () {

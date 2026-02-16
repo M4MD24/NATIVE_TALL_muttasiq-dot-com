@@ -2,6 +2,24 @@ import fitty from 'fitty';
 
 window.fitty = fitty;
 
+const minMainTextSizeSettingKey = 'minimum_main_text_size';
+const minMainTextSizeMinimum = 10;
+const minMainTextSizeMaximum = 20;
+const minMainTextSizeDefault = 16;
+
+const resolveDefaultMinSize = () => {
+    if (typeof window === 'undefined') {
+        return minMainTextSizeDefault;
+    }
+
+    const defaults = window.athkarSettingsDefaults;
+    const raw = defaults?.[minMainTextSizeSettingKey];
+    const numeric = Number.isFinite(Number(raw)) ? Number(raw) : minMainTextSizeDefault;
+    const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : minMainTextSizeDefault;
+
+    return Math.min(minMainTextSizeMaximum, Math.max(minMainTextSizeMinimum, rounded));
+};
+
 const resolveAvailableBoxSpace = (boxElement, safePaddingX, safePaddingY) => {
     const width = Math.max(0, boxElement.clientWidth - safePaddingX);
     const height = Math.max(0, boxElement.clientHeight - safePaddingY);
@@ -9,28 +27,12 @@ const resolveAvailableBoxSpace = (boxElement, safePaddingX, safePaddingY) => {
     return { width, height };
 };
 
-const resolveMaxTextSize = (textElement, availableWidth, baseSize, maxScale) => {
+const resolveMaxTextSize = (baseSize, maxScale) => {
     if (!Number.isFinite(maxScale) || maxScale <= 1) {
         return baseSize;
     }
 
-    textElement.style.fontSize = `${baseSize}px`;
-    const baseWidth = textElement.scrollWidth;
-
-    if (!baseWidth || !availableWidth) {
-        return baseSize;
-    }
-
-    // Prefer width-driven sizing first, then clamp for height in fitTextToBox().
-    const widthScale = availableWidth / baseWidth;
-
-    if (widthScale <= 1) {
-        return baseSize;
-    }
-
-    const allowedScale = Math.min(maxScale, widthScale);
-
-    return Math.max(baseSize, baseSize * allowedScale);
+    return Math.max(baseSize, baseSize * maxScale);
 };
 
 const ensureFittyInstance = (textElement, minSize, maxSize) => {
@@ -117,8 +119,9 @@ const fitTextToBox = (textElement, availableWidth, availableHeight, minSize, max
 const fitTextInBox = ({
     textElement,
     boxElement,
-    minSize = 14,
+    minSize = resolveDefaultMinSize(),
     maxScale = 1.2,
+    baseSizeOverride = null,
     step = 0.5,
     safePaddingX = 0,
     safePaddingY = 0,
@@ -142,14 +145,21 @@ const fitTextInBox = ({
         return;
     }
 
-    textElement.style.fontSize = '';
+    const hasBaseSizeOverride = Number.isFinite(Number(baseSizeOverride));
+
+    if (hasBaseSizeOverride) {
+        textElement.style.fontSize = `${Number(baseSizeOverride)}px`;
+    } else {
+        textElement.style.fontSize = '';
+    }
+
     const baseSize = Number.parseFloat(getComputedStyle(textElement).fontSize);
 
     if (!Number.isFinite(baseSize)) {
         return;
     }
 
-    const maxSize = resolveMaxTextSize(textElement, availableWidth, baseSize, maxScale);
+    const maxSize = resolveMaxTextSize(baseSize, maxScale);
     textElement.style.fontSize = `${baseSize}px`;
 
     const instance = ensureFittyInstance(textElement, minSize, maxSize);
