@@ -1,10 +1,10 @@
 <div>
     <div
-        class="fixed end-10 top-7 z-30 sm:top-8"
+        class="fixed end-10 top-7 z-30 sm:top-5 md:top-8"
         data-stack-item
         wire:ignore
         x-transition
-        x-show="!isSettingsOpen"
+        x-show="!isSettingsOpen && !isAthkarManagerOpen"
         x-data="{
             settingsModalId: @js('fi-' . $this->getId() . '-action-0'),
         }"

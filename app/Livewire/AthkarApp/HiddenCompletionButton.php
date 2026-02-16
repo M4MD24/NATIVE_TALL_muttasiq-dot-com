@@ -28,6 +28,28 @@ class HiddenCompletionButton extends Component implements HasActions, HasSchemas
             ->modalCancelActionLabel('لم أقرأها بعد');
     }
 
+    public function singleThikrCompletionAction(): Action
+    {
+        return Action::make('singleThikrCompletion')
+            ->requiresConfirmation()
+            ->action(function (array $arguments): void {
+                $index = (int) ($arguments['index'] ?? -1);
+
+                if ($index < 0) {
+                    return;
+                }
+
+                $this->js(
+                    "window.dispatchEvent(new CustomEvent('athkar-single-completion-confirmed', { detail: { index: {$index} } }))",
+                );
+            })
+            ->modalIconColor('warning')
+            ->label('إتمام الذكر')
+            ->modalDescription('هل أتممت قراءة هذا الذكر بعدده كاملا؟')
+            ->modalSubmitActionLabel('نعم، أكملت قراءته')
+            ->modalCancelActionLabel('إلغاء');
+    }
+
     public function render()
     {
         return view('livewire.athkar-app.hidden-completion-button');

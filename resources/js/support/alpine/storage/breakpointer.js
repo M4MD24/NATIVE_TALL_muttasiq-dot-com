@@ -1,36 +1,87 @@
 document.addEventListener('alpine:init', function () {
-    const list = ['base', 'sm', 'md', 'lg', 'xl', '2xl']; // ? matching CSS
-    const read = () =>
+    const breakpoints = ['base', 'sm', 'md', 'lg', 'xl', '2xl'];
+    const readBreakpoint = () =>
         getComputedStyle(document.documentElement)
             .getPropertyValue('--breakpoint')
             .trim()
             .replace(/['"]+/g, '');
+    const mediaMatches = (query) =>
+        typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+    const detectTouchInput = () =>
+        'ontouchstart' in window ||
+        Number(window.navigator?.maxTouchPoints ?? 0) > 0 ||
+        mediaMatches('(pointer: coarse)') ||
+        mediaMatches('(any-pointer: coarse)') ||
+        mediaMatches('(hover: none)');
+    const applyTouchClass = (hasTouch) => {
+        document.documentElement.classList.toggle('has-touch', hasTouch);
+    };
 
     const is = (q) => {
         if (!q) return false;
         const m = /(\+|-)$/.exec(q);
         const name = m ? q.slice(0, -1) : q;
-        const cur = read();
-        const idx = list.indexOf(name);
-        const curIdx = list.indexOf(cur);
+        const cur = readBreakpoint();
+        const idx = breakpoints.indexOf(name);
+        const curIdx = breakpoints.indexOf(cur);
         if (idx < 0 || curIdx < 0) return false;
         if (m?.[0] === '+') return curIdx >= idx;
         if (m?.[0] === '-') return curIdx <= idx;
         return cur === name;
     };
+    const isTablet = () => detectTouchInput() && is('sm+') && is('xl-');
+    const shouldUseSortHandles = () => detectTouchInput() && (is('base') || isTablet());
+
+    const initialHasTouch = detectTouchInput();
+    applyTouchClass(initialHasTouch);
 
     window.Alpine.store('bp', {
-        current: read(),
+        current: readBreakpoint(),
+        hasTouch: initialHasTouch,
         is: (q) => is(q),
+        isTouch: () => detectTouchInput(),
+        isTablet: () => isTablet(),
+        shouldUseSortHandles: () => shouldUseSortHandles(),
     });
 
-    // ? Reactive updates when the CSS var flips at breakpoints (no debounce)
-    const ro = new ResizeObserver(() => {
-        const next = read();
-        if (next !== window.Alpine.store('bp').current) {
-            window.Alpine.store('bp').current = next;
+    const syncBreakpoints = () => {
+        const store = window.Alpine.store('bp');
+        const nextBreakpoint = readBreakpoint();
+
+        if (nextBreakpoint !== store.current) {
+            store.current = nextBreakpoint;
         }
+    };
+
+    const syncTouchState = () => {
+        const store = window.Alpine.store('bp');
+        const nextHasTouch = detectTouchInput();
+
+        if (nextHasTouch !== store.hasTouch) {
+            store.hasTouch = nextHasTouch;
+            applyTouchClass(nextHasTouch);
+        }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+        syncBreakpoints();
     });
 
-    ro.observe(document.documentElement);
+    resizeObserver.observe(document.documentElement);
+    window.addEventListener(
+        'resize',
+        () => {
+            syncBreakpoints();
+            syncTouchState();
+        },
+        { passive: true },
+    );
+    window.addEventListener(
+        'orientationchange',
+        () => {
+            syncBreakpoints();
+            syncTouchState();
+        },
+        { passive: true },
+    );
 });

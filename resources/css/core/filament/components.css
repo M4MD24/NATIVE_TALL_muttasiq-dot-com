@@ -14,6 +14,8 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+@import './overrides/color-overrides.css';
+
 @layer components {
     .mobile-platform .fi-no {
         padding-bottom: calc(2rem + var(--inset-bottom, 0px));
