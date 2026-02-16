@@ -240,11 +240,11 @@
 
         @keyframes athkar-text-shimmer {
             0% {
-                background-position: 120% 50%, 0 0;
+                background-position: -100% 50%, 0 0;
             }
 
             100% {
-                background-position: -120% 50%, 0 0;
+                background-position: 100% 50%, 0 0;
             }
         }
 
@@ -347,6 +347,17 @@
         .athkar-text.athkar-shimmer {
             position: relative;
             z-index: 0;
+            color: var(--athkar-text-base);
+            -webkit-text-fill-color: currentColor;
+            background-image: none;
+            background-size: auto;
+            background-position: 0 0;
+            background-repeat: no-repeat;
+            background-clip: border-box;
+            -webkit-background-clip: border-box;
+        }
+
+        .athkar-text.athkar-shimmer.is-shimmering {
             color: transparent;
             -webkit-text-fill-color: transparent;
             background-image: linear-gradient(110deg,
@@ -356,15 +367,12 @@
                     transparent 55%,
                     transparent 100%),
                 linear-gradient(var(--athkar-text-base), var(--athkar-text-base));
-            background-size: 200% 100%, 100% 100%;
-            background-position: 120% 50%, 0 0;
-            background-repeat: no-repeat;
+            background-size: 300% 100%, 100% 100%;
+            background-position: -100% 50%, 0 0;
+            background-repeat: no-repeat, repeat;
             background-clip: text;
             -webkit-background-clip: text;
             will-change: background-position;
-        }
-
-        .athkar-text.athkar-shimmer.is-shimmering {
             animation: athkar-text-shimmer var(--shimmer-duration, 1000ms) linear 1 forwards;
         }
 
@@ -434,8 +442,29 @@
             padding-block: 0;
         }
 
-        .athkar-text-box--touch-scroll.athkar-text-box--origin-scroll .athkar-text--muted {
-            display: none;
+        .athkar-main-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-block: inherit;
+            padding-inline: inherit;
+            opacity: 1;
+            transition: opacity 260ms ease;
+        }
+
+        .athkar-main-text.is-main-hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .athkar-text-box--touch-scroll:not(.athkar-text-box--origin-scroll) .athkar-main-text {
+            position: static;
+            inset: auto;
+            align-items: flex-start;
+            justify-content: center;
+            padding-block: 0;
         }
 
         .athkar-origin-text {
@@ -858,14 +887,12 @@
                     >
                         <!-- Floating Mobile Counter (togglable) -->
                         <div
-                            class="delay-250 pointer-events-none absolute right-2 top-2 z-30 overflow-visible opacity-0 transition-opacity sm:hidden"
+                            class="delay-250 absolute right-2 top-2 z-30 overflow-visible transition-opacity sm:hidden"
                             data-athkar-mobile-counter
-                            x-bind:class="{
-                                /* overall visibility condition */
-                                'opacity-100! pointer-events-auto!': (requiredCount(index) > 1 || countAt(index) >
-                                        requiredCount(index)) &&
-                                    (countAt(index) !== requiredCount(index)),
-                            }"
+                            x-bind:class="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
+                                    (countAt(index) !== requiredCount(index))
+                                ? 'opacity-100! pointer-events-auto!'
+                                : 'opacity-0 pointer-events-none'"
                         >
                             <div class="group relative">
                                 <!-- Top Right Counter -->
@@ -876,6 +903,8 @@
                                     aria-label="العدد"
                                     x-bind:class="isHintOpen(index) && 'size-16!'"
                                     x-on:click.stop="toggleHint(index)"
+                                    x-on:pointerdown.stop
+                                    x-on:touchstart.stop
                                     x-bind:aria-expanded="isHintOpen(index)"
                                 >
                                     <!-- Ring -->
@@ -947,6 +976,8 @@
                                         'opacity-100! scale-100 pointer-events-auto!': isHintOpen(index),
                                     }"
                                     x-on:click.stop="requestSingleThikrCompletion(index)"
+                                    x-on:pointerdown.stop
+                                    x-on:touchstart.stop
                                 >
                                     <x-icon
                                         class="h-4 w-4"
@@ -966,21 +997,9 @@
 
                         <!-- Mobile thikr origin toggler -->
                         <div
-                            class="absolute left-2 top-2 z-30 sm:hidden"
-                            x-data="{
-                                isVisible: false,
-                                timer: null,
-                            }"
+                            class="absolute left-2 top-2 z-30 transition-opacity duration-200 sm:hidden"
                             x-show="isOriginalThikr(index)"
-                            x-bind:class="isVisible ? 'opacity-100' : 'opacity-0'"
-                            x-effect="
-                                if (slide.isActive) {
-                                    clearTimeout(timer);
-                                    isVisible = false;
-                                } else {
-                                    timer = setTimeout(() => (isVisible = true), 300);
-                                }
-                            "
+                            x-bind:class="slide.isActive ? 'pointer-events-none opacity-0' : 'opacity-100'"
                         >
                             <button
                                 class="athkar-origin-indicator athkar-origin-indicator--mobile"
@@ -989,6 +1008,8 @@
                                 x-bind:class="isOriginVisible(index) && 'is-active'"
                                 x-bind:aria-pressed="isOriginVisible(index)"
                                 x-on:click.stop="toggleOrigin(index)"
+                                x-on:pointerdown.stop
+                                x-on:touchstart.stop
                                 x-on:mouseenter="tip = $tippy('مأثور', 'right')"
                                 x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
                                 x-on:focus="tip = $tippy('مأثور', 'right')"
@@ -1100,14 +1121,12 @@
                                         class="athkar-origin-indicator athkar-origin-indicator--desktop opacity-0 transition-opacity duration-300"
                                         type="button"
                                         x-data="{
-                                            isVisible: false,
-                                            timer: null,
                                             tip: null,
                                         }"
                                         x-show="isOriginalThikr(index)"
                                         x-bind:class="{
-                                            'opacity-100!': isVisible,
-                                            'opacity-0': !isVisible,
+                                            'opacity-100!': !slide.isActive,
+                                            'pointer-events-none opacity-0': slide.isActive,
                                             'is-active': isOriginVisible(index),
                                         }"
                                         x-bind:aria-pressed="isOriginVisible(index)"
@@ -1116,14 +1135,6 @@
                                         x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
                                         x-on:focus="tip = $tippy('مأثور', 'right')"
                                         x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
-                                        x-effect="
-                                            if (slide.isActive) {
-                                                clearTimeout(timer);
-                                                isVisible = false;
-                                            } else {
-                                                timer = setTimeout(() => (isVisible = true), 300);
-                                            }
-                                        "
                                     >
                                         <x-icon
                                             class="h-10 w-10"
@@ -1148,6 +1159,7 @@
                                 <div
                                     class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-4 md:px-10 transition-opacity') }}"
                                     data-athkar-text-box
+                                    data-fitty-box
                                     dir="rtl"
                                     x-on:pointerdown="
                                         beginTextScroll($event);
@@ -1166,25 +1178,57 @@
                                     x-on:touchend="endTextScroll()"
                                     x-on:touchcancel="endTextScroll()"
                                 >
-                                    <p
-                                        class="athkar-text athkar-shimmer font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
-                                        data-athkar-text
-                                        data-athkar-shimmer
-                                        data-shimmer-duration="3000"
-                                        data-shimmer-delay="1000"
-                                        data-shimmer-pause="4000"
-                                        dir="rtl"
-                                        x-bind:class="isOriginVisible(index) && 'athkar-text--muted'"
-                                        x-text="item.text"
-                                    ></p>
+                                    <div
+                                        class="athkar-main-text"
+                                        x-bind:class="isOriginVisible(index) && 'is-main-hidden'"
+                                    >
+                                        <p
+                                            class="athkar-text athkar-shimmer font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
+                                            data-athkar-text
+                                            data-fitty-target
+                                            data-fitty-enabled="false"
+                                            data-fitty-overflow-active="false"
+                                            data-fitty-step="0.5"
+                                            data-fitty-safe-padding-x="6"
+                                            data-fitty-safe-padding-y="4"
+                                            data-fitty-manage-overflow="true"
+                                            data-fitty-enable-touch-scroll="true"
+                                            data-fitty-overflow-padding-class="py-2"
+                                            data-fitty-overflow-target="text"
+                                            data-athkar-shimmer
+                                            data-shimmer-duration="3000"
+                                            data-shimmer-delay="1000"
+                                            data-shimmer-pause="4000"
+                                            dir="rtl"
+                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                            x-bind:data-fitty-overflow-active="(activeIndex === index && !isOriginVisible(index)).toString()"
+                                            x-text="item.text"
+                                        ></p>
+                                    </div>
                                     <div
                                         class="athkar-origin-text"
                                         x-bind:class="isOriginVisible(index) && 'is-origin-visible'"
                                     >
                                         <p
-                                            class="athkar-text athkar-origin-text__content font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
+                                            class="athkar-text athkar-shimmer athkar-origin-text__content font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
                                             data-athkar-origin-text
+                                            data-athkar-shimmer
+                                            data-shimmer-duration="3000"
+                                            data-shimmer-delay="1000"
+                                            data-shimmer-pause="4000"
+                                            data-fitty-target
+                                            data-fitty-enabled="false"
+                                            data-fitty-overflow-active="false"
+                                            data-fitty-step="0.5"
+                                            data-fitty-safe-padding-x="6"
+                                            data-fitty-safe-padding-y="4"
+                                            data-fitty-manage-overflow="true"
+                                            data-fitty-enable-touch-scroll="true"
+                                            data-fitty-overflow-padding-class="py-2"
+                                            data-fitty-overflow-target="origin"
                                             dir="rtl"
+                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                            x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
                                             x-text="originTextAt(index)"
                                         ></p>
                                     </div>

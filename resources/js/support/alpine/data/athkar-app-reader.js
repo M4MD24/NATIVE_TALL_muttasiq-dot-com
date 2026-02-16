@@ -8,7 +8,6 @@ import {
     writeAthkarOverridesToStorage,
     writeAthkarSettingsToStorage,
 } from '../athkar-app-overrides';
-import { fitTextInBox as fitAthkarTextInBox } from '../../../packages/fitty';
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppReader', (config) => ({
@@ -93,14 +92,7 @@ document.addEventListener('alpine:init', () => {
         },
         textFit: {
             raf: null,
-            resizeObserver: null,
-            minSize: 14,
-            minOriginSize: 8,
-            maxScale: 1.2,
-            originMaxScale: 1.05,
-            step: 0.5,
-            safePaddingX: 6,
-            safePaddingY: 4,
+            settleTimer: null,
         },
         textShimmer: {
             target: null,
@@ -307,6 +299,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (this.shouldSkipNoticePanels()) {
+                this.closeHint();
+
                 if (this.isNoticeVisible) {
                     this.confirmNotice();
                 }
@@ -327,8 +321,16 @@ document.addEventListener('alpine:init', () => {
                     this.$viewNav('athkar-app-gate');
                 }
             }
+
+            this.queueTextFit();
+            this.queueReaderTextFit();
         },
         toggleHint(index) {
+            if (this.shouldSkipNoticePanels() && !this.isMobileViewport()) {
+                this.closeHint();
+                return;
+            }
+
             const nextIndex = this.hintIndex === index ? null : index;
             this.hintIndex = nextIndex;
             this.setMobileCounterOpen(nextIndex !== null);
@@ -898,7 +900,12 @@ document.addEventListener('alpine:init', () => {
                 };
             }
 
-            this.$nextTick(() => this.queueReaderTextFit());
+            this.$nextTick(() => {
+                this.stopTextShimmer();
+                this.queueReaderTextFit();
+                this.setupTextShimmer();
+                window.setTimeout(() => this.setupTextShimmer(), 320);
+            });
         },
         hideOrigin() {
             this.originToggle = {
@@ -914,6 +921,12 @@ document.addEventListener('alpine:init', () => {
             const normalizedIndex = Number(index ?? -1);
 
             if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
+                return;
+            }
+
+            if (this.shouldSkipNoticePanels()) {
+                this.closeHint();
+                this.completeThikr(normalizedIndex);
                 return;
             }
 
@@ -1563,158 +1576,43 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const startedAt = performance.now();
-            const timeoutMs = 1800;
-
-            const attemptFit = () => {
-                if (!this.views?.['athkar-app-gate']?.isReaderVisible || this.isNoticeVisible) {
-                    return;
-                }
-
-                if (!window.fitty) {
-                    if (performance.now() - startedAt < timeoutMs) {
-                        requestAnimationFrame(attemptFit);
-                    }
-
-                    return;
-                }
-
-                this.$nextTick(() => {
-                    const slide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
-                    const box = slide?.querySelector('[data-athkar-text-box]');
-
-                    if (box?.clientWidth && box?.clientHeight) {
-                        this.queueTextFit();
-                        return;
-                    }
-
-                    if (performance.now() - startedAt < timeoutMs) {
-                        requestAnimationFrame(attemptFit);
-                    }
-                });
-            };
-
-            requestAnimationFrame(attemptFit);
-        },
-        setupTextFit() {
-            if (!window.fitty) {
+            if (!this.views?.['athkar-app-gate']?.isReaderVisible || this.isNoticeVisible) {
                 return;
             }
 
+            this.queueTextFit();
+            this.$nextTick(() => this.queueTextFit());
+        },
+        setupTextFit() {
             this.$nextTick(() => this.queueTextFit());
 
             if (document.fonts?.ready) {
                 document.fonts.ready.then(() => this.queueTextFit());
             }
-
-            if ('ResizeObserver' in window) {
-                const panel = this.$el.querySelector('.athkar-panel');
-
-                if (panel) {
-                    this.textFit.resizeObserver = new ResizeObserver(() => {
-                        this.queueTextFit();
-                    });
-                    this.textFit.resizeObserver.observe(panel);
-                }
-            }
-
-            window.addEventListener('resize', () => this.queueTextFit(), { passive: true });
         },
         queueTextFit() {
-            if (!window.fitty) {
-                return;
-            }
-
             if (this.textFit.raf) {
                 cancelAnimationFrame(this.textFit.raf);
             }
 
-            this.textFit.raf = requestAnimationFrame(() => {
-                this.textFit.raf = null;
+            if (this.textFit.settleTimer) {
+                clearTimeout(this.textFit.settleTimer);
+                this.textFit.settleTimer = null;
+            }
 
-                this.$nextTick(() => {
-                    this.fitActiveThikrText();
-                    this.fitNoticeText();
+            this.textFit.raf = requestAnimationFrame(() => {
+                this.textFit.raf = requestAnimationFrame(() => {
+                    this.textFit.raf = null;
+                    window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                    this.$nextTick(() => this.setupTextShimmer());
                 });
             });
-        },
-        fitNoticeText() {
-            if (!this.isNoticeVisible) {
-                return;
-            }
 
-            const text = this.$el.querySelector('[data-athkar-notice-text]');
-            const box = this.$el.querySelector('[data-athkar-notice-box]');
-
-            if (!text || !box) {
-                return;
-            }
-
-            text.classList.remove('is-fit');
-            this.fitTextInBox(text, box, 14, 1.8);
-        },
-        fitActiveThikrText() {
-            if (!this.activeMode) {
-                return;
-            }
-
-            const slide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
-
-            if (!slide) {
-                return;
-            }
-
-            const text = slide.querySelector('[data-athkar-text]');
-            const originText = slide.querySelector('[data-athkar-origin-text]');
-            const box = slide.querySelector('[data-athkar-text-box]');
-
-            if (!box) {
-                return;
-            }
-
-            let textOverflow = false;
-            let originOverflow = false;
-
-            if (text) {
-                text.classList.remove('is-fit');
-                this.fitTextInBox(text, box);
-                textOverflow = this.isTextOverflowingInBox(text, box);
-            }
-
-            if (originText) {
-                originText.classList.remove('is-fit');
-                this.fitTextInBox(
-                    originText,
-                    box,
-                    this.textFit.minOriginSize,
-                    this.textFit.originMaxScale,
-                );
-                originOverflow = this.isTextOverflowingInBox(originText, box);
-            }
-
-            this.syncActiveTextOverflowState(box, { textOverflow, originOverflow });
-            requestAnimationFrame(() => {
-                this.refreshActiveTextOverflowState();
-                this.setupTextShimmer(text);
-            });
-        },
-        fitTextInBox(text, box, minSizeOverride = null, maxScaleOverride = null) {
-            const minSize = Number.isFinite(minSizeOverride)
-                ? minSizeOverride
-                : this.textFit.minSize;
-
-            fitAthkarTextInBox({
-                textElement: text,
-                boxElement: box,
-                minSize,
-                maxScale: Number.isFinite(maxScaleOverride)
-                    ? maxScaleOverride
-                    : this.textFit.maxScale,
-                step: this.textFit.step,
-                safePaddingX: this.textFit.safePaddingX,
-                safePaddingY: this.textFit.safePaddingY,
-                shouldApplyFittyClass: true,
-            });
+            this.textFit.settleTimer = setTimeout(() => {
+                this.textFit.settleTimer = null;
+                window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                this.$nextTick(() => this.setupTextShimmer());
+            }, 96);
         },
         isTouchReaderContext() {
             const bp = this.$store?.bp;
@@ -1734,24 +1632,6 @@ document.addEventListener('alpine:init', () => {
                 Number(navigator.maxTouchPoints ?? 0) > 0 || isNarrowReaderViewport || isMobileWidth
             );
         },
-        isTextOverflowingInBox(text, box) {
-            if (!text || !box) {
-                return false;
-            }
-
-            const availableWidth = Math.max(0, box.clientWidth - this.textFit.safePaddingX);
-            const availableHeight = Math.max(0, box.clientHeight - this.textFit.safePaddingY);
-            const tolerance = 1;
-
-            if (!availableWidth || !availableHeight) {
-                return false;
-            }
-
-            return (
-                text.scrollHeight > availableHeight + tolerance ||
-                text.scrollWidth > availableWidth + tolerance
-            );
-        },
         shouldAllowTouchScrollForBox(box) {
             if (!box || !this.isTouchReaderContext()) {
                 return false;
@@ -1763,57 +1643,29 @@ document.addEventListener('alpine:init', () => {
             }
 
             const isOriginActive = this.isOriginVisible(this.activeIndex);
-            const text = slide.querySelector('[data-athkar-text]');
-            const originText = slide.querySelector('[data-athkar-origin-text]');
+            const hasTextOverflow = box.dataset.athkarTextOverflow === 'true';
+            const hasOriginOverflow = box.dataset.athkarOriginOverflow === 'true';
+            const hasTouchScrollClass = box.classList.contains('athkar-text-box--touch-scroll');
+            const scrollTarget = box.dataset.athkarScrollTarget ?? '';
+            const touchScrollEnabled =
+                box.dataset.athkarTouchScroll === 'true' ||
+                (hasTouchScrollClass && box.dataset.athkarTouchOverflow !== 'false');
 
             if (isOriginActive) {
-                return this.isTextOverflowingInBox(originText, box);
+                return (
+                    hasOriginOverflow ||
+                    (touchScrollEnabled &&
+                        scrollTarget === 'origin' &&
+                        box.classList.contains('athkar-text-box--origin-scroll'))
+                );
             }
 
-            return this.isTextOverflowingInBox(text, box);
-        },
-        syncActiveTextOverflowState(box, { textOverflow = false, originOverflow = false } = {}) {
-            if (!box) {
-                return;
-            }
-
-            const isOriginActive = this.isOriginVisible(this.activeIndex);
-            const activeOverflow = isOriginActive ? originOverflow : textOverflow;
-            const shouldEnableTouchScroll = this.isTouchReaderContext() && activeOverflow;
-            const nextTarget = isOriginActive ? 'origin' : 'text';
-            const previousEnabled = box.dataset.athkarTouchScroll === 'true';
-            const previousTarget = box.dataset.athkarScrollTarget ?? 'text';
-
-            box.dataset.athkarTouchScroll = shouldEnableTouchScroll ? 'true' : 'false';
-            box.dataset.athkarTouchOverflow = shouldEnableTouchScroll ? 'true' : 'false';
-            box.dataset.athkarTextOverflow = textOverflow ? 'true' : 'false';
-            box.dataset.athkarOriginOverflow = originOverflow ? 'true' : 'false';
-            box.dataset.athkarScrollTarget = nextTarget;
-            box.classList.toggle('athkar-text-box--touch-scroll', shouldEnableTouchScroll);
-            box.classList.toggle(
-                'athkar-text-box--origin-scroll',
-                shouldEnableTouchScroll && isOriginActive,
+            return (
+                hasTextOverflow ||
+                (touchScrollEnabled &&
+                    !box.classList.contains('athkar-text-box--origin-scroll') &&
+                    scrollTarget !== 'origin')
             );
-
-            if (!shouldEnableTouchScroll || !previousEnabled || previousTarget !== nextTarget) {
-                box.scrollTop = 0;
-            }
-        },
-        refreshActiveTextOverflowState() {
-            const slide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
-            const box = slide?.querySelector('[data-athkar-text-box]');
-
-            if (!slide || !box) {
-                return;
-            }
-
-            const text = slide.querySelector('[data-athkar-text]');
-            const originText = slide.querySelector('[data-athkar-origin-text]');
-
-            this.syncActiveTextOverflowState(box, {
-                textOverflow: this.isTextOverflowingInBox(text, box),
-                originOverflow: this.isTextOverflowingInBox(originText, box),
-            });
         },
         beginTextScroll(event) {
             const box = event?.currentTarget;
@@ -1882,21 +1734,35 @@ document.addEventListener('alpine:init', () => {
             this.textScroll.element = null;
         },
         setupTextShimmer(text = null) {
+            const activeSlide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
+            const isOriginActive = this.isOriginVisible(this.activeIndex);
             const target =
                 text ??
-                this.$el.querySelector(
-                    '[data-athkar-slide][data-active="true"] [data-athkar-shimmer]',
+                activeSlide?.querySelector(
+                    isOriginActive ? '[data-athkar-origin-text]' : '[data-athkar-text]',
                 );
 
-            if (!target) {
+            if (!target || target.classList.contains('athkar-text--muted')) {
                 this.stopTextShimmer();
                 return;
             }
+
+            activeSlide
+                ?.querySelectorAll('[data-athkar-shimmer].is-shimmering')
+                .forEach((node) => {
+                    if (node !== target) {
+                        node.classList.remove('is-shimmering');
+                    }
+                });
 
             this.attachTextShimmer(target);
         },
         attachTextShimmer(text) {
             if (this.textShimmer.target === text) {
+                if (!this.textShimmer.timer && !this.textShimmer.runTimer) {
+                    this.scheduleTextShimmer();
+                }
+
                 return;
             }
 
@@ -1948,12 +1814,16 @@ document.addEventListener('alpine:init', () => {
             }
 
             const run = () => {
-                if (!this.textShimmer.target) {
+                if (!this.textShimmer.target || this.textShimmer.target !== target) {
                     return;
                 }
 
                 target.classList.add('is-shimmering');
                 this.textShimmer.runTimer = setTimeout(() => {
+                    if (this.textShimmer.target !== target) {
+                        return;
+                    }
+
                     target.classList.remove('is-shimmering');
                     this.textShimmer.timer = setTimeout(run, pause);
                 }, duration);
@@ -1978,6 +1848,10 @@ document.addEventListener('alpine:init', () => {
             if (this.textShimmer.target) {
                 this.textShimmer.target.classList.remove('is-shimmering');
             }
+
+            this.$el
+                ?.querySelectorAll('[data-athkar-shimmer].is-shimmering')
+                .forEach((node) => node.classList.remove('is-shimmering'));
 
             this.textShimmer.target = null;
         },

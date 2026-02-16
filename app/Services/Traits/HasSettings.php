@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Traits;
 
 use App\Models\Setting;
-use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Text;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\TextSize;
 
 trait HasSettings
 {
+    private const MAIN_TEXT_SIZE_RANGE = 'main_text_size_range';
+
     /**
      * @var array<string, bool|int>
      */
@@ -45,45 +45,19 @@ trait HasSettings
                         'md' => 2,
                     ])
                     ->schema([
-                        Components\TextInput::make(Setting::MINIMUM_MAIN_TEXT_SIZE)
-                            ->default((int) ($generalDefinitions[Setting::MINIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT))
-                            ->label($generalDefinitions[Setting::MINIMUM_MAIN_TEXT_SIZE]['label'])
-                            ->numeric()
-                            ->step(1)
-                            ->inputMode('numeric')
-                            ->minValue(Setting::MIN_MAIN_TEXT_SIZE_MIN)
-                            ->maxValue(Setting::MIN_MAIN_TEXT_SIZE_MAX)
-                            ->rules([
-                                fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
-                                    $minimumValue = is_numeric($value) ? (int) $value : Setting::MIN_MAIN_TEXT_SIZE_DEFAULT;
-                                    $maximumValue = (int) ($get(Setting::MAXIMUM_MAIN_TEXT_SIZE) ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT);
-
-                                    if ($minimumValue > $maximumValue) {
-                                        $fail('الحد الأدنى لا يمكن أن يكون أكبر من الحد الأقصى.');
-                                    }
-                                },
+                        Components\Slider::make(self::MAIN_TEXT_SIZE_RANGE)
+                            ->label('1. نطاق حجم النصوص المحورية (الأدنى/الأقصى).')
+                            ->range(
+                                minValue: Setting::MIN_MAIN_TEXT_SIZE_MIN,
+                                maxValue: Setting::MAX_MAIN_TEXT_SIZE_MAX,
+                            )
+                            ->default([
+                                (int) ($generalDefinitions[Setting::MINIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
+                                (int) ($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
                             ])
-                            ->required(),
-
-                        Components\TextInput::make(Setting::MAXIMUM_MAIN_TEXT_SIZE)
-                            ->default((int) ($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT))
-                            ->label($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['label'])
-                            ->numeric()
                             ->step(1)
-                            ->inputMode('numeric')
-                            ->minValue(Setting::MAX_MAIN_TEXT_SIZE_MIN)
-                            ->maxValue(Setting::MAX_MAIN_TEXT_SIZE_MAX)
-                            ->rules([
-                                fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
-                                    $maximumValue = is_numeric($value) ? (int) $value : Setting::MAX_MAIN_TEXT_SIZE_DEFAULT;
-                                    $minimumValue = (int) ($get(Setting::MINIMUM_MAIN_TEXT_SIZE) ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT);
-
-                                    if ($maximumValue < $minimumValue) {
-                                        $fail('الحد الأقصى لا يمكن أن يكون أصغر من الحد الأدنى.');
-                                    }
-                                },
-                            ])
-                            ->required(),
+                            ->tooltips()
+                            ->fillTrack([false, true, false]),
 
                         Components\Checkbox::make('does_skip_notice_panels')
                             ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
@@ -116,6 +90,14 @@ trait HasSettings
                     ]),
             ])
             ->action(function (array $data): void {
+                if (is_array($data[self::MAIN_TEXT_SIZE_RANGE] ?? null)) {
+                    $rangeValues = array_values($data[self::MAIN_TEXT_SIZE_RANGE]);
+                    $minimumSize = (int) ($rangeValues[0] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT);
+                    $maximumSize = (int) ($rangeValues[1] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT);
+                    $data[Setting::MINIMUM_MAIN_TEXT_SIZE] = min($minimumSize, $maximumSize);
+                    $data[Setting::MAXIMUM_MAIN_TEXT_SIZE] = max($minimumSize, $maximumSize);
+                }
+
                 $savedSettings = Setting::normalizeSettings($data);
 
                 $this->clientSettings = $savedSettings;
@@ -143,9 +125,16 @@ trait HasSettings
             ->pluck('value', 'name')
             ->all();
 
-        return Setting::normalizeSettings(
+        $normalizedSettings = Setting::normalizeSettings(
             array_replace(self::settingsDefaults(), $storedSettings, $this->clientSettings),
         );
+
+        $normalizedSettings[self::MAIN_TEXT_SIZE_RANGE] = [
+            (int) ($normalizedSettings[Setting::MINIMUM_MAIN_TEXT_SIZE] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
+            (int) ($normalizedSettings[Setting::MAXIMUM_MAIN_TEXT_SIZE] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
+        ];
+
+        return $normalizedSettings;
     }
 
     /**

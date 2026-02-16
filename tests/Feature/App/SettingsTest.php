@@ -32,41 +32,27 @@ it('does not persist settings changes globally', function () {
     expect($updatedSettings)->toBe($initialSettings);
 });
 
-it('enforces the main text size bounds in the settings modal', function () {
+it('normalizes the main text size range in the settings modal', function () {
     livewire(Settings::class)
         ->callAction('settings', data: [
-            'minimum_main_text_size' => 9,
-            'maximum_main_text_size' => 20,
+            'main_text_size_range' => [9, 21],
         ])
-        ->assertHasFormErrors(['minimum_main_text_size']);
+        ->assertHasFormErrors(['main_text_size_range.0', 'main_text_size_range.1']);
 
     livewire(Settings::class)
         ->callAction('settings', data: [
-            'minimum_main_text_size' => 21,
-            'maximum_main_text_size' => 20,
+            'main_text_size_range' => [19, 16],
         ])
-        ->assertHasFormErrors(['minimum_main_text_size']);
-
-    livewire(Settings::class)
-        ->callAction('settings', data: [
-            'minimum_main_text_size' => 16,
-            'maximum_main_text_size' => 9,
-        ])
-        ->assertHasFormErrors(['maximum_main_text_size']);
-
-    livewire(Settings::class)
-        ->callAction('settings', data: [
-            'minimum_main_text_size' => 16,
-            'maximum_main_text_size' => 21,
-        ])
-        ->assertHasFormErrors(['maximum_main_text_size']);
+        ->assertHasNoFormErrors()
+        ->assertSet('clientSettings.minimum_main_text_size', 16)
+        ->assertSet('clientSettings.maximum_main_text_size', 19);
 });
 
-it('requires maximum_main_text_size to be greater than or equal to minimum_main_text_size', function () {
+it('accepts a valid main text size range in the settings modal', function () {
     livewire(Settings::class)
         ->callAction('settings', data: [
-            'minimum_main_text_size' => 19,
-            'maximum_main_text_size' => 16,
+            'main_text_size_range' => [12, 19],
         ])
-        ->assertHasFormErrors(['minimum_main_text_size', 'maximum_main_text_size']);
+        ->assertHasNoFormErrors()
+        ->assertDispatched('settings-updated');
 });
