@@ -278,7 +278,6 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScriptWithTimeout($page, homeDataScript('data.activeView'), 'athkar-app-sabah', 12_000);
     waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
     $targetItemIdExpression = js_encode($targetItemId);
     waitForScriptWithTimeout(
