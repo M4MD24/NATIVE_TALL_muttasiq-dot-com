@@ -117,7 +117,7 @@ trait HasSettings
     }
 
     /**
-     * @return array<string, bool|int>
+     * @return array<string, bool|int|list<int>>
      */
     private function loadSettings(): array
     {

@@ -42,7 +42,12 @@ const isTruthyValue = (value, fallback = false) => {
 
     const normalized = String(value).trim().toLowerCase();
 
-    if (normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on') {
+    if (
+        normalized === '1' ||
+        normalized === 'true' ||
+        normalized === 'yes' ||
+        normalized === 'on'
+    ) {
         return true;
     }
 
@@ -86,9 +91,10 @@ const readStoredSettings = () => {
 const resolveMainTextSizeSettings = () => {
     const defaults = window.athkarSettingsDefaults ?? {};
     const stored = readStoredSettings();
-    const source = latestSettingsOverride && typeof latestSettingsOverride === 'object'
-        ? latestSettingsOverride
-        : stored;
+    const source =
+        latestSettingsOverride && typeof latestSettingsOverride === 'object'
+            ? latestSettingsOverride
+            : stored;
     const minimum = normalizeMainTextSize(
         source?.[minimumMainTextSizeKey] ?? defaults?.[minimumMainTextSizeKey],
         minimumMainTextSizeDefault,
@@ -135,7 +141,12 @@ const resolveAvailableSpace = (boxElement, safePaddingX, safePaddingY) => {
 };
 
 const isMeasurable = (textElement, boxElement) => {
-    if (!textElement || !boxElement || !document.contains(textElement) || !document.contains(boxElement)) {
+    if (
+        !textElement ||
+        !boxElement ||
+        !document.contains(textElement) ||
+        !document.contains(boxElement)
+    ) {
         return false;
     }
 
@@ -184,7 +195,10 @@ const fitToHeight = ({ textElement, minSize, maxSize, availableWidth, availableH
 
     let low = minSize;
     let high = maxSize;
-    let best = Math.max(minSize, Math.min(maxSize, Number.parseFloat(getComputedStyle(textElement).fontSize)));
+    let best = Math.max(
+        minSize,
+        Math.min(maxSize, Number.parseFloat(getComputedStyle(textElement).fontSize)),
+    );
 
     if (!Number.isFinite(best)) {
         best = minSize;
@@ -212,7 +226,13 @@ const fitToHeight = ({ textElement, minSize, maxSize, availableWidth, availableH
     }
 };
 
-const resolveOverflowState = ({ textElement, boxElement, availableWidth, availableHeight, tolerance = 1 }) => {
+const resolveOverflowState = ({
+    textElement,
+    boxElement,
+    availableWidth,
+    availableHeight,
+    tolerance = 1,
+}) => {
     if (!textElement || !boxElement || !availableWidth || !availableHeight) {
         return {
             overflowX: false,
@@ -312,7 +332,10 @@ const applyOverflowState = ({ textElement, boxElement, overflowState, overflowTa
         boxElement.classList.toggle(paddingClass, shouldEnableTouchScroll);
     }
 
-    if (shouldEnableTouchScroll && (previousTarget !== overflowTarget || previousTouchScroll !== 'true')) {
+    if (
+        shouldEnableTouchScroll &&
+        (previousTarget !== overflowTarget || previousTouchScroll !== 'true')
+    ) {
         boxElement.scrollTop = 0;
     }
 };
@@ -596,12 +619,20 @@ window.addEventListener('settings-updated', (event) => {
     latestSettingsOverride = event?.detail?.settings ?? null;
     refitTargets();
 });
-window.addEventListener('resize', () => {
-    refitTargets();
-}, { passive: true });
-window.addEventListener('orientationchange', () => {
-    refitTargets();
-}, { passive: true });
+window.addEventListener(
+    'resize',
+    () => {
+        refitTargets();
+    },
+    { passive: true },
+);
+window.addEventListener(
+    'orientationchange',
+    () => {
+        refitTargets();
+    },
+    { passive: true },
+);
 window.addEventListener(
     'transitionend',
     (event) => {

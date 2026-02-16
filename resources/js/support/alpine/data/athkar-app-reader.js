@@ -1747,13 +1747,11 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            activeSlide
-                ?.querySelectorAll('[data-athkar-shimmer].is-shimmering')
-                .forEach((node) => {
-                    if (node !== target) {
-                        node.classList.remove('is-shimmering');
-                    }
-                });
+            activeSlide?.querySelectorAll('[data-athkar-shimmer].is-shimmering').forEach((node) => {
+                if (node !== target) {
+                    node.classList.remove('is-shimmering');
+                }
+            });
 
             this.attachTextShimmer(target);
         },

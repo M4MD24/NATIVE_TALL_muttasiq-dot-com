@@ -890,9 +890,9 @@
                             class="delay-250 absolute right-2 top-2 z-30 overflow-visible transition-opacity sm:hidden"
                             data-athkar-mobile-counter
                             x-bind:class="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
-                                    (countAt(index) !== requiredCount(index))
-                                ? 'opacity-100! pointer-events-auto!'
-                                : 'opacity-0 pointer-events-none'"
+                            (countAt(index) !== requiredCount(index)) ?
+                            'opacity-100! pointer-events-auto!' :
+                            'opacity-0 pointer-events-none'"
                         >
                             <div class="group relative">
                                 <!-- Top Right Counter -->
