@@ -1,290 +1,22 @@
-const athkarSettingsStorageKey = 'athkar-settings-v1';
-
-const normalizeAthkarSettings = (settings, defaults) => {
-    if (!defaults || typeof defaults !== 'object' || Object.keys(defaults).length === 0) {
-        if (!settings || typeof settings !== 'object') {
-            return {};
-        }
-
-        const normalized = {};
-
-        Object.keys(settings).forEach((key) => {
-            normalized[key] = Boolean(settings[key]);
-        });
-
-        return normalized;
-    }
-
-    const normalized = { ...defaults };
-
-    if (!settings || typeof settings !== 'object') {
-        return normalized;
-    }
-
-    Object.keys(defaults).forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(settings, key)) {
-            normalized[key] = Boolean(settings[key]);
-        }
-    });
-
-    return normalized;
-};
-
-const resolveAthkarSettingsDefaults = () => {
-    if (typeof window === 'undefined') {
-        return {};
-    }
-
-    const defaults = window.athkarSettingsDefaults;
-
-    if (!defaults || typeof defaults !== 'object') {
-        return {};
-    }
-
-    return defaults;
-};
-
-const readAthkarSettingsFromStorage = (defaults = resolveAthkarSettingsDefaults()) => {
-    if (typeof localStorage === 'undefined') {
-        return normalizeAthkarSettings({}, defaults);
-    }
-
-    try {
-        const raw = localStorage.getItem(athkarSettingsStorageKey);
-
-        if (!raw) {
-            return normalizeAthkarSettings({}, defaults);
-        }
-
-        return normalizeAthkarSettings(JSON.parse(raw), defaults);
-    } catch (_) {
-        return normalizeAthkarSettings({}, defaults);
-    }
-};
-
-const writeAthkarSettingsToStorage = (settings, defaults = resolveAthkarSettingsDefaults()) => {
-    const normalized = normalizeAthkarSettings(settings, defaults);
-
-    if (typeof localStorage === 'undefined') {
-        return normalized;
-    }
-
-    try {
-        localStorage.setItem(athkarSettingsStorageKey, JSON.stringify(normalized));
-    } catch (_) {
-        return normalized;
-    }
-
-    return normalized;
-};
-
-if (typeof window !== 'undefined') {
-    window.getAthkarSettingsFromStorage = () => readAthkarSettingsFromStorage();
-}
+import {
+    athkarOverridesStorageKey,
+    normalizeAthkarDefaults,
+    normalizeAthkarOverrides,
+    readAthkarOverridesFromStorage,
+    readAthkarSettingsFromStorage,
+    resolveAthkarWithOverrides,
+    writeAthkarOverridesToStorage,
+    writeAthkarSettingsToStorage,
+} from '../athkar-app-overrides';
+import { fitTextInBox as fitAthkarTextInBox } from '../../../packages/fitty';
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('athkarAppGate', () => ({
-        hoverSide: null,
-        activeSide: null,
-        isHovering: false,
-        isPinging: false,
-        splitValue: 50,
-        splitAnimation: null,
-        spillOpacity: 0,
-        spillTransitionMs: 180,
-        spillShowDelayMs: 650,
-        spillShowDurationMs: 500,
-        spillHideDurationMs: 120,
-        spillIntroDelayMs: 900,
-        spillTargetOpacity: 0.6,
-        spillTimer: null,
-        spillHideTimer: null,
-        spillReadyTimer: null,
-        lastSpillState: null,
-        isEnhanced: false,
-        isSpillReady: false,
-        pingDuration: 1400,
-        pingDelay: 650,
-        setScrollLock(locked) {
-            document.documentElement.style.overflow = locked ? 'hidden' : '';
-            document.body.style.overflow = locked ? 'hidden' : '';
-        },
-        syncPerfProfile() {
-            this.$store.bp.current;
-            const nextEnhanced = this.$store.bp.is('sm+');
-
-            if (nextEnhanced && !this.isEnhanced) {
-                this.deactivateSide();
-            }
-
-            this.isEnhanced = nextEnhanced;
-            this.spillTargetOpacity = this.isEnhanced ? 0.55 : 0.45;
-        },
-        animateSplit(value) {
-            if (this.splitAnimation?.pause) {
-                this.splitAnimation.pause();
-            }
-            this.splitValue = value;
-        },
-        setHover(side) {
-            if (this.activeSide) {
-                return;
-            }
-            this.hoverSide = side;
-            if (side === 'morning') {
-                this.animateSplit(40);
-            } else if (side === 'night') {
-                this.animateSplit(60);
-            } else {
-                this.animateSplit(50);
-            }
-        },
-        startHover() {
-            if (this.isHovering) {
-                return;
-            }
-            this.isHovering = true;
-            this.queuePing();
-        },
-        endHover() {
-            this.isHovering = false;
-        },
-        resetHover() {
-            if (this.activeSide) {
-                return;
-            }
-            this.setHover(null);
-        },
-        activateSide(side) {
-            if (!side) {
-                return;
-            }
-
-            this.activeSide = side;
-            this.hoverSide = side;
-
-            if (side === 'morning') {
-                this.animateSplit(40);
-                return;
-            }
-
-            if (side === 'night') {
-                this.animateSplit(60);
-                return;
-            }
-
-            this.animateSplit(50);
-        },
-        deactivateSide() {
-            if (!this.activeSide) {
-                return;
-            }
-
-            this.activeSide = null;
-            this.hoverSide = null;
-            this.animateSplit(50);
-        },
-        handleOutsideActivation() {
-            if (this.isEnhanced) {
-                return;
-            }
-
-            this.deactivateSide();
-        },
-        sideForMode(mode) {
-            if (mode === 'sabah') {
-                return 'morning';
-            }
-
-            if (mode === 'masaa') {
-                return 'night';
-            }
-
-            return mode;
-        },
-        syncSpillState(isActive) {
-            if (this.lastSpillState === isActive) {
-                return;
-            }
-            this.lastSpillState = isActive;
-            if (this.spillTimer) {
-                clearTimeout(this.spillTimer);
-            }
-            if (this.spillHideTimer) {
-                clearTimeout(this.spillHideTimer);
-            }
-            if (this.spillReadyTimer) {
-                clearTimeout(this.spillReadyTimer);
-            }
-            if (isActive) {
-                this.setScrollLock(true);
-                this.spillTransitionMs = this.spillShowDurationMs;
-                if (!this.isSpillReady) {
-                    this.spillReadyTimer = setTimeout(() => {
-                        if (!this.lastSpillState) {
-                            return;
-                        }
-                        this.isSpillReady = true;
-                        this.spillOpacity = 0;
-                        const scheduleShow = () => {
-                            this.spillTimer = setTimeout(() => {
-                                this.spillOpacity = this.spillTargetOpacity;
-                            }, this.spillShowDelayMs);
-                        };
-                        if (window.requestAnimationFrame) {
-                            window.requestAnimationFrame(() =>
-                                window.requestAnimationFrame(scheduleShow),
-                            );
-                            return;
-                        }
-                        scheduleShow();
-                    }, this.spillIntroDelayMs);
-                    return;
-                }
-                this.spillTimer = setTimeout(() => {
-                    this.spillOpacity = this.spillTargetOpacity;
-                }, this.spillShowDelayMs);
-                return;
-            }
-            this.spillTransitionMs = this.spillHideDurationMs;
-            this.spillOpacity = 0;
-            this.spillHideTimer = setTimeout(() => {
-                this.setScrollLock(false);
-            }, this.spillHideDurationMs);
-        },
-        queuePing() {
-            if (this.isPinging || !this.isHovering) {
-                return;
-            }
-            this.isPinging = true;
-            setTimeout(() => {
-                this.isPinging = false;
-                if (this.isHovering) {
-                    setTimeout(() => this.queuePing(), this.pingDelay);
-                }
-            }, this.pingDuration);
-        },
-        requestOpenMode(mode) {
-            if (this.isEnhanced) {
-                this.$dispatch('athkar-gate-open', { mode });
-                return;
-            }
-
-            const side = this.sideForMode(mode);
-
-            if (this.activeSide === side) {
-                this.deactivateSide();
-                this.$dispatch('athkar-gate-open', { mode });
-                return;
-            }
-
-            this.activateSide(side);
-        },
-    }));
-
     window.Alpine.data('athkarAppReader', (config) => ({
-        athkar: config.athkar,
+        defaultAthkar: normalizeAthkarDefaults(config.athkar),
+        athkarOverrides: window.Alpine.$persist([]).as(athkarOverridesStorageKey),
+        athkar: [],
         settingsDefaults: config.athkarSettings,
+        typeLabels: config.typeLabels ?? {},
         settings: readAthkarSettingsFromStorage(config.athkarSettings),
         activeMode: window.Alpine.$persist(null).as('athkar-active-mode'),
         isCompletionVisible: false,
@@ -294,9 +26,7 @@ document.addEventListener('alpine:init', () => {
             isVisible: false,
             isPinned: false,
             isArmed: false,
-            canHover: window.matchMedia
-                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
-                : false,
+            canHover: false,
         },
         completionTimer: null,
         swipe: {
@@ -305,9 +35,18 @@ document.addEventListener('alpine:init', () => {
             active: false,
             ignoreClick: false,
             startedOnTap: false,
+            startedInScrollableText: false,
             pointerId: null,
             pointerType: null,
             source: null,
+        },
+        textScroll: {
+            active: false,
+            source: null,
+            startY: 0,
+            startScrollTop: 0,
+            pointerId: null,
+            element: null,
         },
         nav: {
             isActive: false,
@@ -327,33 +66,41 @@ document.addEventListener('alpine:init', () => {
             index: null,
             isActive: false,
             timer: null,
-            prev: '',
-            next: '',
+            segments: [],
+            hasChanges: false,
         },
         pagePulse: {
             isActive: false,
             direction: null,
             timer: null,
-            prev: '',
-            next: '',
+            segments: [],
+            hasChanges: false,
         },
         totalPulse: {
             isActive: false,
             timer: null,
-            prev: '',
-            next: '',
+            segments: [],
+            hasChanges: false,
         },
         tapPulse: {
             index: null,
             isActive: false,
             timer: null,
         },
+        originToggle: {
+            mode: null,
+            index: null,
+        },
         textFit: {
             raf: null,
             resizeObserver: null,
-            minSize: 16,
+            minSize: 14,
+            minOriginSize: 8,
             maxScale: 1.2,
+            originMaxScale: 1.05,
             step: 0.5,
+            safePaddingX: 6,
+            safePaddingY: 4,
         },
         textShimmer: {
             target: null,
@@ -383,10 +130,33 @@ document.addEventListener('alpine:init', () => {
         init() {
             window.athkarSettingsDefaults = this.settingsDefaults;
             this.ensureState();
+            this.refreshCompletionInputMode();
+            this.applyAthkarOverrides(this.athkarOverrides, { persist: true });
             this.syncDay();
             this.ensureProgress('sabah');
             this.ensureProgress('masaa');
+            window.addEventListener('resize', () => this.refreshCompletionInputMode());
+            window.addEventListener('orientationchange', () => this.refreshCompletionInputMode());
             window.addEventListener('focus', () => this.syncDay());
+            window.addEventListener('athkar-overrides-updated', (event) => {
+                this.applyAthkarOverrides(event?.detail?.overrides ?? [], { persist: true });
+            });
+            window.addEventListener('storage', (event) => {
+                if (event.key !== athkarOverridesStorageKey) {
+                    return;
+                }
+
+                this.applyAthkarOverrides(readAthkarOverridesFromStorage(), { persist: false });
+            });
+            window.addEventListener('athkar-single-completion-confirmed', (event) => {
+                const index = Number(event?.detail?.index ?? -1);
+
+                if (!Number.isFinite(index) || index < 0) {
+                    return;
+                }
+
+                this.completeThikr(index);
+            });
             window.addEventListener('switch-view', (event) => {
                 const nextView = event?.detail?.to;
                 const isRestoring = Boolean(event?.detail?.restoring) || this.isRestoring;
@@ -454,9 +224,13 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.setupTextFit();
-            this.$watch('activeMode', () => this.queueTextFit());
+            this.$watch('activeMode', () => {
+                this.hideOrigin();
+                this.queueTextFit();
+            });
             this.$watch('activeIndex', () => {
                 this.closeHint();
+                this.hideOrigin();
                 this.queueTextFit();
             });
             this.$watch(
@@ -472,6 +246,40 @@ document.addEventListener('alpine:init', () => {
                     this.queueReaderTextFit();
                 }
             });
+        },
+        applyAthkarOverrides(nextOverrides, { persist = true } = {}) {
+            if (!Array.isArray(nextOverrides)) {
+                return;
+            }
+
+            const normalized = normalizeAthkarOverrides(nextOverrides);
+
+            this.athkarOverrides = persist ? writeAthkarOverridesToStorage(normalized) : normalized;
+
+            this.syncAthkarWithOverrides();
+        },
+        syncAthkarWithOverrides() {
+            this.athkar = resolveAthkarWithOverrides(this.defaultAthkar, this.athkarOverrides);
+
+            if (!this.progress || typeof this.progress !== 'object') {
+                return;
+            }
+
+            this.ensureProgress('sabah');
+            this.ensureProgress('masaa');
+
+            if (!this.activeMode) {
+                return;
+            }
+
+            if (!this.activeList.length) {
+                this.closeMode();
+
+                return;
+            }
+
+            this.resumeModeIndex();
+            this.$nextTick(() => this.queueReaderTextFit());
         },
         applySettings(nextSettings) {
             if (!nextSettings || typeof nextSettings !== 'object') {
@@ -561,6 +369,7 @@ document.addEventListener('alpine:init', () => {
             );
             this.progress[this.activeMode].ids = this.activeList.map((item) => item?.id ?? null);
             this.progress[this.activeMode].activeId = this.activeList[this.activeIndex]?.id ?? null;
+            this.persistProgress();
             const nextTotal = this.totalCompletedCount;
             this.triggerTotalPulse(previousTotal, nextTotal);
 
@@ -610,6 +419,17 @@ document.addEventListener('alpine:init', () => {
                 this.completedOn.masaa = null;
             }
         },
+        persistProgress() {
+            if (typeof localStorage === 'undefined') {
+                return;
+            }
+
+            try {
+                localStorage.setItem('athkar-progress-v1', JSON.stringify(this.progress));
+            } catch (_) {
+                //
+            }
+        },
         todayKey() {
             const now = new Date();
             const year = now.getFullYear();
@@ -654,10 +474,18 @@ document.addEventListener('alpine:init', () => {
                 ids: listIds,
                 activeId: listIds[0] ?? null,
             };
+            this.persistProgress();
         },
         ensureProgress(mode) {
             const list = this.athkarFor(mode);
             const listIds = list.map((item) => item?.id ?? null);
+            const normalizeId = (value) => {
+                if (value === null || value === undefined) {
+                    return null;
+                }
+
+                return String(value);
+            };
 
             if (!this.progress[mode]) {
                 this.resetProgress(mode);
@@ -674,11 +502,13 @@ document.addEventListener('alpine:init', () => {
 
             if (hasStoredIds) {
                 storedIds.forEach((id, index) => {
-                    if (id === null || id === undefined) {
+                    const normalizedId = normalizeId(id);
+
+                    if (normalizedId === null) {
                         return;
                     }
 
-                    countForId.set(id, counts[index]);
+                    countForId.set(normalizedId, counts[index]);
                 });
             }
 
@@ -693,8 +523,10 @@ document.addEventListener('alpine:init', () => {
             };
 
             this.progress[mode].counts = listIds.map((id, index) => {
-                if (hasStoredIds && id !== null && id !== undefined && countForId.has(id)) {
-                    return normalizeCount(countForId.get(id));
+                const normalizedId = normalizeId(id);
+
+                if (hasStoredIds && normalizedId !== null && countForId.has(normalizedId)) {
+                    return normalizeCount(countForId.get(normalizedId));
                 }
 
                 if (!hasStoredIds) {
@@ -707,10 +539,10 @@ document.addEventListener('alpine:init', () => {
             this.progress[mode].ids = listIds;
 
             const maxIndex = Math.max(list.length - 1, 0);
-            const activeId = this.progress[mode].activeId;
+            const activeId = normalizeId(this.progress[mode].activeId);
             const currentIndex = Number(this.progress[mode].index ?? 0);
             const nextIndexById =
-                activeId !== null && activeId !== undefined ? listIds.indexOf(activeId) : -1;
+                activeId !== null ? listIds.findIndex((id) => normalizeId(id) === activeId) : -1;
 
             if (nextIndexById >= 0) {
                 this.progress[mode].index = nextIndexById;
@@ -719,6 +551,13 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.progress[mode].activeId = listIds[this.progress[mode].index] ?? null;
+            this.progress = {
+                ...this.progress,
+                [mode]: {
+                    ...this.progress[mode],
+                },
+            };
+            this.persistProgress();
         },
         isModeLocked(mode) {
             if (!this.shouldPreventSwitching()) {
@@ -749,6 +588,7 @@ document.addEventListener('alpine:init', () => {
             if (currentIndex < targetIndex) {
                 this.progress[this.activeMode].index = targetIndex;
                 this.progress[this.activeMode].activeId = this.activeList[targetIndex]?.id ?? null;
+                this.persistProgress();
             }
         },
         activateMode(mode, { updateHash = false, respectLock = true } = {}) {
@@ -774,6 +614,7 @@ document.addEventListener('alpine:init', () => {
                 this.progress[this.activeMode].index = this.maxNavigableIndex;
                 this.progress[this.activeMode].activeId =
                     this.activeList[this.maxNavigableIndex]?.id ?? null;
+                this.persistProgress();
             }
 
             this.resetNavState();
@@ -858,6 +699,22 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.closeMode();
+        },
+        openGateAndManageAthkar() {
+            if (!this.activeMode) {
+                return;
+            }
+
+            if (this.views?.['athkar-app-gate']) {
+                this.views['athkar-app-gate'].isReaderVisible = false;
+            }
+
+            this.softCloseMode();
+            this.$viewNav('athkar-app-gate', { force: true });
+
+            window.setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('open-athkar-manager'));
+            }, this.readerLeaveMs + 90);
         },
         closeMode() {
             const previousHash = window.history.state?.__hashActionPrev;
@@ -957,6 +814,25 @@ document.addEventListener('alpine:init', () => {
                 this.completionHack.isArmed = armed ?? true;
             }
         },
+        refreshCompletionInputMode() {
+            const supportsHover = window.matchMedia
+                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                : false;
+            const isTouchContext =
+                this.$store?.bp?.isTouch?.() ?? Number(navigator.maxTouchPoints) > 0;
+            const canHover = supportsHover && !isTouchContext;
+
+            this.completionHack.canHover = canHover;
+
+            if (canHover) {
+                this.completionHack.isArmed = false;
+                return;
+            }
+
+            if (this.completionHack.isVisible) {
+                this.completionHack.isArmed = true;
+            }
+        },
         hideCompletionHack({ force = false } = {}) {
             if (!force && this.completionHack.isPinned) {
                 return;
@@ -980,6 +856,75 @@ document.addEventListener('alpine:init', () => {
         },
         get activeLabel() {
             return this.activeMode === 'sabah' ? 'أذكار الصباح' : 'أذكار المساء';
+        },
+        defaultType() {
+            const [firstType] = Object.keys(this.typeLabels ?? {});
+
+            return firstType ?? 'glorification';
+        },
+        typeLabelFor(type) {
+            const normalizedType = String(type ?? this.defaultType());
+
+            return (
+                this.typeLabels?.[normalizedType] ?? this.typeLabels?.[this.defaultType()] ?? 'عام'
+            );
+        },
+        activeTypeLabel(index) {
+            return this.typeLabelFor(this.activeList?.[index]?.type);
+        },
+        hasOrigin(index) {
+            const item = this.activeList?.[index];
+            const normalizedOrigin = String(item?.origin ?? '').trim();
+
+            return normalizedOrigin.length > 0 || Boolean(item?.is_original);
+        },
+        originTextAt(index) {
+            return String(this.activeList?.[index]?.origin ?? '').trim();
+        },
+        isOriginVisible(index) {
+            return this.originToggle.mode === this.activeMode && this.originToggle.index === index;
+        },
+        toggleOrigin(index) {
+            if (!this.hasOrigin(index)) {
+                return;
+            }
+
+            if (this.isOriginVisible(index)) {
+                this.hideOrigin();
+            } else {
+                this.originToggle = {
+                    mode: this.activeMode,
+                    index,
+                };
+            }
+
+            this.$nextTick(() => this.queueReaderTextFit());
+        },
+        hideOrigin() {
+            this.originToggle = {
+                mode: null,
+                index: null,
+            };
+        },
+        requestSingleThikrCompletion(index) {
+            if (!this.activeMode) {
+                return;
+            }
+
+            const normalizedIndex = Number(index ?? -1);
+
+            if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
+                return;
+            }
+
+            window.dispatchEvent(
+                new CustomEvent('athkar-open-single-completion', {
+                    detail: { index: normalizedIndex },
+                }),
+            );
+        },
+        isOriginalThikr(index) {
+            return this.hasOrigin(index);
         },
         get activeList() {
             return this.activeMode ? this.athkarFor(this.activeMode) : [];
@@ -1315,6 +1260,7 @@ document.addEventListener('alpine:init', () => {
             const previousPage = currentIndex + 1;
             this.progress[this.activeMode].index = nextIndex;
             this.progress[this.activeMode].activeId = this.activeList[nextIndex]?.id ?? null;
+            this.persistProgress();
             const direction = nextIndex > currentIndex ? 'next' : 'prev';
             const nextPage = nextIndex + 1;
 
@@ -1386,6 +1332,7 @@ document.addEventListener('alpine:init', () => {
             const nextValue = allowOvercount ? sanitized : Math.min(sanitized, maxCount);
 
             this.progress[this.activeMode].counts[index] = nextValue;
+            this.persistProgress();
         },
         isItemComplete(index) {
             return this.countAt(index) >= this.requiredCount(index);
@@ -1487,6 +1434,7 @@ document.addEventListener('alpine:init', () => {
 
             const previousTotal = this.totalCompletedCount;
             this.progress[this.activeMode].counts[index] = required;
+            this.persistProgress();
             const nextTotal = this.totalCompletedCount;
             this.triggerCountPulse(index, current, required);
             this.triggerTotalPulse(previousTotal, nextTotal);
@@ -1606,7 +1554,9 @@ document.addEventListener('alpine:init', () => {
             }, this.readerLeaveMs);
         },
         itemKey(item, index) {
-            return `${this.activeMode ?? 'athkar'}-${index}`;
+            const itemId = item?.id ?? `index-${index}`;
+
+            return `${this.activeMode ?? 'athkar'}-${itemId}`;
         },
         queueReaderTextFit() {
             if (!this.activeMode) {
@@ -1715,51 +1665,221 @@ document.addEventListener('alpine:init', () => {
             }
 
             const text = slide.querySelector('[data-athkar-text]');
+            const originText = slide.querySelector('[data-athkar-origin-text]');
             const box = slide.querySelector('[data-athkar-text-box]');
 
-            if (!text || !box) {
+            if (!box) {
                 return;
             }
 
-            text.classList.remove('is-fit');
-            this.fitTextInBox(text, box);
-            requestAnimationFrame(() => this.setupTextShimmer(text));
+            let textOverflow = false;
+            let originOverflow = false;
+
+            if (text) {
+                text.classList.remove('is-fit');
+                this.fitTextInBox(text, box);
+                textOverflow = this.isTextOverflowingInBox(text, box);
+            }
+
+            if (originText) {
+                originText.classList.remove('is-fit');
+                this.fitTextInBox(
+                    originText,
+                    box,
+                    this.textFit.minOriginSize,
+                    this.textFit.originMaxScale,
+                );
+                originOverflow = this.isTextOverflowingInBox(originText, box);
+            }
+
+            this.syncActiveTextOverflowState(box, { textOverflow, originOverflow });
+            requestAnimationFrame(() => {
+                this.refreshActiveTextOverflowState();
+                this.setupTextShimmer(text);
+            });
         },
         fitTextInBox(text, box, minSizeOverride = null, maxScaleOverride = null) {
-            if (!window.fitty) {
-                text.classList.add('is-fit');
-                return;
-            }
-
-            if (!box.clientWidth || !box.clientHeight) {
-                text.classList.add('is-fit');
-                return;
-            }
-
-            text.style.fontSize = '';
-            const baseSize = Number.parseFloat(getComputedStyle(text).fontSize);
-
-            if (!Number.isFinite(baseSize)) {
-                return;
-            }
-
             const minSize = Number.isFinite(minSizeOverride)
                 ? minSizeOverride
                 : this.textFit.minSize;
-            const maxSize = this.maxTextSizeForBox(text, box, baseSize, maxScaleOverride);
-            text.style.fontSize = `${baseSize}px`;
 
-            const instance = this.ensureFittyInstance(text, minSize, maxSize);
+            fitAthkarTextInBox({
+                textElement: text,
+                boxElement: box,
+                minSize,
+                maxScale: Number.isFinite(maxScaleOverride)
+                    ? maxScaleOverride
+                    : this.textFit.maxScale,
+                step: this.textFit.step,
+                safePaddingX: this.textFit.safePaddingX,
+                safePaddingY: this.textFit.safePaddingY,
+                shouldApplyFittyClass: true,
+            });
+        },
+        isTouchReaderContext() {
+            const bp = this.$store?.bp;
+            const isNarrowReaderViewport =
+                typeof bp?.is === 'function' ? bp.is('base') || bp.is('sm') : false;
+            const isMobileWidth = this.isMobileViewport();
 
-            if (instance?.fit) {
-                instance.fit();
+            if (typeof bp?.isTouch === 'function') {
+                return bp.isTouch() || isNarrowReaderViewport || isMobileWidth;
             }
 
-            this.fitTextToBox(text, box, minSize, maxSize);
+            if (typeof bp?.hasTouch === 'boolean') {
+                return bp.hasTouch || isNarrowReaderViewport || isMobileWidth;
+            }
 
-            requestAnimationFrame(() => {
-                text.classList.add('is-fit');
+            return (
+                Number(navigator.maxTouchPoints ?? 0) > 0 || isNarrowReaderViewport || isMobileWidth
+            );
+        },
+        isTextOverflowingInBox(text, box) {
+            if (!text || !box) {
+                return false;
+            }
+
+            const availableWidth = Math.max(0, box.clientWidth - this.textFit.safePaddingX);
+            const availableHeight = Math.max(0, box.clientHeight - this.textFit.safePaddingY);
+            const tolerance = 1;
+
+            if (!availableWidth || !availableHeight) {
+                return false;
+            }
+
+            return (
+                text.scrollHeight > availableHeight + tolerance ||
+                text.scrollWidth > availableWidth + tolerance
+            );
+        },
+        shouldAllowTouchScrollForBox(box) {
+            if (!box || !this.isTouchReaderContext()) {
+                return false;
+            }
+
+            const slide = box.closest?.('[data-athkar-slide]');
+            if (!slide || slide.dataset.active !== 'true') {
+                return false;
+            }
+
+            const isOriginActive = this.isOriginVisible(this.activeIndex);
+            const text = slide.querySelector('[data-athkar-text]');
+            const originText = slide.querySelector('[data-athkar-origin-text]');
+
+            if (isOriginActive) {
+                return this.isTextOverflowingInBox(originText, box);
+            }
+
+            return this.isTextOverflowingInBox(text, box);
+        },
+        syncActiveTextOverflowState(box, { textOverflow = false, originOverflow = false } = {}) {
+            if (!box) {
+                return;
+            }
+
+            const isOriginActive = this.isOriginVisible(this.activeIndex);
+            const activeOverflow = isOriginActive ? originOverflow : textOverflow;
+            const shouldEnableTouchScroll = this.isTouchReaderContext() && activeOverflow;
+            const nextTarget = isOriginActive ? 'origin' : 'text';
+            const previousEnabled = box.dataset.athkarTouchScroll === 'true';
+            const previousTarget = box.dataset.athkarScrollTarget ?? 'text';
+
+            box.dataset.athkarTouchScroll = shouldEnableTouchScroll ? 'true' : 'false';
+            box.dataset.athkarTouchOverflow = shouldEnableTouchScroll ? 'true' : 'false';
+            box.dataset.athkarTextOverflow = textOverflow ? 'true' : 'false';
+            box.dataset.athkarOriginOverflow = originOverflow ? 'true' : 'false';
+            box.dataset.athkarScrollTarget = nextTarget;
+            box.classList.toggle('athkar-text-box--touch-scroll', shouldEnableTouchScroll);
+            box.classList.toggle(
+                'athkar-text-box--origin-scroll',
+                shouldEnableTouchScroll && isOriginActive,
+            );
+
+            if (!shouldEnableTouchScroll || !previousEnabled || previousTarget !== nextTarget) {
+                box.scrollTop = 0;
+            }
+        },
+        refreshActiveTextOverflowState() {
+            const slide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = slide?.querySelector('[data-athkar-text-box]');
+
+            if (!slide || !box) {
+                return;
+            }
+
+            const text = slide.querySelector('[data-athkar-text]');
+            const originText = slide.querySelector('[data-athkar-origin-text]');
+
+            this.syncActiveTextOverflowState(box, {
+                textOverflow: this.isTextOverflowingInBox(text, box),
+                originOverflow: this.isTextOverflowingInBox(originText, box),
             });
+        },
+        beginTextScroll(event) {
+            const box = event?.currentTarget;
+
+            if (!box || !this.isTouchReaderContext()) {
+                return;
+            }
+
+            if (!this.shouldAllowTouchScrollForBox(box)) {
+                return;
+            }
+
+            const point = this.swipePoint(event);
+
+            if (!point) {
+                return;
+            }
+
+            this.textScroll.active = true;
+            this.textScroll.source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
+            this.textScroll.startY = point.y;
+            this.textScroll.startScrollTop = box.scrollTop;
+            this.textScroll.pointerId = point.pointerId;
+            this.textScroll.element = box;
+
+            event.stopPropagation();
+        },
+        moveTextScroll(event) {
+            if (!this.textScroll.active || !this.textScroll.element) {
+                return;
+            }
+
+            const source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
+
+            if (this.textScroll.source && source !== this.textScroll.source) {
+                return;
+            }
+
+            const point = this.swipePoint(event);
+
+            if (!point) {
+                return;
+            }
+
+            if (
+                this.textScroll.pointerId !== null &&
+                point.pointerId !== this.textScroll.pointerId
+            ) {
+                return;
+            }
+
+            const deltaY = point.y - this.textScroll.startY;
+            this.textScroll.element.scrollTop = this.textScroll.startScrollTop - deltaY;
+
+            event.stopPropagation();
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+        },
+        endTextScroll() {
+            this.textScroll.active = false;
+            this.textScroll.source = null;
+            this.textScroll.startY = 0;
+            this.textScroll.startScrollTop = 0;
+            this.textScroll.pointerId = null;
+            this.textScroll.element = null;
         },
         setupTextShimmer(text = null) {
             const target =
@@ -1861,97 +1981,6 @@ document.addEventListener('alpine:init', () => {
 
             this.textShimmer.target = null;
         },
-        maxTextSizeForBox(text, box, baseSize, maxScaleOverride = null) {
-            const maxScale = Number.isFinite(maxScaleOverride)
-                ? maxScaleOverride
-                : this.textFit.maxScale;
-
-            if (!Number.isFinite(maxScale) || maxScale <= 1) {
-                return baseSize;
-            }
-
-            text.style.fontSize = `${baseSize}px`;
-            const baseHeight = text.scrollHeight;
-            const baseWidth = text.scrollWidth;
-
-            if (!baseHeight) {
-                return baseSize;
-            }
-
-            const heightScale = box.clientHeight / baseHeight;
-            const widthScale = baseWidth ? box.clientWidth / baseWidth : heightScale;
-
-            if (heightScale <= 1 && widthScale <= 1) {
-                return baseSize;
-            }
-
-            const allowedScale = Math.min(maxScale, Math.max(heightScale, widthScale));
-
-            return Math.max(baseSize, baseSize * allowedScale);
-        },
-        ensureFittyInstance(text, minSize, maxSize) {
-            const storedMin = Number.parseFloat(text.dataset.fittyMinSize ?? '0');
-            const storedMax = Number.parseFloat(text.dataset.fittyMaxSize ?? '0');
-
-            if (text._fittyInstance && storedMin === minSize && storedMax === maxSize) {
-                return text._fittyInstance;
-            }
-
-            if (text._fittyInstance?.unsubscribe) {
-                text._fittyInstance.unsubscribe();
-            }
-
-            const instance = window.fitty(text, {
-                minSize,
-                maxSize,
-                multiLine: true,
-                observeMutations: false,
-                observeWindow: false,
-            });
-
-            text._fittyInstance = instance;
-            text.dataset.fittyMinSize = String(minSize);
-            text.dataset.fittyMaxSize = String(maxSize);
-
-            return instance;
-        },
-        fitTextToBox(text, box, minSize, maxSize) {
-            let size = Number.parseFloat(getComputedStyle(text).fontSize);
-
-            if (!Number.isFinite(size)) {
-                return;
-            }
-
-            const fits = () => {
-                return text.scrollHeight <= box.clientHeight && text.scrollWidth <= box.clientWidth;
-            };
-
-            if (!fits()) {
-                size = Math.max(minSize, Math.min(maxSize, size));
-            }
-
-            let low = minSize;
-            let high = maxSize;
-            let best = Math.max(minSize, Math.min(size, maxSize));
-
-            for (let i = 0; i < 14; i += 1) {
-                const mid = (low + high) / 2;
-                text.style.fontSize = `${mid}px`;
-
-                if (fits()) {
-                    best = mid;
-                    low = mid;
-                } else {
-                    high = mid;
-                }
-            }
-
-            const rounded = Math.max(minSize, Math.min(maxSize, best));
-            const step = this.textFit.step;
-            const snapped = step > 0 ? Math.round(rounded / step) * step : rounded;
-
-            text.style.fontSize = `${snapped}px`;
-        },
         swipePoint(event) {
             if (event?.touches?.length) {
                 const touch = event.touches[0];
@@ -1991,6 +2020,16 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            const textBox = event.target?.closest?.('[data-athkar-text-box]');
+            if (
+                this.isTouchReaderContext() &&
+                textBox &&
+                this.shouldAllowTouchScrollForBox(textBox)
+            ) {
+                this.swipeCancel();
+                return;
+            }
+
             const source = event?.type?.startsWith('touch') ? 'touch' : 'pointer';
 
             if (this.swipe.source && this.swipe.source !== source) {
@@ -2024,6 +2063,11 @@ document.addEventListener('alpine:init', () => {
             this.swipe.pointerId = point.pointerId;
             this.swipe.pointerType = point.pointerType;
             this.swipe.startedOnTap = Boolean(event.target?.closest?.('[data-athkar-tap]'));
+            this.swipe.startedInScrollableText = Boolean(
+                event.target?.closest?.(
+                    '[data-athkar-text-box][data-athkar-touch-overflow="true"]',
+                ),
+            );
         },
         swipeEnd(event) {
             if (!this.swipe.active) {
@@ -2051,11 +2095,13 @@ document.addEventListener('alpine:init', () => {
             const absX = Math.abs(deltaX);
             const absY = Math.abs(deltaY);
             const isTouchLike = (point.pointerType ?? 'mouse') !== 'mouse';
+            const startedInScrollableText = this.swipe.startedInScrollableText;
 
             this.swipe.active = false;
             this.swipe.pointerId = null;
             this.swipe.pointerType = null;
             this.swipe.source = null;
+            this.swipe.startedInScrollableText = false;
 
             if (this.isNoticeVisible) {
                 if (absX < 40 || absX < absY) {
@@ -2072,6 +2118,13 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            if (startedInScrollableText && absY >= 12 && absY > absX) {
+                this.swipe.startedOnTap = false;
+                this.swipe.ignoreClick = true;
+
+                return;
+            }
+
             if (this.swipe.startedOnTap && isTouchLike && absX < 12 && absY < 12) {
                 this.swipe.startedOnTap = false;
                 this.swipe.ignoreClick = true;
@@ -2082,14 +2135,17 @@ document.addEventListener('alpine:init', () => {
 
             this.swipe.startedOnTap = false;
 
-            if (absX < 40 || absX < absY) {
+            const isHorizontalSwipe = absX >= 40 && absX >= absY;
+            const isVerticalSwipe = absY >= 40 && absY > absX;
+
+            if (!isHorizontalSwipe && !isVerticalSwipe) {
                 return;
             }
 
             const previousIndex = this.activeIndex;
             let didHandleSwipe = false;
 
-            if (deltaX < 0) {
+            if (isHorizontalSwipe && deltaX < 0) {
                 this.prev();
                 didHandleSwipe = this.activeIndex !== previousIndex;
 
@@ -2138,6 +2194,35 @@ document.addEventListener('alpine:init', () => {
             this.swipe.pointerId = null;
             this.swipe.pointerType = null;
             this.swipe.source = null;
+            this.swipe.startedInScrollableText = false;
+            this.endTextScroll();
+        },
+        buildDigitMorphSegments(previousValue, nextValue) {
+            const previous = String(previousValue ?? '');
+            const next = String(nextValue ?? '');
+            const length = Math.max(previous.length, next.length);
+            const previousChars = previous.padStart(length, ' ').split('');
+            const nextChars = next.padStart(length, ' ').split('');
+
+            const segments = nextChars
+                .map((nextChar, index) => {
+                    const previousChar = previousChars[index] ?? '';
+                    const prev = previousChar === ' ' ? '' : previousChar;
+                    const nextValueChar = nextChar === ' ' ? '' : nextChar;
+
+                    return {
+                        key: `${index}:${prev}->${nextValueChar}`,
+                        prev,
+                        next: nextValueChar,
+                        changed: prev !== nextValueChar,
+                    };
+                })
+                .filter((segment) => segment.prev !== '' || segment.next !== '');
+
+            return {
+                segments,
+                hasChanges: segments.some((segment) => segment.changed),
+            };
         },
         triggerSlidePulse(direction) {
             if (this.slide.timer) {
@@ -2160,10 +2245,16 @@ document.addEventListener('alpine:init', () => {
                 clearTimeout(this.countPulse.timer);
             }
 
+            const morph = this.buildDigitMorphSegments(previousValue, nextValue);
+
             this.countPulse.index = index;
             this.countPulse.isActive = false;
-            this.countPulse.prev = previousValue ?? '';
-            this.countPulse.next = nextValue ?? '';
+            this.countPulse.segments = morph.segments;
+            this.countPulse.hasChanges = morph.hasChanges;
+
+            if (!morph.hasChanges) {
+                return;
+            }
 
             requestAnimationFrame(() => {
                 this.countPulse.isActive = true;
@@ -2178,10 +2269,16 @@ document.addEventListener('alpine:init', () => {
                 clearTimeout(this.pagePulse.timer);
             }
 
+            const morph = this.buildDigitMorphSegments(previousValue, nextValue);
+
             this.pagePulse.direction = direction;
             this.pagePulse.isActive = false;
-            this.pagePulse.prev = previousValue ?? '';
-            this.pagePulse.next = nextValue ?? '';
+            this.pagePulse.segments = morph.segments;
+            this.pagePulse.hasChanges = morph.hasChanges;
+
+            if (!morph.hasChanges) {
+                return;
+            }
 
             requestAnimationFrame(() => {
                 this.pagePulse.isActive = true;
@@ -2196,9 +2293,15 @@ document.addEventListener('alpine:init', () => {
                 clearTimeout(this.totalPulse.timer);
             }
 
+            const morph = this.buildDigitMorphSegments(previousValue, nextValue);
+
             this.totalPulse.isActive = false;
-            this.totalPulse.prev = previousValue ?? '';
-            this.totalPulse.next = nextValue ?? '';
+            this.totalPulse.segments = morph.segments;
+            this.totalPulse.hasChanges = morph.hasChanges;
+
+            if (!morph.hasChanges) {
+                return;
+            }
 
             requestAnimationFrame(() => {
                 this.totalPulse.isActive = true;

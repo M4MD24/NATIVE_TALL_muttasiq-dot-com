@@ -20,6 +20,8 @@
         items: [],
         observer: null,
         attributeObserver: null,
+        isUpdatingLayout: false,
+        hasPendingLayout: false,
         stackTransitionMs: 200,
         shouldManageDisplay(item) {
             if (!item) {
@@ -27,6 +29,22 @@
             }
     
             return !item.hasAttribute('x-show') && !item.hasAttribute('x-cloak');
+        },
+        isItemVisible(item) {
+            if (!item || !item.isConnected) {
+                return false;
+            }
+    
+            if (item.hidden || item.hasAttribute('x-cloak')) {
+                return false;
+            }
+    
+            const styles = window.getComputedStyle(item);
+    
+            return styles.display !== 'none' && styles.visibility !== 'hidden';
+        },
+        visibleItems() {
+            return this.items.filter((item) => this.isItemVisible(item));
         },
         init() {
             this.refreshItems();
@@ -83,7 +101,16 @@
             });
         },
         observeItems() {
-            this.observer = new MutationObserver(() => {
+            this.observer = new MutationObserver((mutations) => {
+                if (this.isUpdatingLayout) {
+                    this.hasPendingLayout = true;
+                    return;
+                }
+    
+                if (!this.hasRelevantMutation(mutations)) {
+                    return;
+                }
+    
                 this.refreshItems();
                 this.updateLayout();
             });
@@ -91,7 +118,35 @@
             this.observer.observe(this.$refs.stack, {
                 childList: true,
                 subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'hidden', 'x-cloak'],
             });
+        },
+        hasRelevantMutation(mutations) {
+            return mutations.some((mutation) => this.isRelevantMutation(mutation));
+        },
+        isRelevantMutation(mutation) {
+            if (mutation.type === 'attributes') {
+                return this.isStackItemElement(mutation.target);
+            }
+    
+            if (mutation.type !== 'childList') {
+                return false;
+            }
+    
+            return this.containsStackItem(mutation.target) ||
+                Array.from(mutation.addedNodes).some((node) => this.containsStackItem(node)) ||
+                Array.from(mutation.removedNodes).some((node) => this.containsStackItem(node));
+        },
+        isStackItemElement(node) {
+            return node instanceof Element && node.matches('[data-stack-item]');
+        },
+        containsStackItem(node) {
+            if (!(node instanceof Element)) {
+                return false;
+            }
+    
+            return this.isStackItemElement(node) || node.querySelector('[data-stack-item]') !== null;
         },
         bindClickHandler() {
             this.handleClick = (event) => {
@@ -105,7 +160,7 @@
                     return;
                 }
     
-                const index = Number(item.dataset.stackIndex ?? -1);
+                const index = this.visibleItems().indexOf(item);
     
                 if (index < 0) {
                     return;
@@ -175,8 +230,8 @@
     
             return this.activeGap;
         },
-        offsetFromAnchor(index) {
-            const lastIndex = this.items.length - 1;
+        offsetFromAnchor(index, visibleCount) {
+            const lastIndex = visibleCount - 1;
             let total = 0;
     
             for (let i = index; i < lastIndex; i += 1) {
@@ -193,20 +248,54 @@
             return 70 - index;
         },
         updateLayout() {
+            this.isUpdatingLayout = true;
+    
+            const finishUpdate = () => {
+                requestAnimationFrame(() => {
+                    this.isUpdatingLayout = false;
+    
+                    if (!this.hasPendingLayout) {
+                        return;
+                    }
+    
+                    this.hasPendingLayout = false;
+                    this.refreshItems();
+                    this.updateLayout();
+                });
+            };
+    
             if (!this.items.length) {
+                finishUpdate();
                 return;
             }
     
             if (!this.respectingStack) {
                 this.items.forEach((item) => this.resetItem(item));
+                finishUpdate();
                 return;
             }
+    
+            const visibleItems = this.visibleItems();
+    
+            if (!visibleItems.length) {
+                this.items.forEach((item) => this.resetItem(item));
+                finishUpdate();
+                return;
+            }
+    
+            if (this.activeIndex > visibleItems.length - 1) {
+                this.activeIndex = Math.max(visibleItems.length - 1, 0);
+            }
+    
+            const visibleCount = visibleItems.length;
     
             const anchorSide = this.vertical === 'bottom' ? 'bottom' : 'top';
             const anchorOpposite = this.vertical === 'bottom' ? 'top' : 'bottom';
     
-            this.items.forEach((item, index) => {
-                const translateX = this.offsetFromAnchor(index).toFixed(2);
+            this.items.forEach((item) => this.resetItem(item));
+    
+            visibleItems.forEach((item, index) => {
+                const translateX = this.offsetFromAnchor(index, visibleCount).toFixed(2);
     
                 item.style.position = 'absolute';
                 item.style[anchorSide] = '0';
@@ -221,6 +310,8 @@
                     item.style.display = 'block';
                 }
             });
+    
+            finishUpdate();
         },
         resetItem(item) {
             item.style.position = '';
@@ -239,7 +330,7 @@
     }"
     x-init="init();
     return () => destroy();"
-    x-effect="if (typeof isSettingsOpen !== 'undefined' && isSettingsOpen) { isQuickStackOpen = false; activeIndex = 0; updateLayout(); }"
+    x-effect="if ((typeof isSettingsOpen !== 'undefined' && isSettingsOpen) || (typeof isAthkarManagerOpen !== 'undefined' && isAthkarManagerOpen)) { isQuickStackOpen = false; activeIndex = 0; updateLayout(); }"
     x-on:click.window="
         if (!respectingStack) return;
         if ($refs.stack && $refs.stack.contains($event.target)) return;

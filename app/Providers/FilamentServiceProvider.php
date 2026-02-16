@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Services\Overrides\Pages\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Livewire\Notifications;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -33,20 +32,20 @@ class FilamentServiceProvider extends PanelProvider
     {
         return $panel
             ->id('admin')
-            ->path('admin')
+            ->path(config('app.custom.admin_path'))
+            ->login(Login::class)
+            ->homeUrl(config('app.url'))
+            ->brandLogo(sprintf('%s/images/logo-wide.svg', rtrim((string) config('app.url'), '/')))
+            ->brandLogoHeight('5rem')
             ->colors(config('app.custom.colors'))
+            ->font('Readex Pro')
             ->viteTheme('resources/css/core/filament/panels.css')
             ->darkMode(false)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([
-                Dashboard::class,
-            ])
+            ->pages([])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -63,9 +62,10 @@ class FilamentServiceProvider extends PanelProvider
             ]);
     }
 
-    public function boot()
+    public function boot(): void
     {
         FilamentColor::register(config('app.custom.colors'));
+        FilamentAsset::registerCssVariables($this->filamentBackgroundCssVariables());
 
         Notifications::alignment(Alignment::End);
         Notifications::verticalAlignment(VerticalAlignment::End);
@@ -74,5 +74,49 @@ class FilamentServiceProvider extends PanelProvider
             PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('@ineresh'),
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function filamentBackgroundCssVariables(): array
+    {
+        $shellLight = $this->resolveFilamentBackground(
+            key: 'shell.light',
+            fallback: $this->themeBackgroundFallback(name: 'background', fallback: '#fef7ff'),
+        );
+        $shellDark = $this->resolveFilamentBackground(
+            key: 'shell.dark',
+            fallback: $this->themeBackgroundFallback(name: 'background-dark', fallback: '#201f25'),
+        );
+
+        return [
+            'fi-shell-bg-light' => $shellLight,
+            'fi-shell-bg-dark' => $shellDark,
+            'fi-surface-bg-light' => $this->resolveFilamentBackground('surface.light', $shellLight),
+            'fi-surface-bg-dark' => $this->resolveFilamentBackground('surface.dark', $shellDark),
+            'fi-surface-muted-bg-light' => $this->resolveFilamentBackground('surface_muted.light', $shellLight),
+            'fi-surface-muted-bg-dark' => $this->resolveFilamentBackground('surface_muted.dark', $shellDark),
+        ];
+    }
+
+    protected function resolveFilamentBackground(string $key, string $fallback): string
+    {
+        $background = config("app.custom.filament.background_colors.{$key}");
+
+        return is_string($background) && $background !== '' ? $background : $fallback;
+    }
+
+    protected function themeBackgroundFallback(string $name, string $fallback): string
+    {
+        if (! function_exists('theme_color')) {
+            return $fallback;
+        }
+
+        try {
+            return theme_color($name, $fallback);
+        } catch (\Throwable) {
+            return $fallback;
+        }
     }
 }

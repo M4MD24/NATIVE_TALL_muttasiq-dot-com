@@ -27,6 +27,7 @@
             display: none !important;
         }
     </style>
+    @include('partials.filament-color-overrides')
     @filamentStyles
     @lazyCss(['resources/css/core/filament/components.css', 'resources/css/app-lazy.css'])
     @vite('resources/css/app.css')
