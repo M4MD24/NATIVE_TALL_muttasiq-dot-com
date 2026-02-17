@@ -401,6 +401,21 @@
             scrollbar-color: var(--athkar-scrollbar-thumb) var(--athkar-scrollbar-track);
             scrollbar-gutter: stable;
             padding-inline-end: 0.4rem;
+            --athkar-edge-fade-size: 1rem;
+            -webkit-mask-image: linear-gradient(180deg,
+                    transparent 0,
+                    black var(--athkar-edge-fade-size),
+                    black calc(100% - var(--athkar-edge-fade-size)),
+                    transparent 100%);
+            mask-image: linear-gradient(180deg,
+                    transparent 0,
+                    black var(--athkar-edge-fade-size),
+                    black calc(100% - var(--athkar-edge-fade-size)),
+                    transparent 100%);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
         }
 
         .athkar-text-box--touch-scroll {
@@ -465,10 +480,31 @@
             pointer-events: none;
         }
 
-        .athkar-tap.athkar-tap--overflow-toggle .athkar-main-text.is-main-hidden,
-        .athkar-tap.athkar-tap--overflow-toggle .athkar-origin-text:not(.is-origin-visible) {
-            opacity: 0 !important;
+        .athkar-tap.athkar-tap--overflow-toggle .athkar-main-text,
+        .athkar-tap.athkar-tap--overflow-toggle .athkar-origin-text {
             transition: none !important;
+        }
+
+        .athkar-tap.athkar-tap--overflow-to-origin .athkar-main-text {
+            opacity: 1 !important;
+            position: static !important;
+            inset: auto !important;
+        }
+
+        .athkar-tap.athkar-tap--overflow-to-origin .athkar-origin-text {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .athkar-tap.athkar-tap--overflow-to-text .athkar-origin-text {
+            opacity: 1 !important;
+            position: static !important;
+            inset: auto !important;
+        }
+
+        .athkar-tap.athkar-tap--overflow-to-text .athkar-main-text {
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         .athkar-text-box--touch-scroll:not(.athkar-text-box--origin-scroll) .athkar-main-text {
@@ -1167,6 +1203,8 @@
                                     'athkar-tap--pulse': tapPulse.index === index && tapPulse.isActive,
                                     'is-origin-active': isOriginVisible(index),
                                     'athkar-tap--overflow-toggle': isOverflowToggleTransition(index),
+                                    'athkar-tap--overflow-to-origin': isOverflowToggleToOrigin(index),
+                                    'athkar-tap--overflow-to-text': isOverflowToggleToText(index),
                                 }"
                             >
                                 <div
