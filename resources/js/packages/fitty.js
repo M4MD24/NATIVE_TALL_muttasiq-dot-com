@@ -2,40 +2,160 @@ import fitty from 'fitty';
 
 window.fitty = fitty;
 
-const resolveAvailableBoxSpace = (boxElement, safePaddingX, safePaddingY) => {
-    const width = Math.max(0, boxElement.clientWidth - safePaddingX);
-    const height = Math.max(0, boxElement.clientHeight - safePaddingY);
+// IMPORTANT:
+// Fitty requires measurable layout dimensions. Do not pair fit targets with display:none
+// containers (e.g. raw x-show=false while hidden) if you need immediate refits.
+// Prefer opacity/visibility transitions for hidden states, then trigger `athkar-fitty-refit`.
+
+const athkarSettingsStorageKey = 'athkar-settings-v1';
+const minimumMainTextSizeKey = 'minimum_main_text_size';
+const maximumMainTextSizeKey = 'maximum_main_text_size';
+const minimumMainTextSizeDefault = 16;
+const maximumMainTextSizeDefault = 20;
+const mainTextSizeMinimum = 10;
+const mainTextSizeMaximum = 20;
+const fittyTargetSelector = '[data-fitty-target]';
+const fittyBoxSelector = '[data-fitty-box]';
+const deferredRetryDelayMs = 64;
+const maxDeferredRetries = 2;
+const postFitRetryDelayMs = 72;
+const maxPostFitRetries = 2;
+const transitionRefitDelayMs = 32;
+
+const fitQueue = new Map();
+const deferredRetryTimers = new WeakMap();
+const deferredRetryCounts = new WeakMap();
+const postFitRetryTimers = new WeakMap();
+const postFitRetryCounts = new WeakMap();
+const transitionRefitTimers = new WeakMap();
+let fitQueueTimer = null;
+let latestSettingsOverride = null;
+
+const isTruthyValue = (value, fallback = false) => {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+
+    if (typeof value === 'boolean') {
+        return value;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+
+    if (
+        normalized === '1' ||
+        normalized === 'true' ||
+        normalized === 'yes' ||
+        normalized === 'on'
+    ) {
+        return true;
+    }
+
+    if (
+        normalized === '0' ||
+        normalized === 'false' ||
+        normalized === 'no' ||
+        normalized === 'off'
+    ) {
+        return false;
+    }
+
+    return fallback;
+};
+
+const parseNumber = (value, fallback = null) => {
+    const parsed = Number.parseFloat(String(value ?? ''));
+
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeMainTextSize = (value, fallback) => {
+    const numeric = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
+    const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
+
+    return Math.min(mainTextSizeMaximum, Math.max(mainTextSizeMinimum, rounded));
+};
+
+const readStoredSettings = () => {
+    if (typeof localStorage === 'undefined') {
+        return {};
+    }
+
+    try {
+        return JSON.parse(localStorage.getItem(athkarSettingsStorageKey) ?? '{}') ?? {};
+    } catch (_) {
+        return {};
+    }
+};
+
+const resolveMainTextSizeSettings = () => {
+    const defaults = window.athkarSettingsDefaults ?? {};
+    const stored = readStoredSettings();
+    const source =
+        latestSettingsOverride && typeof latestSettingsOverride === 'object'
+            ? latestSettingsOverride
+            : stored;
+    const minimum = normalizeMainTextSize(
+        source?.[minimumMainTextSizeKey] ?? defaults?.[minimumMainTextSizeKey],
+        minimumMainTextSizeDefault,
+    );
+    const maximum = normalizeMainTextSize(
+        source?.[maximumMainTextSizeKey] ?? defaults?.[maximumMainTextSizeKey],
+        maximumMainTextSizeDefault,
+    );
+
+    return {
+        minimum: Math.min(minimum, maximum),
+        maximum: Math.max(minimum, maximum),
+    };
+};
+
+const resolveFittyBox = (textElement) => {
+    const closestSelector = String(textElement.dataset.fittyBoxClosest ?? '').trim();
+
+    if (closestSelector) {
+        const scopedMatch = textElement.closest(closestSelector);
+
+        if (scopedMatch) {
+            return scopedMatch;
+        }
+
+        return document.querySelector(closestSelector);
+    }
+
+    return textElement.closest(fittyBoxSelector);
+};
+
+const resolveAvailableSpace = (boxElement, safePaddingX, safePaddingY) => {
+    const styles = getComputedStyle(boxElement);
+    const paddingInline =
+        (Number.parseFloat(styles.paddingInlineStart) || 0) +
+        (Number.parseFloat(styles.paddingInlineEnd) || 0);
+    const paddingBlock =
+        (Number.parseFloat(styles.paddingTop) || 0) +
+        (Number.parseFloat(styles.paddingBottom) || 0);
+    const width = Math.max(0, boxElement.clientWidth - paddingInline - safePaddingX);
+    const height = Math.max(0, boxElement.clientHeight - paddingBlock - safePaddingY);
 
     return { width, height };
 };
 
-const resolveMaxTextSize = (textElement, availableWidth, baseSize, maxScale) => {
-    if (!Number.isFinite(maxScale) || maxScale <= 1) {
-        return baseSize;
+const isMeasurable = (textElement, boxElement) => {
+    if (
+        !textElement ||
+        !boxElement ||
+        !document.contains(textElement) ||
+        !document.contains(boxElement)
+    ) {
+        return false;
     }
 
-    textElement.style.fontSize = `${baseSize}px`;
-    const baseWidth = textElement.scrollWidth;
-
-    if (!baseWidth || !availableWidth) {
-        return baseSize;
-    }
-
-    // Prefer width-driven sizing first, then clamp for height in fitTextToBox().
-    const widthScale = availableWidth / baseWidth;
-
-    if (widthScale <= 1) {
-        return baseSize;
-    }
-
-    const allowedScale = Math.min(maxScale, widthScale);
-
-    return Math.max(baseSize, baseSize * allowedScale);
+    return boxElement.clientWidth > 0 && boxElement.clientHeight > 0;
 };
 
 const ensureFittyInstance = (textElement, minSize, maxSize) => {
-    const storedMin = Number.parseFloat(textElement.dataset.fittyMinSize ?? '0');
-    const storedMax = Number.parseFloat(textElement.dataset.fittyMaxSize ?? '0');
+    const storedMin = Number.parseFloat(textElement.dataset.fittyMinSize ?? '');
+    const storedMax = Number.parseFloat(textElement.dataset.fittyMaxSize ?? '');
 
     if (textElement._fittyInstance && storedMin === minSize && storedMax === maxSize) {
         return textElement._fittyInstance;
@@ -60,28 +180,31 @@ const ensureFittyInstance = (textElement, minSize, maxSize) => {
     return instance;
 };
 
-const fitTextToBox = (textElement, availableWidth, availableHeight, minSize, maxSize, step) => {
-    let size = Number.parseFloat(getComputedStyle(textElement).fontSize);
-
-    if (!Number.isFinite(size) || !availableWidth || !availableHeight) {
+const fitToHeight = ({ textElement, minSize, maxSize, availableWidth, availableHeight, step }) => {
+    if (!availableWidth || !availableHeight) {
         return;
     }
 
+    const normalizedStep = step > 0 ? step : 0.5;
     const fits = () => {
         return (
-            textElement.scrollHeight <= availableHeight && textElement.scrollWidth <= availableWidth
+            textElement.scrollHeight <= availableHeight + 1 &&
+            textElement.scrollWidth <= availableWidth + 1
         );
     };
 
-    if (!fits()) {
-        size = Math.max(minSize, Math.min(maxSize, size));
-    }
-
     let low = minSize;
     let high = maxSize;
-    let best = Math.max(minSize, Math.min(size, maxSize));
+    let best = Math.max(
+        minSize,
+        Math.min(maxSize, Number.parseFloat(getComputedStyle(textElement).fontSize)),
+    );
 
-    for (let i = 0; i < 14; i += 1) {
+    if (!Number.isFinite(best)) {
+        best = minSize;
+    }
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
         const mid = (low + high) / 2;
         textElement.style.fontSize = `${mid}px`;
 
@@ -93,78 +216,460 @@ const fitTextToBox = (textElement, availableWidth, availableHeight, minSize, max
         }
     }
 
-    const rounded = Math.max(minSize, Math.min(maxSize, best));
-    const normalizedStep = step > 0 ? step : 0.25;
-    let snapped = Math.round(rounded / normalizedStep) * normalizedStep;
+    let snapped = Math.round(best / normalizedStep) * normalizedStep;
     snapped = Math.max(minSize, Math.min(maxSize, snapped));
-
     textElement.style.fontSize = `${snapped}px`;
 
-    // Keep shrinking to avoid bottom/edge overflow after snapping.
-    let guard = 0;
-
-    while (!fits() && snapped > minSize && guard < 24) {
+    while (!fits() && snapped > minSize) {
         snapped = Math.max(minSize, snapped - normalizedStep);
         textElement.style.fontSize = `${snapped}px`;
-        guard += 1;
-    }
-
-    if (!fits()) {
-        textElement.style.fontSize = `${minSize}px`;
     }
 };
 
-const fitTextInBox = ({
+const resolveOverflowState = ({
     textElement,
     boxElement,
-    minSize = 14,
-    maxScale = 1.2,
-    step = 0.5,
-    safePaddingX = 0,
-    safePaddingY = 0,
-    shouldApplyFittyClass = true,
+    availableWidth,
+    availableHeight,
+    tolerance = 1,
 }) => {
-    if (!textElement || !boxElement) {
-        return;
+    if (!textElement || !boxElement || !availableWidth || !availableHeight) {
+        return {
+            overflowX: false,
+            overflowY: false,
+            isOverflowing: false,
+        };
     }
 
-    const { width: availableWidth, height: availableHeight } = resolveAvailableBoxSpace(
-        boxElement,
-        Number.isFinite(safePaddingX) ? Math.max(0, safePaddingX) : 0,
-        Number.isFinite(safePaddingY) ? Math.max(0, safePaddingY) : 0,
-    );
+    const scrollOverflowX = textElement.scrollWidth > availableWidth + tolerance;
+    const scrollOverflowY = textElement.scrollHeight > availableHeight + tolerance;
+    const textRect = textElement.getBoundingClientRect();
+    const boxRect = boxElement.getBoundingClientRect();
+    const boxStyles = getComputedStyle(boxElement);
+    const paddingTop = Number.parseFloat(boxStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(boxStyles.paddingBottom) || 0;
+    const paddingRight = Number.parseFloat(boxStyles.paddingRight) || 0;
+    const paddingLeft = Number.parseFloat(boxStyles.paddingLeft) || 0;
+    const contentTop = boxRect.top + paddingTop;
+    const contentBottom = boxRect.bottom - paddingBottom;
+    const contentLeft = boxRect.left + paddingLeft;
+    const contentRight = boxRect.right - paddingRight;
+    const rectOverflowX =
+        textRect.left < contentLeft - tolerance || textRect.right > contentRight + tolerance;
+    const rectOverflowY =
+        textRect.top < contentTop - tolerance || textRect.bottom > contentBottom + tolerance;
+    const sizeOverflowX = textRect.width > availableWidth + tolerance;
+    const sizeOverflowY = textRect.height > availableHeight + tolerance;
+    const elementOffsetOverflowX = textElement.offsetWidth > availableWidth + tolerance;
+    const elementOffsetOverflowY = textElement.offsetHeight > availableHeight + tolerance;
 
-    if (!window.fitty || !availableWidth || !availableHeight) {
-        if (shouldApplyFittyClass) {
-            textElement.classList.add('is-fit');
-        }
+    return {
+        overflowX: scrollOverflowX || rectOverflowX || sizeOverflowX || elementOffsetOverflowX,
+        overflowY: scrollOverflowY || rectOverflowY || sizeOverflowY || elementOffsetOverflowY,
+        isOverflowing:
+            scrollOverflowX ||
+            scrollOverflowY ||
+            rectOverflowX ||
+            rectOverflowY ||
+            sizeOverflowX ||
+            sizeOverflowY ||
+            elementOffsetOverflowX ||
+            elementOffsetOverflowY,
+    };
+};
 
-        return;
-    }
+const clearTouchOverflowState = (boxElement, paddingClass) => {
+    boxElement.dataset.athkarTouchScroll = 'false';
+    boxElement.dataset.athkarTouchOverflow = 'false';
+    boxElement.dataset.athkarScrollTarget = '';
+    boxElement.classList.remove('athkar-text-box--touch-scroll');
+    boxElement.classList.remove('athkar-text-box--origin-scroll');
 
-    textElement.style.fontSize = '';
-    const baseSize = Number.parseFloat(getComputedStyle(textElement).fontSize);
-
-    if (!Number.isFinite(baseSize)) {
-        return;
-    }
-
-    const maxSize = resolveMaxTextSize(textElement, availableWidth, baseSize, maxScale);
-    textElement.style.fontSize = `${baseSize}px`;
-
-    const instance = ensureFittyInstance(textElement, minSize, maxSize);
-
-    if (instance?.fit) {
-        instance.fit();
-    }
-
-    fitTextToBox(textElement, availableWidth, availableHeight, minSize, maxSize, step);
-
-    if (shouldApplyFittyClass) {
-        requestAnimationFrame(() => {
-            textElement.classList.add('is-fit');
-        });
+    if (paddingClass) {
+        boxElement.classList.remove(paddingClass);
     }
 };
 
-export { fitTextInBox };
+const applyOverflowState = ({ textElement, boxElement, overflowState, overflowTarget }) => {
+    const manageOverflow = isTruthyValue(textElement.dataset.fittyManageOverflow, false);
+
+    if (!manageOverflow) {
+        return;
+    }
+
+    const activeForOverflow = isTruthyValue(textElement.dataset.fittyOverflowActive, true);
+    const enableTouchScroll = isTruthyValue(textElement.dataset.fittyEnableTouchScroll, true);
+    const paddingClass = String(textElement.dataset.fittyOverflowPaddingClass ?? 'py-2').trim();
+
+    if (overflowTarget === 'origin') {
+        boxElement.dataset.athkarOriginOverflow = overflowState.overflowY ? 'true' : 'false';
+    } else {
+        boxElement.dataset.athkarTextOverflow = overflowState.overflowY ? 'true' : 'false';
+    }
+
+    if (!activeForOverflow) {
+        return;
+    }
+
+    const previousTarget = boxElement.dataset.athkarScrollTarget ?? '';
+    const previousTouchScroll = boxElement.dataset.athkarTouchScroll ?? 'false';
+    const shouldEnableTouchScroll = enableTouchScroll && overflowState.overflowY;
+
+    boxElement.dataset.athkarScrollTarget = overflowTarget;
+    boxElement.dataset.athkarTouchScroll = shouldEnableTouchScroll ? 'true' : 'false';
+    boxElement.dataset.athkarTouchOverflow = shouldEnableTouchScroll ? 'true' : 'false';
+    boxElement.classList.toggle('athkar-text-box--touch-scroll', shouldEnableTouchScroll);
+    boxElement.classList.toggle(
+        'athkar-text-box--origin-scroll',
+        shouldEnableTouchScroll && overflowTarget === 'origin',
+    );
+
+    if (paddingClass) {
+        boxElement.classList.toggle(paddingClass, shouldEnableTouchScroll);
+    }
+
+    if (
+        shouldEnableTouchScroll &&
+        (previousTarget !== overflowTarget || previousTouchScroll !== 'true')
+    ) {
+        boxElement.scrollTop = 0;
+    }
+};
+
+const resolveElementConfig = (textElement) => {
+    const enabled = isTruthyValue(textElement.dataset.fittyEnabled, true);
+
+    if (!enabled) {
+        return null;
+    }
+
+    const boxElement = resolveFittyBox(textElement);
+
+    if (!boxElement) {
+        return null;
+    }
+
+    const settings = resolveMainTextSizeSettings();
+    const minFromDataset = parseNumber(textElement.dataset.fittyMinSizeOverride);
+    const maxFromDataset = parseNumber(textElement.dataset.fittyMaxSizeOverride);
+    const minSize = Number.isFinite(minFromDataset)
+        ? normalizeMainTextSize(minFromDataset, settings.minimum)
+        : settings.minimum;
+    const maxSizeSeed = Number.isFinite(maxFromDataset)
+        ? normalizeMainTextSize(maxFromDataset, settings.maximum)
+        : settings.maximum;
+    const maxSize = Math.max(minSize, maxSizeSeed);
+    const step = parseNumber(textElement.dataset.fittyStep, 0.5);
+    const safePaddingX = Math.max(0, parseNumber(textElement.dataset.fittySafePaddingX, 6) ?? 6);
+    const safePaddingY = Math.max(0, parseNumber(textElement.dataset.fittySafePaddingY, 4) ?? 4);
+
+    return {
+        textElement,
+        boxElement,
+        minSize,
+        maxSize,
+        step,
+        safePaddingX,
+        safePaddingY,
+        overflowTarget: String(textElement.dataset.fittyOverflowTarget ?? 'text').trim() || 'text',
+    };
+};
+
+const queueElement = (textElement) => {
+    if (!textElement || !document.contains(textElement)) {
+        return;
+    }
+
+    fitQueue.set(textElement, true);
+    scheduleFitQueue();
+};
+
+const queueDeferredRetry = (textElement) => {
+    if (!textElement || deferredRetryTimers.has(textElement)) {
+        return;
+    }
+
+    const retryCount = deferredRetryCounts.get(textElement) ?? 0;
+
+    if (retryCount >= maxDeferredRetries) {
+        return;
+    }
+
+    deferredRetryCounts.set(textElement, retryCount + 1);
+
+    const timer = window.setTimeout(() => {
+        deferredRetryTimers.delete(textElement);
+        queueElement(textElement);
+    }, deferredRetryDelayMs);
+
+    deferredRetryTimers.set(textElement, timer);
+};
+
+const queuePostFitRetry = (textElement) => {
+    if (!textElement || postFitRetryTimers.has(textElement)) {
+        return;
+    }
+
+    const retryCount = postFitRetryCounts.get(textElement) ?? 0;
+
+    if (retryCount >= maxPostFitRetries) {
+        return;
+    }
+
+    postFitRetryCounts.set(textElement, retryCount + 1);
+
+    const timer = window.setTimeout(() => {
+        postFitRetryTimers.delete(textElement);
+        queueElement(textElement);
+    }, postFitRetryDelayMs);
+
+    postFitRetryTimers.set(textElement, timer);
+};
+
+const clearPostFitRetry = (textElement) => {
+    const timer = postFitRetryTimers.get(textElement);
+
+    if (timer) {
+        clearTimeout(timer);
+        postFitRetryTimers.delete(textElement);
+    }
+
+    postFitRetryCounts.delete(textElement);
+};
+
+const processTextElement = (textElement) => {
+    if (!textElement || !document.contains(textElement)) {
+        fitQueue.delete(textElement);
+        return null;
+    }
+
+    const config = resolveElementConfig(textElement);
+
+    if (!config) {
+        return null;
+    }
+
+    const {
+        textElement: target,
+        boxElement,
+        minSize,
+        maxSize,
+        step,
+        safePaddingX,
+        safePaddingY,
+        overflowTarget,
+    } = config;
+
+    const activeForOverflow = isTruthyValue(target.dataset.fittyOverflowActive, true);
+
+    if (activeForOverflow) {
+        const previousTarget = boxElement.dataset.athkarScrollTarget ?? '';
+
+        if (previousTarget && previousTarget !== overflowTarget) {
+            const paddingClass = String(target.dataset.fittyOverflowPaddingClass ?? 'py-2').trim();
+            clearTouchOverflowState(boxElement, paddingClass);
+        }
+    }
+
+    if (!isMeasurable(target, boxElement) || !window.fitty) {
+        queueDeferredRetry(textElement);
+
+        return null;
+    }
+
+    const { width: availableWidth, height: availableHeight } = resolveAvailableSpace(
+        boxElement,
+        safePaddingX,
+        safePaddingY,
+    );
+
+    if (!availableWidth || !availableHeight) {
+        queueDeferredRetry(textElement);
+
+        return null;
+    }
+
+    deferredRetryCounts.delete(textElement);
+    target.style.maxWidth = `${availableWidth}px`;
+
+    const instance = ensureFittyInstance(target, minSize, maxSize);
+
+    if (instance?.fit) {
+        // Force synchronous fit so fitty does not apply a delayed nowrap pass
+        // after we compute overflow and touch-scroll behavior.
+        instance.fit({ sync: true });
+    }
+
+    // Keep multiline wrapping deterministic after fitty's internal measuring.
+    target.style.whiteSpace = 'break-spaces';
+
+    fitToHeight({
+        textElement: target,
+        minSize,
+        maxSize,
+        availableWidth,
+        availableHeight,
+        step,
+    });
+
+    target.classList.add('is-fit');
+
+    const overflowState = resolveOverflowState({
+        textElement: target,
+        boxElement,
+        availableWidth,
+        availableHeight,
+    });
+
+    applyOverflowState({
+        textElement: target,
+        boxElement,
+        overflowState,
+        overflowTarget,
+    });
+
+    const manageOverflow = isTruthyValue(target.dataset.fittyManageOverflow, false);
+
+    if (manageOverflow && activeForOverflow && !overflowState.overflowY) {
+        queuePostFitRetry(textElement);
+    } else {
+        clearPostFitRetry(textElement);
+    }
+
+    return overflowState;
+};
+
+const runFitQueue = () => {
+    fitQueueTimer = null;
+
+    const next = fitQueue.entries().next();
+
+    if (next.done) {
+        return;
+    }
+
+    const [textElement] = next.value;
+    fitQueue.delete(textElement);
+    processTextElement(textElement);
+
+    if (fitQueue.size > 0) {
+        scheduleFitQueue();
+    }
+};
+
+const scheduleFitQueue = () => {
+    if (fitQueueTimer !== null) {
+        return;
+    }
+
+    fitQueueTimer = window.setTimeout(runFitQueue, 0);
+};
+
+const queueAll = () => {
+    document.querySelectorAll(fittyTargetSelector).forEach((textElement) => {
+        if (!isTruthyValue(textElement.dataset.fittyEnabled, true)) {
+            return;
+        }
+
+        queueElement(textElement);
+    });
+};
+
+const refitTargets = (targets = null) => {
+    if (Array.isArray(targets) && targets.length > 0) {
+        targets.forEach((target) => {
+            if (target instanceof Element) {
+                queueElement(target);
+            }
+        });
+
+        return;
+    }
+
+    queueAll();
+};
+
+const scheduleTransitionRefit = (boxElement) => {
+    if (!boxElement || transitionRefitTimers.has(boxElement)) {
+        return;
+    }
+
+    const timer = window.setTimeout(() => {
+        transitionRefitTimers.delete(boxElement);
+
+        const targets = Array.from(boxElement.querySelectorAll(fittyTargetSelector)).filter(
+            (target) => target instanceof Element,
+        );
+
+        refitTargets(targets);
+    }, transitionRefitDelayMs);
+
+    transitionRefitTimers.set(boxElement, timer);
+};
+
+window.addEventListener('athkar-fitty-refit', (event) => {
+    const targets = Array.isArray(event?.detail?.targets) ? event.detail.targets : null;
+    refitTargets(targets);
+});
+window.addEventListener('settings-updated', (event) => {
+    latestSettingsOverride = event?.detail?.settings ?? null;
+    refitTargets();
+});
+window.addEventListener(
+    'resize',
+    () => {
+        refitTargets();
+    },
+    { passive: true },
+);
+window.addEventListener(
+    'orientationchange',
+    () => {
+        refitTargets();
+    },
+    { passive: true },
+);
+window.addEventListener(
+    'transitionend',
+    (event) => {
+        const source = event.target;
+
+        if (!(source instanceof Element)) {
+            return;
+        }
+
+        const boxElement = source.matches(fittyBoxSelector)
+            ? source
+            : source.closest(fittyBoxSelector);
+
+        if (!boxElement) {
+            return;
+        }
+
+        scheduleTransitionRefit(boxElement);
+    },
+    true,
+);
+window.addEventListener('pageshow', () => {
+    refitTargets();
+});
+window.addEventListener(
+    'load',
+    () => {
+        refitTargets();
+        window.setTimeout(() => {
+            refitTargets();
+        }, 96);
+    },
+    { once: true },
+);
+
+if (document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+        refitTargets();
+    });
+}
+
+window.requestAthkarFittyRefit = refitTargets;
+
+export { refitTargets as requestAthkarFittyRefit };
