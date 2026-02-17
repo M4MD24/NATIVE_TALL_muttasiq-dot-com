@@ -478,33 +478,7 @@
         .athkar-main-text.is-main-hidden {
             opacity: 0 !important;
             pointer-events: none;
-        }
-
-        .athkar-tap.athkar-tap--overflow-toggle .athkar-main-text,
-        .athkar-tap.athkar-tap--overflow-toggle .athkar-origin-text {
-            transition: none !important;
-        }
-
-        .athkar-tap.athkar-tap--overflow-to-origin .athkar-main-text {
-            opacity: 1 !important;
-            position: static !important;
-            inset: auto !important;
-        }
-
-        .athkar-tap.athkar-tap--overflow-to-origin .athkar-origin-text {
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-
-        .athkar-tap.athkar-tap--overflow-to-text .athkar-origin-text {
-            opacity: 1 !important;
-            position: static !important;
-            inset: auto !important;
-        }
-
-        .athkar-tap.athkar-tap--overflow-to-text .athkar-main-text {
-            opacity: 0 !important;
-            pointer-events: none !important;
+            transition-duration: 0ms !important;
         }
 
         .athkar-text-box--touch-scroll:not(.athkar-text-box--origin-scroll) .athkar-main-text {
@@ -525,7 +499,9 @@
             padding-inline: inherit;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 260ms ease;
+            transition-property: opacity;
+            transition-timing-function: ease;
+            transition-duration: 0ms;
         }
 
         .athkar-origin-text__content {
@@ -536,6 +512,7 @@
 
         .athkar-origin-text.is-origin-visible {
             opacity: 1 !important;
+            transition-duration: 260ms;
         }
 
         .athkar-origin-indicator {
@@ -1202,9 +1179,6 @@
                                     'opacity-30!': isHintOpen(index),
                                     'athkar-tap--pulse': tapPulse.index === index && tapPulse.isActive,
                                     'is-origin-active': isOriginVisible(index),
-                                    'athkar-tap--overflow-toggle': isOverflowToggleTransition(index),
-                                    'athkar-tap--overflow-to-origin': isOverflowToggleToOrigin(index),
-                                    'athkar-tap--overflow-to-text': isOverflowToggleToText(index),
                                 }"
                             >
                                 <div
@@ -1251,7 +1225,7 @@
                                             data-shimmer-delay="1000"
                                             data-shimmer-pause="4000"
                                             dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                            x-bind:data-fitty-enabled="(activeIndex === index && !isOriginVisible(index)).toString()"
                                             x-bind:data-fitty-overflow-active="(activeIndex === index && !isOriginVisible(index)).toString()"
                                             x-text="item.text"
                                         ></p>
@@ -1278,7 +1252,7 @@
                                             data-fitty-overflow-padding-class="py-1"
                                             data-fitty-overflow-target="origin"
                                             dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                            x-bind:data-fitty-enabled="(activeIndex === index && isOriginVisible(index)).toString()"
                                             x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
                                             x-text="originTextAt(index)"
                                         ></p>

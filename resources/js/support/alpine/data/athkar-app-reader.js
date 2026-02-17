@@ -96,12 +96,6 @@ document.addEventListener('alpine:init', () => {
             settleTimer: null,
         },
         textShimmerController: null,
-        originToggleTransition: {
-            index: null,
-            isOverflowFast: false,
-            target: null,
-            timer: null,
-        },
         hintIndex: null,
         isMobileCounterOpen: false,
         readerLeaveMs: 300,
@@ -895,8 +889,6 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            this.beginOriginToggleTransition(index);
-
             if (this.isOriginVisible(index)) {
                 this.hideOrigin();
             } else {
@@ -907,14 +899,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.$nextTick(() => {
-                const isOverflowFast =
-                    this.originToggleTransition.isOverflowFast &&
-                    this.originToggleTransition.index === index;
-
-                if (!isOverflowFast) {
-                    this.syncVisibleTextBoxState(index);
-                }
-
+                this.syncVisibleTextBoxState(index);
                 this.stopTextShimmer();
                 this.queueReaderTextFit();
                 this.setupTextShimmer(null, { immediate: true });
@@ -923,48 +908,6 @@ document.addEventListener('alpine:init', () => {
                     this.setupTextShimmer(null, { immediate: true });
                 }, 180);
             });
-        },
-        beginOriginToggleTransition(index = this.activeIndex) {
-            if (this.originToggleTransition.timer) {
-                clearTimeout(this.originToggleTransition.timer);
-                this.originToggleTransition.timer = null;
-            }
-
-            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
-            const box = activeSlide?.querySelector('[data-athkar-text-box]');
-            const hasOverflow =
-                box?.dataset?.athkarTextOverflow === 'true' || box?.dataset?.athkarOriginOverflow === 'true';
-            const target = this.isOriginVisible(index) ? 'text' : 'origin';
-
-            this.originToggleTransition.index = index;
-            this.originToggleTransition.isOverflowFast = hasOverflow;
-            this.originToggleTransition.target = target;
-
-            if (!hasOverflow) {
-                return;
-            }
-
-            this.originToggleTransition.timer = setTimeout(() => {
-                this.originToggleTransition.timer = null;
-                this.originToggleTransition.isOverflowFast = false;
-                this.originToggleTransition.index = null;
-                this.originToggleTransition.target = null;
-                this.syncVisibleTextBoxState(this.activeIndex);
-                this.setupTextShimmer(null, { immediate: true });
-            }, 320);
-        },
-        isOverflowToggleTransition(index) {
-            return (
-                this.originToggleTransition.isOverflowFast &&
-                this.originToggleTransition.index === index &&
-                this.activeIndex === index
-            );
-        },
-        isOverflowToggleToOrigin(index) {
-            return this.isOverflowToggleTransition(index) && this.originToggleTransition.target === 'origin';
-        },
-        isOverflowToggleToText(index) {
-            return this.isOverflowToggleTransition(index) && this.originToggleTransition.target === 'text';
         },
         syncVisibleTextBoxState(index = this.activeIndex) {
             const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
