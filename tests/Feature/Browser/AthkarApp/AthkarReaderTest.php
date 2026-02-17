@@ -433,6 +433,20 @@ JS, ['targetId' => $targetId]));
         );
     }
 
+    forceHomeView($page, 'athkar-app-sabah');
+    setHashOnly($page, '#athkar-app-sabah', true, true);
+    $page->script(homeDataCommandScript(<<<'JS'
+views['athkar-app-gate'].isReaderVisible = true;
+JS));
+    setLocalStorageValue($page, 'athkar-active-mode', 'sabah');
+    setLocalStorageValue($page, 'athkar-reader-visible', true);
+    setLocalStorageValue($page, 'app-active-view', 'athkar-app-sabah');
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForReaderVisible($page);
+    waitForScript($page, 'JSON.parse(localStorage.getItem("athkar-active-mode"))', 'sabah');
+    waitForScript($page, 'JSON.parse(localStorage.getItem("app-active-view"))', 'athkar-app-sabah');
+    waitForScript($page, 'window.location.hash', '#athkar-app-sabah');
+
     $todayKey = $page->script(<<<'JS'
 (() => {
   const now = new Date();
