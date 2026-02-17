@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Setting;
 use App\Models\Thikr;
 use App\Services\Enums\ThikrTime;
 
@@ -277,8 +278,7 @@ JS);
     $page->refresh();
 
     waitForAlpineReady($page);
-    waitForReaderVisible($page);
-    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
+    ensureAthkarReaderMode($page, 'sabah');
     $targetItemIdExpression = js_encode($targetItemId);
     waitForScriptWithTimeout(
         $page,
@@ -286,7 +286,7 @@ JS);
             "data.activeList.some((item) => String(item?.id ?? '') === String({$targetItemIdExpression}))",
         ),
         true,
-        12_000,
+        4_000,
     );
     $restoredIndex = $page->script(
         athkarReaderDataScript(
@@ -310,7 +310,7 @@ JS);
 })()
 JS, ['targetId' => $targetItemId]),
         2,
-        12_000,
+        4_000,
     );
 });
 
@@ -405,7 +405,7 @@ JS, ['targetId' => $targetId]));
             "String(data.activeList[data.activeIndex]?.id ?? '') === String({$targetIdExpression})",
         ),
         true,
-        12_000,
+        4_000,
     );
     waitForScript($page, athkarReaderDataScript('data.countAt(data.activeIndex)'), 2);
 
@@ -417,7 +417,7 @@ JS, ['targetId' => $targetId]));
                 "data.activeList.every((item) => String(item?.id ?? '') !== String({$deletedIdExpression}))",
             ),
             true,
-            12_000,
+            4_000,
         );
     }
 
@@ -429,7 +429,7 @@ JS, ['targetId' => $targetId]));
                 "data.activeList.some((item) => String(item?.id ?? '') === String({$customIdExpression}))",
             ),
             true,
-            12_000,
+            4_000,
         );
     }
 
@@ -463,15 +463,14 @@ JS);
     $page->refresh();
 
     waitForAlpineReady($page);
-    waitForReaderVisible($page);
-    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
+    ensureAthkarReaderMode($page, 'sabah');
     waitForScriptWithTimeout(
         $page,
         athkarReaderDataScript(
             "String(data.activeList[data.activeIndex]?.id ?? '') === String({$targetIdExpression})",
         ),
         true,
-        12_000,
+        4_000,
     );
     waitForScriptWithTimeout(
         $page,
@@ -489,7 +488,7 @@ JS);
 })()
 JS, ['targetId' => $targetId]),
         2,
-        12_000,
+        4_000,
     );
 });
 
@@ -1561,13 +1560,16 @@ it('keeps multiline wrapping and scroll detection when min and max text sizes di
     enableMobileContext($page);
     waitForReaderVisible($page);
 
+    $minimumMainTextSize = Setting::MIN_MAIN_TEXT_SIZE_MIN;
+    $maximumMainTextSize = min(20, Setting::MAX_MAIN_TEXT_SIZE_MAX);
+
     setAthkarSettings($page, [
-        'minimum_main_text_size' => 10,
-        'maximum_main_text_size' => 20,
+        'minimum_main_text_size' => $minimumMainTextSize,
+        'maximum_main_text_size' => $maximumMainTextSize,
     ]);
     waitForAthkarSettings($page, [
-        'minimum_main_text_size' => 10,
-        'maximum_main_text_size' => 20,
+        'minimum_main_text_size' => $minimumMainTextSize,
+        'maximum_main_text_size' => $maximumMainTextSize,
     ]);
 
     $page->script(athkarReaderCommandScript(<<<'JS'

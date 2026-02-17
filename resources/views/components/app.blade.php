@@ -27,6 +27,21 @@
             display: none !important;
         }
     </style>
+    @if (config('app.browser_test_fast_mode'))
+        <style>
+            body.test-fast-ui *,
+            body.test-fast-ui *::before,
+            body.test-fast-ui *::after {
+                transition-duration: 0ms !important;
+                transition-delay: 0ms !important;
+                animation-duration: 0ms !important;
+                animation-delay: 0ms !important;
+            }
+        </style>
+        <script>
+            window.__APP_BROWSER_TEST_FAST_UI = true;
+        </script>
+    @endif
     @include('partials.filament-color-overrides')
     @filamentStyles
     @lazyCss(['resources/css/core/filament/components.css', 'resources/css/app-lazy.css'])
@@ -47,6 +62,7 @@
     class="{{ twMerge([
         'mobile-platform' => is_platform('mobile'),
         'nativephp-safe-area font-arabic-sans relative h-full min-h-dvh antialiased transition-[opacity,color,background-color,border-color,text-decoration-color,fill,stroke] ease-in will-change-[opacity,color,background-color,border-color,text-decoration-color,fill,stroke]',
+        'test-fast-ui' => config('app.browser_test_fast_mode'),
     ]) }}"
     x-bind:class="{
         'overflow-hidden': isScrollingDisabled,

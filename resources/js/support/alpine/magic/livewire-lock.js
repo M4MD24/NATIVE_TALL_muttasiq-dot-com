@@ -1,4 +1,6 @@
 document.addEventListener('alpine:init', () => {
+    const isFastUiMode = () => window.__APP_BROWSER_TEST_FAST_UI === true;
+
     const throttle = (delay, callback, options = {}) => {
         const { noTrailing = false, noLeading = false, debounceMode = null } = options;
         let timeoutId = null;
@@ -69,6 +71,20 @@ document.addEventListener('alpine:init', () => {
 
     window.Alpine.magic('livewireLock', (el) => {
         return (wire, delayMs = 350, enforceDelay = false) => {
+            if (isFastUiMode()) {
+                const state = window.Alpine.reactive({ locked: false });
+
+                state.run = (callback) => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                };
+
+                state.bind = () => {};
+
+                return state;
+            }
+
             const state = window.Alpine.reactive({ locked: false });
             let stop = null;
             let pendingRequests = 0;

@@ -54,7 +54,7 @@ it('normalizes the main text size range in the settings modal', function () {
 it('accepts a valid main text size range in the settings modal', function () {
     livewire(Settings::class)
         ->callAction('settings', data: [
-            'main_text_size_range' => [12, 19],
+            'main_text_size_range' => [14, 19],
         ])
         ->assertHasNoFormErrors()
         ->assertDispatched('settings-updated');

@@ -1,4 +1,21 @@
 document.addEventListener('alpine:init', () => {
+    const isFastUiMode = () => {
+        return window.__APP_BROWSER_TEST_FAST_UI === true;
+    };
+
+    const schedule = (callback, delayMs = 0) => {
+        if (typeof callback !== 'function') {
+            return;
+        }
+
+        if (isFastUiMode() || delayMs <= 0) {
+            callback();
+            return;
+        }
+
+        setTimeout(callback, delayMs);
+    };
+
     const isNativeShell = () => {
         return Boolean(document.body?.classList?.contains('mobile-platform'));
     };
@@ -93,9 +110,9 @@ document.addEventListener('alpine:init', () => {
             applyHash(hash, { rememberInHistory: true, rememberInState: true });
             index += 1;
             if (hashes[index]) {
-                setTimeout(runNext, delayMs);
+                schedule(runNext, delayMs);
             } else if (typeof onDone === 'function') {
-                setTimeout(onDone, delayMs);
+                schedule(onDone, delayMs);
             }
         };
 
@@ -111,17 +128,17 @@ document.addEventListener('alpine:init', () => {
     };
 
     const waitForHistoryReady = (callback) => {
-        const delayMs = isNativeShell() ? 120 : 0;
+        const delayMs = isFastUiMode() ? 0 : isNativeShell() ? 120 : 0;
 
         if (document.readyState === 'complete') {
-            setTimeout(callback, delayMs);
+            schedule(callback, delayMs);
             return;
         }
 
         window.addEventListener(
             'load',
             () => {
-                setTimeout(callback, delayMs);
+                schedule(callback, delayMs);
             },
             { once: true },
         );
@@ -351,7 +368,7 @@ document.addEventListener('alpine:init', () => {
     const runNativeBack = (targetHash) => {
         window.__hashActionBypassLock = true;
         applyHash(targetHash, { rememberInHistory: false, rememberInState: true });
-        setTimeout(() => {
+        schedule(() => {
             window.__hashActionBypassLock = false;
         }, 0);
     };
@@ -386,7 +403,7 @@ document.addEventListener('alpine:init', () => {
 
             if (force && currentHash === targetHash) {
                 applyHash(resetHash, { rememberInHistory: false, rememberInState: false });
-                setTimeout(() => {
+                schedule(() => {
                     applyHash(targetHash, {
                         rememberInHistory: remember,
                         rememberInState: remember,
@@ -445,7 +462,7 @@ document.addEventListener('alpine:init', () => {
 
                 action();
 
-                setTimeout(() => {
+                schedule(() => {
                     if (shouldRemember) {
                         return;
                     }

@@ -256,6 +256,7 @@ function resetBrowserState($page, bool $isMobile = false): void
         }
 
         waitForAlpineReady($page);
+        applyTestSpeedups($page);
 
         if ($isMobile) {
             enableMobileContext($page);
@@ -625,6 +626,55 @@ function waitForReaderVisible($page): void
     waitForScript($page, readerVisibleScript());
 }
 
+function ensureAthkarReaderMode($page, string $mode): void
+{
+    try {
+        waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), $mode, 2_200);
+
+        return;
+    } catch (Throwable) {
+        //
+    }
+
+    $view = $mode === 'sabah' ? 'athkar-app-sabah' : 'athkar-app-masaa';
+    $hash = '#'.$view;
+
+    if ($page->script(homeDataScript('data.activeView')) !== $view) {
+        forceHomeView($page, $view);
+    }
+
+    if ($page->script('window.location.hash') !== $hash) {
+        setHashOnly($page, $hash, true, true);
+    }
+
+    $page->script(homeDataCommandScript(<<<'JS'
+views['athkar-app-gate'].isReaderVisible = true;
+JS));
+
+    $page->script(js_template(<<<'JS'
+(() => {
+  const view = {{view}};
+  window.dispatchEvent(new CustomEvent('switch-view', {
+    detail: {
+      to: view,
+      restoring: true,
+    },
+  }));
+})();
+JS, ['view' => $view]));
+
+    if ($page->script(athkarReaderDataScript('data.activeMode')) !== $mode) {
+        $page->script(athkarReaderCommandScript("data.restoreMode('{$mode}');"));
+    }
+
+    if ($page->script(athkarReaderDataScript('data.isNoticeVisible'))) {
+        $page->script(athkarReaderCommandScript('data.confirmNotice();'));
+    }
+
+    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), $mode, 3_000);
+    waitForReaderVisible($page);
+}
+
 function waitForGateVisible($page): void
 {
     waitForScript($page, gateVisibleScript());
@@ -859,11 +909,19 @@ JS, ['settings' => $settings]));
 function waitForAthkarSettings($page, array $settings): void
 {
     foreach ($settings as $key => $value) {
-        $expected = is_bool($value) ? ($value ? 'true' : 'false') : js_encode($value);
+        if (is_bool($value)) {
+            $expected = $value ? 'true' : 'false';
+            $expression = "Boolean(data.settings?.{$key}) === {$expected}";
+        } elseif (is_numeric($value)) {
+            $expression = 'Number(data.settings?.'.$key.') === '.(int) $value;
+        } else {
+            $expected = js_encode($value);
+            $expression = "data.settings?.{$key} === {$expected}";
+        }
 
         waitForScript(
             $page,
-            athkarReaderDataScript("data.settings?.{$key} === {$expected}"),
+            athkarReaderDataScript($expression),
             true,
         );
     }
