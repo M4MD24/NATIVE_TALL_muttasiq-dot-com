@@ -18,12 +18,17 @@ class HomeController extends Controller
      */
     public function __invoke(Request $request): View
     {
+        $settingDefaults = Setting::defaults();
+        $storedSettings = Setting::query()
+            ->whereIn('name', array_keys($settingDefaults))
+            ->pluck('value', 'name')
+            ->all();
+
         return view('home', [
             'athkar' => $this->resolveAthkarPayload(),
-            'athkarSettings' => Setting::query()
-                ->whereIn('name', array_keys(Setting::defaults()))
-                ->pluck('value', 'name')
-                ->all(),
+            'athkarSettings' => Setting::normalizeSettings(
+                array_replace($settingDefaults, $storedSettings),
+            ),
         ]);
     }
 

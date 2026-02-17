@@ -278,7 +278,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
+    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
     $targetItemIdExpression = js_encode($targetItemId);
     waitForScriptWithTimeout(
         $page,
@@ -433,6 +433,20 @@ JS, ['targetId' => $targetId]));
         );
     }
 
+    forceHomeView($page, 'athkar-app-sabah');
+    setHashOnly($page, '#athkar-app-sabah', true, true);
+    $page->script(homeDataCommandScript(<<<'JS'
+views['athkar-app-gate'].isReaderVisible = true;
+JS));
+    setLocalStorageValue($page, 'athkar-active-mode', 'sabah');
+    setLocalStorageValue($page, 'athkar-reader-visible', true);
+    setLocalStorageValue($page, 'app-active-view', 'athkar-app-sabah');
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForReaderVisible($page);
+    waitForScript($page, 'JSON.parse(localStorage.getItem("athkar-active-mode"))', 'sabah');
+    waitForScript($page, 'JSON.parse(localStorage.getItem("app-active-view"))', 'athkar-app-sabah');
+    waitForScript($page, 'window.location.hash', '#athkar-app-sabah');
+
     $todayKey = $page->script(<<<'JS'
 (() => {
   const now = new Date();
@@ -450,7 +464,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
+    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
     waitForScriptWithTimeout(
         $page,
         athkarReaderDataScript(
@@ -830,6 +844,145 @@ JS,
     );
 });
 
+it('re-fits active thikr and origin text immediately when max main text size changes with a fixed min size', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    waitForReaderVisible($page);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const index = data.activeIndex;
+if (!data.activeList?.[index]) {
+  return;
+}
+
+data.activeList[index].text = 'لا إله إلا الله وحده لا شريك له';
+data.activeList[index].origin = 'رواه البخاري';
+data.activeList[index].count = 1;
+if (Array.isArray(data.progress?.[data.activeMode]?.counts)) {
+  data.progress[data.activeMode].counts[index] = 0;
+}
+data.originToggle = { mode: data.activeMode, index };
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(text).fontSize);
+
+  return Number.isFinite(size) && size > 0;
+})()
+JS,
+        true,
+    );
+
+    setAthkarSettings($page, [
+        'minimum_main_text_size' => 16,
+        'maximum_main_text_size' => 16,
+    ]);
+    waitForAthkarSettings($page, [
+        'minimum_main_text_size' => 16,
+        'maximum_main_text_size' => 16,
+    ]);
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!text || !origin) {
+    return null;
+  }
+
+  const textSize = Number.parseFloat(getComputedStyle(text).fontSize);
+  const originSize = Number.parseFloat(getComputedStyle(origin).fontSize);
+
+  return Number.isFinite(textSize) &&
+    Number.isFinite(originSize) &&
+    textSize > 0 &&
+    originSize > 0 &&
+    textSize <= 16.5 &&
+    originSize <= 16.5;
+})()
+JS);
+
+    $fontAtMaxSixteen = $page->script(<<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return null;
+  }
+
+  return Number.parseFloat(getComputedStyle(text).fontSize);
+})()
+JS);
+
+    $originFontAtMaxSixteen = $page->script(<<<'JS'
+(() => {
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!origin) {
+    return null;
+  }
+
+  return Number.parseFloat(getComputedStyle(origin).fontSize);
+})()
+JS);
+
+    expect($fontAtMaxSixteen)->toBeNumeric()->toBeGreaterThan(0);
+    expect($originFontAtMaxSixteen)->toBeNumeric()->toBeGreaterThan(0);
+
+    setAthkarSettings($page, ['maximum_main_text_size' => 20]);
+    waitForAthkarSettings($page, ['maximum_main_text_size' => 20]);
+
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  if (!text) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(text).fontSize);
+
+  return Number.isFinite(size) && size >= Number({{min}});
+})()
+JS,
+            ['min' => $fontAtMaxSixteen + 0.5],
+        ),
+        true,
+    );
+
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const origin = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-origin-text]');
+  if (!origin) {
+    return false;
+  }
+
+  const size = Number.parseFloat(getComputedStyle(origin).fontSize);
+
+  return Number.isFinite(size) && size >= Number({{min}});
+})()
+JS,
+            ['min' => $originFontAtMaxSixteen + 0.5],
+        ),
+        true,
+    );
+});
+
 it('restores the notice on reload and allows continuing to the reader when notice panels are enabled', function () {
     $page = visit('/');
 
@@ -922,6 +1075,122 @@ JS,
     waitForNoticeVisible($page);
 });
 
+it('bypasses hint and completion popups when setting 4 is enabled', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    $settings = [
+        'does_skip_notice_panels' => true,
+        'does_prevent_switching_athkar_until_completion' => false,
+        'does_automatically_switch_completed_athkar' => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $multiIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => Number(item.count ?? 1) > 1)',
+        ),
+    );
+
+    expect($multiIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(
+        athkarReaderCommandScript(
+            "data.setActiveIndex({$multiIndex}); data.setCount({$multiIndex}, 0);",
+        ),
+    );
+
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
+
+    $page->script(athkarReaderCommandScript("data.toggleHint({$multiIndex});"));
+    waitForScript($page, athkarReaderDataScript('data.hintIndex'), null);
+
+    $page->script(
+        athkarReaderCommandScript("data.requestSingleThikrCompletion({$multiIndex});"),
+    );
+
+    waitForScript(
+        $page,
+        athkarReaderDataScript(
+            "data.countAt({$multiIndex}) === data.requiredCount({$multiIndex})",
+        ),
+        true,
+    );
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', false);
+});
+
+it('expands the mobile counter hint when tapped while hint bypass is disabled', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    $settings = [
+        'does_skip_notice_panels' => false,
+        'does_prevent_switching_athkar_until_completion' => false,
+        'does_automatically_switch_completed_athkar' => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $multiIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => Number(item.count ?? 1) > 1)',
+        ),
+    );
+
+    expect($multiIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(athkarReaderCommandScript("data.setActiveIndex({$multiIndex}); data.closeHint();"));
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
+
+    $mobileCounterSelector = '[data-athkar-slide][data-active="true"] [data-athkar-mobile-counter] button[aria-label="العدد"]';
+
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const button = document.querySelector({{selector}});
+  if (!button) {
+    return false;
+  }
+
+  const styles = getComputedStyle(button);
+  return styles.pointerEvents !== 'none' && styles.opacity !== '0';
+})()
+JS,
+            ['selector' => $mobileCounterSelector],
+        ),
+        true,
+    );
+
+    scriptClick($page, $mobileCounterSelector);
+    waitForScript($page, athkarReaderDataScript('data.hintIndex'), $multiIndex);
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const button = document.querySelector({{selector}});
+  if (!button) {
+    return false;
+  }
+
+  return button.getAttribute('aria-expanded') === 'true' && button.getBoundingClientRect().width >= 56;
+})()
+JS,
+            ['selector' => $mobileCounterSelector],
+        ),
+        true,
+    );
+});
+
 it('executes hidden completion buttons on desktop for single thikr and all athkar', function () {
     $page = visit('/');
 
@@ -973,6 +1242,92 @@ it('executes hidden completion buttons on desktop for single thikr and all athka
 
     waitForScript($page, athkarReaderDataScript('data.isModeComplete("sabah")'), true);
     waitForScript($page, athkarReaderDataScript('data.activeMode'), null);
+});
+
+it('keeps overflowing mobile origin anchored to the top and scrollable', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    $originIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => String(item?.origin ?? "").trim().length > 0 || Boolean(item?.is_original))',
+        ),
+    );
+
+    expect($originIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(athkarReaderCommandScript(js_template(<<<'JS'
+data.setActiveIndex({{index}});
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد';
+data.activeList[activeIndex].origin = Array.from(
+  { length: 140 },
+  () => 'حدثنا عبد الله بن مسلمة عن مالك عن سمي عن أبي صالح عن أبي هريرة رضي الله عنه'
+).join(' ');
+data.originToggle = { mode: data.activeMode, index: activeIndex };
+data.queueReaderTextFit();
+JS, ['index' => $originIndex])));
+
+    waitForScript($page, athkarReaderDataScript('data.isOriginVisible(data.activeIndex)'), true);
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+  const origin = slide?.querySelector('[data-athkar-origin-text]');
+
+  if (!box || !origin) {
+    return false;
+  }
+
+  if (String(origin.textContent ?? '').trim().length < 200) {
+    return false;
+  }
+
+  const styles = getComputedStyle(box);
+
+  if (
+    box.dataset.athkarOriginOverflow !== 'true' ||
+    !box.classList.contains('athkar-text-box--touch-scroll') ||
+    !box.classList.contains('athkar-text-box--origin-scroll') ||
+    styles.overflowY !== 'auto'
+  ) {
+    return false;
+  }
+
+  box.scrollTop = 0;
+  const boxRect = box.getBoundingClientRect();
+  const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
+  const contentTop = boxRect.top + paddingTop;
+  const originRect = origin.getBoundingClientRect();
+
+  if (originRect.top < contentTop - 2) {
+    return false;
+  }
+
+  box.scrollTop = Math.max(0, box.scrollHeight - box.clientHeight - 8);
+  if (box.scrollTop <= 0) {
+    return false;
+  }
+
+  box.scrollTop = 0;
+
+  return box.scrollTop === 0;
+})()
+JS,
+        true,
+    );
 });
 
 it('shows single-thikr completion button on touch tablets without hover', function () {
@@ -1192,6 +1547,256 @@ JS,
     box.classList.contains('athkar-text-box--origin-scroll') &&
     box.scrollHeight > box.clientHeight + 1
   );
+})()
+JS,
+        true,
+    );
+});
+
+it('keeps multiline wrapping and scroll detection when min and max text sizes differ', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    setAthkarSettings($page, [
+        'minimum_main_text_size' => 10,
+        'maximum_main_text_size' => 20,
+    ]);
+    waitForAthkarSettings($page, [
+        'minimum_main_text_size' => 10,
+        'maximum_main_text_size' => 20,
+    ]);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = Array.from(
+  { length: 180 },
+  () => 'سبحان الله والحمد لله ولا إله إلا الله والله أكبر'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+  const text = slide?.querySelector('[data-athkar-text]');
+  if (!box || !text) {
+    return false;
+  }
+
+  const whiteSpace = getComputedStyle(text).whiteSpace;
+
+  return (
+    whiteSpace !== 'nowrap' &&
+    box.dataset.athkarTextOverflow === 'true' &&
+    box.dataset.athkarTouchScroll === 'true' &&
+    box.classList.contains('athkar-text-box--touch-scroll')
+  );
+})()
+JS,
+        true,
+    );
+});
+
+it('re-arms shimmer when toggling between text and origin layers', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    $originIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => String(item?.origin ?? "").trim().length > 0 || Boolean(item?.is_original))',
+        ),
+    );
+
+    expect($originIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(athkarReaderCommandScript(js_template(<<<'JS'
+data.setActiveIndex({{index}});
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = Array.from(
+  { length: 80 },
+  () => 'لا إله إلا الله وحده لا شريك له'
+).join(' ');
+data.activeList[activeIndex].origin = Array.from(
+  { length: 80 },
+  () => 'حدثنا عبد الله بن مسلمة عن مالك عن سمي عن أبي صالح'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+
+requestAnimationFrame(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const text = slide?.querySelector('[data-athkar-text]');
+  const origin = slide?.querySelector('[data-athkar-origin-text]');
+
+  [text, origin].forEach((node) => {
+    if (!node) {
+      return;
+    }
+
+    node.dataset.shimmerDelay = '20';
+    node.dataset.shimmerDuration = '120';
+    node.dataset.shimmerPause = '120';
+  });
+
+  data.setupTextShimmer();
+});
+JS, ['index' => $originIndex])));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+  return Boolean(text?.classList.contains('is-shimmering'));
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const origin = slide?.querySelector('[data-athkar-origin-text]');
+  const isVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+
+  return Boolean(isVisible && origin?.classList.contains('is-shimmering'));
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const text = slide?.querySelector('[data-athkar-text]');
+  const isOriginVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+
+  return Boolean(!isOriginVisible && text?.classList.contains('is-shimmering'));
+})()
+JS,
+        true,
+    );
+});
+
+it('keeps text scrollable after toggling origin on and back off', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableTabletContext($page);
+    waitForReaderVisible($page);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = Array.from(
+  { length: 140 },
+  () => 'سبحان الله والحمد لله ولا إله إلا الله والله أكبر'
+).join(' ');
+data.activeList[activeIndex].origin = Array.from(
+  { length: 120 },
+  () => 'حدثنا عبد الله بن مسلمة عن مالك عن سمي عن أبي صالح عن أبي هريرة رضي الله عنه'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const box = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text-box]');
+  if (!box) {
+    return false;
+  }
+
+  return box.dataset.athkarTextOverflow === 'true' && box.dataset.athkarTouchScroll === 'true';
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const box = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text-box]');
+  if (!box) {
+    return false;
+  }
+
+  return (
+    box.dataset.athkarScrollTarget === 'origin' &&
+    box.dataset.athkarOriginOverflow === 'true' &&
+    box.classList.contains('athkar-text-box--origin-scroll')
+  );
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const box = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text-box]');
+  if (!box) {
+    return false;
+  }
+
+  if (box.dataset.athkarScrollTarget !== 'text') {
+    return false;
+  }
+
+  if (box.dataset.athkarTextOverflow !== 'true' || box.dataset.athkarTouchScroll !== 'true') {
+    return false;
+  }
+
+  if (box.classList.contains('athkar-text-box--origin-scroll')) {
+    return false;
+  }
+
+  box.scrollTop = Math.min(160, box.scrollHeight - box.clientHeight);
+
+  return box.scrollTop > 0;
 })()
 JS,
         true,

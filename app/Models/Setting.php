@@ -8,18 +8,28 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'value' => 'boolean',
-        ];
-    }
+    public const GROUP_GENERAL = 'general';
+
+    public const GROUP_ATHKAR = 'athkar';
+
+    public const MINIMUM_MAIN_TEXT_SIZE = 'minimum_main_text_size';
+
+    public const MAXIMUM_MAIN_TEXT_SIZE = 'maximum_main_text_size';
+
+    public const MIN_MAIN_TEXT_SIZE_MIN = 10;
+
+    public const MIN_MAIN_TEXT_SIZE_MAX = 20;
+
+    public const MIN_MAIN_TEXT_SIZE_DEFAULT = 16;
+
+    public const MAX_MAIN_TEXT_SIZE_MIN = 10;
+
+    public const MAX_MAIN_TEXT_SIZE_MAX = 20;
+
+    public const MAX_MAIN_TEXT_SIZE_DEFAULT = 20;
 
     /**
-     * @return array<string, array{default: bool, label: string, help?: string}>
+     * @return array<string, array{default: bool|int, label: string, group: string, type: 'boolean'|'integer', help?: string, min?: int, max?: int}>
      */
     public static function definitions(): array
     {
@@ -27,26 +37,61 @@ class Setting extends Model
             'does_automatically_switch_completed_athkar' => [
                 'default' => true,
                 'label' => '1. الانتقال التلقائي عند اكتمال عدد الذكر.',
+                'group' => self::GROUP_ATHKAR,
+                'type' => 'boolean',
             ],
             'does_clicking_switch_athkar_too' => [
                 'default' => true,
                 'label' => '2. الضغط والنقر يقوم بالانتقال أيضا للذكر التالي، وليس مجرد السحب فحسب.',
                 'help' => 'ولكن إن قمت بالعودة للأذكار التامة، أو كان الخيار الأذكار (1) معطلا، فالضغط يقوم بزيادة العدّ.',
+                'group' => self::GROUP_ATHKAR,
+                'type' => 'boolean',
             ],
             'does_prevent_switching_athkar_until_completion' => [
                 'default' => true,
                 'label' => '3. المنع من الانتقال بين الأذكار حتى إنهائها أولًا.',
                 'help' => 'وكذلك يقوم بالسماح بإعادة استعراض أذكار الصباح والمساء حتى عند إتمامها.',
+                'group' => self::GROUP_ATHKAR,
+                'type' => 'boolean',
+            ],
+            self::MINIMUM_MAIN_TEXT_SIZE => [
+                'default' => self::MIN_MAIN_TEXT_SIZE_DEFAULT,
+                'label' => '1. الحد الأدنى لحجم النصوص المحورية.',
+                'group' => self::GROUP_GENERAL,
+                'type' => 'integer',
+                'min' => self::MIN_MAIN_TEXT_SIZE_MIN,
+                'max' => self::MIN_MAIN_TEXT_SIZE_MAX,
+            ],
+            self::MAXIMUM_MAIN_TEXT_SIZE => [
+                'default' => self::MAX_MAIN_TEXT_SIZE_DEFAULT,
+                'label' => '2. الحد الأقصى لحجم النصوص المحورية.',
+                'group' => self::GROUP_GENERAL,
+                'type' => 'integer',
+                'min' => self::MAX_MAIN_TEXT_SIZE_MIN,
+                'max' => self::MAX_MAIN_TEXT_SIZE_MAX,
             ],
             'does_skip_notice_panels' => [
                 'default' => false,
-                'label' => '4. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'label' => '2. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'group' => self::GROUP_GENERAL,
+                'type' => 'boolean',
             ],
         ];
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<string, array{default: bool|int, label: string, group: string, type: 'boolean'|'integer', help?: string, min?: int, max?: int}>
+     */
+    public static function definitionsForGroup(string $group): array
+    {
+        return array_filter(
+            self::definitions(),
+            static fn (array $definition): bool => $definition['group'] === $group,
+        );
+    }
+
+    /**
+     * @return array<string, bool|int>
      */
     public static function defaults(): array
     {
@@ -57,5 +102,76 @@ class Setting extends Model
         }
 
         return $defaults;
+    }
+
+    public static function normalizeValue(string $name, mixed $value): bool|int
+    {
+        $definition = self::definitions()[$name] ?? null;
+
+        if (! is_array($definition)) {
+            if (is_bool($value)) {
+                return $value;
+            }
+
+            if (is_numeric($value)) {
+                return (int) $value;
+            }
+
+            return false;
+        }
+
+        if ($definition['type'] === 'integer') {
+            $numericValue = is_numeric($value) ? (int) $value : (int) $definition['default'];
+            $minimum = (int) ($definition['min'] ?? $definition['default']);
+            $maximum = (int) ($definition['max'] ?? $definition['default']);
+
+            return max($minimum, min($maximum, $numericValue));
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === 1 || $value === '1') {
+            return true;
+        }
+
+        if ($value === 0 || $value === '0') {
+            return false;
+        }
+
+        $normalized = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        if ($normalized !== null) {
+            return $normalized;
+        }
+
+        return (bool) $definition['default'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<string, bool|int>
+     */
+    public static function normalizeSettings(array $settings): array
+    {
+        $normalized = [];
+
+        foreach (self::definitions() as $name => $definition) {
+            $value = array_key_exists($name, $settings) ? $settings[$name] : $definition['default'];
+            $normalized[$name] = self::normalizeValue($name, $value);
+        }
+
+        $minimumMainTextSize = (int) ($normalized[self::MINIMUM_MAIN_TEXT_SIZE] ?? self::MIN_MAIN_TEXT_SIZE_DEFAULT);
+        $maximumMainTextSize = (int) ($normalized[self::MAXIMUM_MAIN_TEXT_SIZE] ?? self::MAX_MAIN_TEXT_SIZE_DEFAULT);
+
+        if ($minimumMainTextSize > $maximumMainTextSize) {
+            $minimumMainTextSize = $maximumMainTextSize;
+        }
+
+        $normalized[self::MINIMUM_MAIN_TEXT_SIZE] = $minimumMainTextSize;
+        $normalized[self::MAXIMUM_MAIN_TEXT_SIZE] = max($maximumMainTextSize, $minimumMainTextSize);
+
+        return $normalized;
     }
 }
