@@ -25,10 +25,7 @@ const parseTime = (value, fallback) => {
     return parsed;
 };
 
-export const createAthkarShimmerController = ({
-    resolveRoot,
-    resolveIsOriginVisible,
-} = {}) => {
+export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisible } = {}) => {
     const state = {
         target: null,
         timer: null,
