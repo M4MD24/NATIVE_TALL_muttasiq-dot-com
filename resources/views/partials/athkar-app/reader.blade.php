@@ -1225,7 +1225,7 @@
                                             data-shimmer-delay="1000"
                                             data-shimmer-pause="4000"
                                             dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index && !isOriginVisible(index)).toString()"
+                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
                                             x-bind:data-fitty-overflow-active="(activeIndex === index && !isOriginVisible(index)).toString()"
                                             x-text="item.text"
                                         ></p>
@@ -1252,7 +1252,7 @@
                                             data-fitty-overflow-padding-class="py-1"
                                             data-fitty-overflow-target="origin"
                                             dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index && isOriginVisible(index)).toString()"
+                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
                                             x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
                                             x-text="originTextAt(index)"
                                         ></p>
