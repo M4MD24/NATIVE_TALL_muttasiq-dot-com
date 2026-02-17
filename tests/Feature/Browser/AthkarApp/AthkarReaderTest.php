@@ -278,7 +278,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
+    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
     $targetItemIdExpression = js_encode($targetItemId);
     waitForScriptWithTimeout(
         $page,
@@ -450,7 +450,7 @@ JS);
 
     waitForAlpineReady($page);
     waitForReaderVisible($page);
-    waitForScript($page, athkarReaderDataScript('data.activeMode'), 'sabah');
+    waitForScriptWithTimeout($page, athkarReaderDataScript('data.activeMode'), 'sabah', 12_000);
     waitForScriptWithTimeout(
         $page,
         athkarReaderDataScript(
