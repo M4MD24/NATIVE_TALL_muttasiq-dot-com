@@ -29,6 +29,7 @@ class HomeController extends Controller
             'athkarSettings' => Setting::normalizeSettings(
                 array_replace($settingDefaults, $storedSettings),
             ),
+            'athkarMainTextSizeLimits' => Setting::mainTextSizeLimits(),
         ]);
     }
 

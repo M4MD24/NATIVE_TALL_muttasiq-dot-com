@@ -113,6 +113,8 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'browser_test_fast_mode' => (bool) env('BROWSER_TEST_FAST_MODE', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

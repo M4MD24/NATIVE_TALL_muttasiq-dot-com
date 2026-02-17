@@ -1,5 +1,6 @@
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('layoutManager', () => ({
+        isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
         isFontReady: false,
         isLayoutSetUp: false,
         isBodyVisible: false,
@@ -11,6 +12,16 @@ document.addEventListener('alpine:init', () => {
         isScrollingDisabled: false,
 
         init() {
+            if (this.isFastUiMode) {
+                this.defaultTransitionDurationInMs = 0;
+                this.fastTransitionDurationInMs = 0;
+                this.useFastTransitionDuration = true;
+                this.isFontReady = true;
+                this.isLayoutSetUp = true;
+                this.isBlinkerShown = false;
+                this.isBodyVisible = true;
+            }
+
             // ? Keep track of Filament action events
             window.addEventListener('open-modal', () => (this.isActionOpen = true));
             window.addEventListener('close-modal-quietly', () => (this.isActionOpen = false));

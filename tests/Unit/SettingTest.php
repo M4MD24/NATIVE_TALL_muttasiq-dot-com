@@ -13,8 +13,23 @@ test('athkar setting defaults are available for the home payload', function () {
     expect(array_key_exists('minimum_main_text_size', $defaults))->toBeTrue();
     expect(array_key_exists('maximum_main_text_size', $defaults))->toBeTrue();
     expect($defaults['does_skip_notice_panels'])->toBeFalse();
-    expect($defaults['minimum_main_text_size'])->toBe(16);
-    expect($defaults['maximum_main_text_size'])->toBe(20);
+    expect($defaults['minimum_main_text_size'])->toBe(Setting::MIN_MAIN_TEXT_SIZE_DEFAULT);
+    expect($defaults['maximum_main_text_size'])->toBe(Setting::MAX_MAIN_TEXT_SIZE_DEFAULT);
+});
+
+test('it exposes main text size limits for frontend consumers', function () {
+    $limits = Setting::mainTextSizeLimits();
+
+    expect($limits[Setting::MINIMUM_MAIN_TEXT_SIZE])->toBe([
+        'min' => Setting::MIN_MAIN_TEXT_SIZE_MIN,
+        'max' => Setting::MIN_MAIN_TEXT_SIZE_MAX,
+        'default' => Setting::MIN_MAIN_TEXT_SIZE_DEFAULT,
+    ]);
+    expect($limits[Setting::MAXIMUM_MAIN_TEXT_SIZE])->toBe([
+        'min' => Setting::MAX_MAIN_TEXT_SIZE_MIN,
+        'max' => Setting::MAX_MAIN_TEXT_SIZE_MAX,
+        'default' => Setting::MAX_MAIN_TEXT_SIZE_DEFAULT,
+    ]);
 });
 
 test('it normalizes settings payload values by their definitions', function () {
@@ -25,22 +40,22 @@ test('it normalizes settings payload values by their definitions', function () {
     ]);
 
     expect($normalized['does_skip_notice_panels'])->toBeTrue();
-    expect($normalized['minimum_main_text_size'])->toBe(20);
-    expect($normalized['maximum_main_text_size'])->toBe(20);
+    expect($normalized['minimum_main_text_size'])->toBe(Setting::MIN_MAIN_TEXT_SIZE_MAX);
+    expect($normalized['maximum_main_text_size'])->toBe(Setting::MAX_MAIN_TEXT_SIZE_MAX);
 
     $normalized = Setting::normalizeSettings([
         'minimum_main_text_size' => 7,
         'maximum_main_text_size' => 7,
     ]);
 
-    expect($normalized['minimum_main_text_size'])->toBe(10);
-    expect($normalized['maximum_main_text_size'])->toBe(10);
+    expect($normalized['minimum_main_text_size'])->toBe(Setting::MIN_MAIN_TEXT_SIZE_MIN);
+    expect($normalized['maximum_main_text_size'])->toBe(Setting::MAX_MAIN_TEXT_SIZE_MIN);
 
     $normalized = Setting::normalizeSettings([
-        'minimum_main_text_size' => 20,
-        'maximum_main_text_size' => 10,
+        'minimum_main_text_size' => Setting::MIN_MAIN_TEXT_SIZE_MAX,
+        'maximum_main_text_size' => Setting::MAX_MAIN_TEXT_SIZE_MIN,
     ]);
 
-    expect($normalized['minimum_main_text_size'])->toBe(10);
-    expect($normalized['maximum_main_text_size'])->toBe(10);
+    expect($normalized['minimum_main_text_size'])->toBe(Setting::MIN_MAIN_TEXT_SIZE_MIN);
+    expect($normalized['maximum_main_text_size'])->toBe(Setting::MAX_MAIN_TEXT_SIZE_MIN);
 });

@@ -1,5 +1,6 @@
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppGate', () => ({
+        isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
         hoverSide: null,
         activeSide: null,
         isHovering: false,
@@ -21,6 +22,20 @@ document.addEventListener('alpine:init', () => {
         isSpillReady: false,
         pingDuration: 1400,
         pingDelay: 650,
+        init() {
+            if (!this.isFastUiMode) {
+                return;
+            }
+
+            this.spillTransitionMs = 0;
+            this.spillShowDelayMs = 0;
+            this.spillShowDurationMs = 0;
+            this.spillHideDurationMs = 0;
+            this.spillIntroDelayMs = 0;
+            this.pingDuration = 0;
+            this.pingDelay = 0;
+            this.isSpillReady = true;
+        },
         setScrollLock(locked) {
             document.documentElement.style.overflow = locked ? 'hidden' : '';
             document.body.style.overflow = locked ? 'hidden' : '';
@@ -132,6 +147,14 @@ document.addEventListener('alpine:init', () => {
             if (this.spillReadyTimer) {
                 clearTimeout(this.spillReadyTimer);
             }
+
+            if (this.isFastUiMode) {
+                this.spillTransitionMs = 0;
+                this.spillOpacity = isActive ? this.spillTargetOpacity : 0;
+                this.setScrollLock(isActive);
+                return;
+            }
+
             if (isActive) {
                 this.setScrollLock(true);
                 this.spillTransitionMs = this.spillShowDurationMs;
@@ -169,6 +192,11 @@ document.addEventListener('alpine:init', () => {
             }, this.spillHideDurationMs);
         },
         queuePing() {
+            if (this.isFastUiMode) {
+                this.isPinging = false;
+                return;
+            }
+
             if (this.isPinging || !this.isHovering) {
                 return;
             }

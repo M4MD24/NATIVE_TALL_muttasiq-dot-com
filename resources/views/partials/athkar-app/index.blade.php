@@ -19,6 +19,7 @@
     x-data="athkarAppReader({
         athkar: @js($athkar),
         athkarSettings: @js($athkarSettings),
+        athkarMainTextSizeLimits: @js($athkarMainTextSizeLimits),
         typeLabels: @js(\App\Services\Enums\ThikrType::labels()),
     })"
     x-on:close-athkar-mode.window="closeMode()"

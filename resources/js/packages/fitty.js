@@ -10,10 +10,18 @@ window.fitty = fitty;
 const athkarSettingsStorageKey = 'athkar-settings-v1';
 const minimumMainTextSizeKey = 'minimum_main_text_size';
 const maximumMainTextSizeKey = 'maximum_main_text_size';
-const minimumMainTextSizeDefault = 16;
-const maximumMainTextSizeDefault = 20;
-const mainTextSizeMinimum = 10;
-const mainTextSizeMaximum = 20;
+const fallbackMainTextSizeLimits = Object.freeze({
+    [minimumMainTextSizeKey]: Object.freeze({
+        min: 10,
+        max: 24,
+        default: 16,
+    }),
+    [maximumMainTextSizeKey]: Object.freeze({
+        min: 10,
+        max: 24,
+        default: 24,
+    }),
+});
 const fittyTargetSelector = '[data-fitty-target]';
 const fittyBoxSelector = '[data-fitty-box]';
 const deferredRetryDelayMs = 64;
@@ -69,11 +77,53 @@ const parseNumber = (value, fallback = null) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const normalizeMainTextSize = (value, fallback) => {
+const toFiniteInteger = (value, fallback) => {
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric)) {
+        return fallback;
+    }
+
+    return Math.trunc(numeric);
+};
+
+const normalizeMainTextSizeLimits = (value, fallback) => {
+    const minimum = toFiniteInteger(value?.min, fallback.min);
+    const maximumSeed = toFiniteInteger(value?.max, fallback.max);
+    const maximum = Math.max(minimum, maximumSeed);
+    const defaultSeed = toFiniteInteger(value?.default, fallback.default);
+
+    return {
+        min: minimum,
+        max: maximum,
+        default: Math.max(minimum, Math.min(maximum, defaultSeed)),
+    };
+};
+
+const resolveMainTextSizeLimits = () => {
+    const limits = window.athkarMainTextSizeLimits;
+
+    if (!limits || typeof limits !== 'object') {
+        return fallbackMainTextSizeLimits;
+    }
+
+    return {
+        [minimumMainTextSizeKey]: normalizeMainTextSizeLimits(
+            limits?.[minimumMainTextSizeKey],
+            fallbackMainTextSizeLimits[minimumMainTextSizeKey],
+        ),
+        [maximumMainTextSizeKey]: normalizeMainTextSizeLimits(
+            limits?.[maximumMainTextSizeKey],
+            fallbackMainTextSizeLimits[maximumMainTextSizeKey],
+        ),
+    };
+};
+
+const normalizeMainTextSize = (value, fallback, limits) => {
     const numeric = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
     const rounded = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
 
-    return Math.min(mainTextSizeMaximum, Math.max(mainTextSizeMinimum, rounded));
+    return Math.min(limits.max, Math.max(limits.min, rounded));
 };
 
 const readStoredSettings = () => {
@@ -90,6 +140,9 @@ const readStoredSettings = () => {
 
 const resolveMainTextSizeSettings = () => {
     const defaults = window.athkarSettingsDefaults ?? {};
+    const mainTextSizeLimits = resolveMainTextSizeLimits();
+    const minimumLimits = mainTextSizeLimits[minimumMainTextSizeKey];
+    const maximumLimits = mainTextSizeLimits[maximumMainTextSizeKey];
     const stored = readStoredSettings();
     const source =
         latestSettingsOverride && typeof latestSettingsOverride === 'object'
@@ -97,16 +150,20 @@ const resolveMainTextSizeSettings = () => {
             : stored;
     const minimum = normalizeMainTextSize(
         source?.[minimumMainTextSizeKey] ?? defaults?.[minimumMainTextSizeKey],
-        minimumMainTextSizeDefault,
+        minimumLimits.default,
+        minimumLimits,
     );
     const maximum = normalizeMainTextSize(
         source?.[maximumMainTextSizeKey] ?? defaults?.[maximumMainTextSizeKey],
-        maximumMainTextSizeDefault,
+        maximumLimits.default,
+        maximumLimits,
     );
 
     return {
         minimum: Math.min(minimum, maximum),
         maximum: Math.max(minimum, maximum),
+        minimumLimits,
+        maximumLimits,
     };
 };
 
@@ -353,10 +410,10 @@ const resolveElementConfig = (textElement) => {
     const minFromDataset = parseNumber(textElement.dataset.fittyMinSizeOverride);
     const maxFromDataset = parseNumber(textElement.dataset.fittyMaxSizeOverride);
     const minSize = Number.isFinite(minFromDataset)
-        ? normalizeMainTextSize(minFromDataset, settings.minimum)
+        ? normalizeMainTextSize(minFromDataset, settings.minimum, settings.minimumLimits)
         : settings.minimum;
     const maxSizeSeed = Number.isFinite(maxFromDataset)
-        ? normalizeMainTextSize(maxFromDataset, settings.maximum)
+        ? normalizeMainTextSize(maxFromDataset, settings.maximum, settings.maximumLimits)
         : settings.maximum;
     const maxSize = Math.max(minSize, maxSizeSeed);
     const step = parseNumber(textElement.dataset.fittyStep, 0.5);

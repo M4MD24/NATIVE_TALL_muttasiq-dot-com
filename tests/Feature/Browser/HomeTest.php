@@ -142,7 +142,7 @@ JS);
             break;
         }
 
-        usleep(200_000);
+        usleep(testRetrySleepMicroseconds());
     }
 
     expect($snapshot)->toBeArray('Last snapshot payload: '.var_export($lastResult, true));
@@ -243,7 +243,7 @@ JS);
             break;
         }
 
-        usleep(200_000);
+        usleep(testRetrySleepMicroseconds());
     }
 
     expect($snapshot)->toBeArray('Last snapshot payload: '.var_export($lastResult, true));

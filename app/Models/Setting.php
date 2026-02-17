@@ -16,17 +16,17 @@ class Setting extends Model
 
     public const MAXIMUM_MAIN_TEXT_SIZE = 'maximum_main_text_size';
 
-    public const MIN_MAIN_TEXT_SIZE_MIN = 10;
+    public const MIN_MAIN_TEXT_SIZE_MIN = 14;
 
-    public const MIN_MAIN_TEXT_SIZE_MAX = 20;
+    public const MIN_MAIN_TEXT_SIZE_MAX = 24;
 
     public const MIN_MAIN_TEXT_SIZE_DEFAULT = 16;
 
-    public const MAX_MAIN_TEXT_SIZE_MIN = 10;
+    public const MAX_MAIN_TEXT_SIZE_MIN = 14;
 
-    public const MAX_MAIN_TEXT_SIZE_MAX = 20;
+    public const MAX_MAIN_TEXT_SIZE_MAX = 24;
 
-    public const MAX_MAIN_TEXT_SIZE_DEFAULT = 20;
+    public const MAX_MAIN_TEXT_SIZE_DEFAULT = 21;
 
     /**
      * @return array<string, array{default: bool|int, label: string, group: string, type: 'boolean'|'integer', help?: string, min?: int, max?: int}>
@@ -102,6 +102,32 @@ class Setting extends Model
         }
 
         return $defaults;
+    }
+
+    /**
+     * @return array{
+     *     minimum_main_text_size: array{min: int, max: int, default: int},
+     *     maximum_main_text_size: array{min: int, max: int, default: int}
+     * }
+     */
+    public static function mainTextSizeLimits(): array
+    {
+        $definitions = self::definitions();
+        $minimumDefinition = $definitions[self::MINIMUM_MAIN_TEXT_SIZE] ?? [];
+        $maximumDefinition = $definitions[self::MAXIMUM_MAIN_TEXT_SIZE] ?? [];
+
+        return [
+            self::MINIMUM_MAIN_TEXT_SIZE => [
+                'min' => (int) ($minimumDefinition['min'] ?? self::MIN_MAIN_TEXT_SIZE_MIN),
+                'max' => (int) ($minimumDefinition['max'] ?? self::MIN_MAIN_TEXT_SIZE_MAX),
+                'default' => (int) ($minimumDefinition['default'] ?? self::MIN_MAIN_TEXT_SIZE_DEFAULT),
+            ],
+            self::MAXIMUM_MAIN_TEXT_SIZE => [
+                'min' => (int) ($maximumDefinition['min'] ?? self::MAX_MAIN_TEXT_SIZE_MIN),
+                'max' => (int) ($maximumDefinition['max'] ?? self::MAX_MAIN_TEXT_SIZE_MAX),
+                'default' => (int) ($maximumDefinition['default'] ?? self::MAX_MAIN_TEXT_SIZE_DEFAULT),
+            ],
+        ];
     }
 
     public static function normalizeValue(string $name, mixed $value): bool|int

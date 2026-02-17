@@ -16,6 +16,7 @@ document.addEventListener('alpine:init', () => {
         athkarOverrides: window.Alpine.$persist([]).as(athkarOverridesStorageKey),
         athkar: [],
         settingsDefaults: config.athkarSettings,
+        mainTextSizeLimits: config.athkarMainTextSizeLimits ?? {},
         typeLabels: config.typeLabels ?? {},
         settings: readAthkarSettingsFromStorage(config.athkarSettings),
         activeMode: window.Alpine.$persist(null).as('athkar-active-mode'),
@@ -96,6 +97,7 @@ document.addEventListener('alpine:init', () => {
             settleTimer: null,
         },
         textShimmerController: null,
+        isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
         hintIndex: null,
         isMobileCounterOpen: false,
         readerLeaveMs: 300,
@@ -104,6 +106,9 @@ document.addEventListener('alpine:init', () => {
         transitionDistance: '1.5rem',
         isGateMenuTransition: true,
         pulseDurationMs: 520,
+        originResyncDelayMs: 180,
+        completionVisibleMs: 3000,
+        textFitSettleMs: 96,
         lastSeenDay: window.Alpine.$persist(null).as('athkar-last-day'),
         progress: window.Alpine.$persist({
             sabah: { index: 0, counts: [], ids: [], activeId: null },
@@ -114,7 +119,18 @@ document.addEventListener('alpine:init', () => {
             masaa: null,
         }).as('athkar-completed-v1'),
         init() {
+            if (this.isFastUiMode) {
+                this.readerLeaveMs = 40;
+                this.slideDurationMs = 120;
+                this.pulseDurationMs = 80;
+                this.originResyncDelayMs = 0;
+                this.completionVisibleMs = 250;
+                this.textFitSettleMs = 0;
+                this.transitionDistance = '0rem';
+            }
+
             window.athkarSettingsDefaults = this.settingsDefaults;
+            window.athkarMainTextSizeLimits = this.mainTextSizeLimits;
             this.ensureState();
             this.refreshCompletionInputMode();
             this.applyAthkarOverrides(this.athkarOverrides, { persist: true });
@@ -906,7 +922,7 @@ document.addEventListener('alpine:init', () => {
                 window.setTimeout(() => {
                     this.syncVisibleTextBoxState(index);
                     this.setupTextShimmer(null, { immediate: true });
-                }, 180);
+                }, this.originResyncDelayMs);
             });
         },
         syncVisibleTextBoxState(index = this.activeIndex) {
@@ -1579,7 +1595,7 @@ document.addEventListener('alpine:init', () => {
 
             this.completionTimer = setTimeout(() => {
                 this.isCompletionVisible = false;
-            }, 3000);
+            }, this.completionVisibleMs);
 
             setTimeout(() => {
                 if (!this.views[`athkar-app-gate`].isReaderVisible) {
@@ -1634,7 +1650,7 @@ document.addEventListener('alpine:init', () => {
                 this.textFit.settleTimer = null;
                 window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
                 this.$nextTick(() => this.setupTextShimmer());
-            }, 96);
+            }, this.textFitSettleMs);
         },
         isTouchReaderContext() {
             const bp = this.$store?.bp;
