@@ -16,6 +16,7 @@ document.addEventListener('alpine:init', () => {
         athkarOverrides: window.Alpine.$persist([]).as(athkarOverridesStorageKey),
         athkar: [],
         settingsDefaults: config.athkarSettings,
+        mainTextSizeLimits: config.athkarMainTextSizeLimits ?? {},
         typeLabels: config.typeLabels ?? {},
         settings: readAthkarSettingsFromStorage(config.athkarSettings),
         activeMode: window.Alpine.$persist(null).as('athkar-active-mode'),
@@ -115,6 +116,7 @@ document.addEventListener('alpine:init', () => {
         }).as('athkar-completed-v1'),
         init() {
             window.athkarSettingsDefaults = this.settingsDefaults;
+            window.athkarMainTextSizeLimits = this.mainTextSizeLimits;
             this.ensureState();
             this.refreshCompletionInputMode();
             this.applyAthkarOverrides(this.athkarOverrides, { persist: true });

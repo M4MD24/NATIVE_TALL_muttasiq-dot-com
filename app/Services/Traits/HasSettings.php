@@ -7,6 +7,7 @@ namespace App\Services\Traits;
 use App\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components;
+use Filament\Forms\Components\Slider\Enums\PipsMode;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Text;
 use Filament\Support\Enums\TextSize;
@@ -56,9 +57,8 @@ trait HasSettings
                                 (int) ($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
                             ])
                             ->step(1)
-                            ->tooltips()
                             ->fillTrack([false, true, false])
-                            ->pips(),
+                            ->pips(PipsMode::Steps, density: 1),
 
                         Components\Checkbox::make('does_skip_notice_panels')
                             ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))

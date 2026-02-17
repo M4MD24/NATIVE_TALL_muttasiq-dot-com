@@ -2,8 +2,64 @@ const athkarSettingsStorageKey = 'athkar-settings-v1';
 const athkarOverridesStorageKey = 'athkar-overrides-v1';
 const minimumMainTextSizeKey = 'minimum_main_text_size';
 const maximumMainTextSizeKey = 'maximum_main_text_size';
-const mainTextSizeMinimum = 10;
-const mainTextSizeMaximum = 20;
+const fallbackMainTextSizeLimits = Object.freeze({
+    [minimumMainTextSizeKey]: Object.freeze({
+        min: 10,
+        max: 24,
+        default: 16,
+    }),
+    [maximumMainTextSizeKey]: Object.freeze({
+        min: 10,
+        max: 24,
+        default: 24,
+    }),
+});
+
+const toFiniteInteger = (value, fallback) => {
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric)) {
+        return fallback;
+    }
+
+    return Math.trunc(numeric);
+};
+
+const normalizeMainTextSizeLimits = (value, fallback) => {
+    const minimum = toFiniteInteger(value?.min, fallback.min);
+    const maximumSeed = toFiniteInteger(value?.max, fallback.max);
+    const maximum = Math.max(minimum, maximumSeed);
+    const defaultSeed = toFiniteInteger(value?.default, fallback.default);
+
+    return {
+        min: minimum,
+        max: maximum,
+        default: Math.max(minimum, Math.min(maximum, defaultSeed)),
+    };
+};
+
+const resolveMainTextSizeLimits = () => {
+    if (typeof window === 'undefined') {
+        return fallbackMainTextSizeLimits;
+    }
+
+    const limits = window.athkarMainTextSizeLimits;
+
+    if (!limits || typeof limits !== 'object') {
+        return fallbackMainTextSizeLimits;
+    }
+
+    return {
+        [minimumMainTextSizeKey]: normalizeMainTextSizeLimits(
+            limits?.[minimumMainTextSizeKey],
+            fallbackMainTextSizeLimits[minimumMainTextSizeKey],
+        ),
+        [maximumMainTextSizeKey]: normalizeMainTextSizeLimits(
+            limits?.[maximumMainTextSizeKey],
+            fallbackMainTextSizeLimits[maximumMainTextSizeKey],
+        ),
+    };
+};
 
 const normalizeBooleanSettingValue = (value, fallback) => {
     if (typeof value === 'boolean') {
@@ -40,7 +96,14 @@ const normalizeIntegerSettingValue = (key, value, fallback) => {
     let normalized = Number.isFinite(numeric) ? Math.trunc(numeric) : Number(fallback);
 
     if (key === minimumMainTextSizeKey || key === maximumMainTextSizeKey) {
-        normalized = Math.max(mainTextSizeMinimum, Math.min(mainTextSizeMaximum, normalized));
+        const mainTextSizeLimits = resolveMainTextSizeLimits()[key];
+
+        if (mainTextSizeLimits) {
+            normalized = Math.max(
+                mainTextSizeLimits.min,
+                Math.min(mainTextSizeLimits.max, normalized),
+            );
+        }
     }
 
     return normalized;

@@ -35,7 +35,10 @@ it('does not persist settings changes globally', function () {
 it('normalizes the main text size range in the settings modal', function () {
     livewire(Settings::class)
         ->callAction('settings', data: [
-            'main_text_size_range' => [9, 21],
+            'main_text_size_range' => [
+                Setting::MIN_MAIN_TEXT_SIZE_MIN - 1,
+                Setting::MAX_MAIN_TEXT_SIZE_MAX + 1,
+            ],
         ])
         ->assertHasFormErrors(['main_text_size_range.0', 'main_text_size_range.1']);
 
