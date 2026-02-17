@@ -412,10 +412,15 @@
             width: 0.46rem;
         }
 
+        @media (max-width: 639px) {
+            .athkar-text-box--touch-scroll {
+                inline-size: calc(100% - 3px);
+            }
+        }
+
         .athkar-text-box--touch-scroll::-webkit-scrollbar-track {
             border-radius: 999px;
             background: var(--athkar-scrollbar-track);
-            margin-block: 0.5rem;
         }
 
         .athkar-text-box--touch-scroll::-webkit-scrollbar-thumb {
@@ -425,6 +430,7 @@
             background: linear-gradient(180deg,
                     var(--athkar-scrollbar-thumb),
                     color-mix(in srgb, var(--athkar-scrollbar-thumb) 78%, var(--background-dark) 22%));
+            background-clip: padding-box;
             box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning-300) 22%, transparent);
         }
 
@@ -988,7 +994,7 @@
 
                             <!-- Label -->
                             <div
-                                class="pointer-events-none absolute -left-12 top-1/2 z-30 -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 opacity-0 transition-opacity dark:text-gray-300"
+                                class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 opacity-0 transition-opacity dark:text-gray-300"
                                 x-bind:class="isHintOpen(index) && 'opacity-100!'"
                             >
                                 العدد
@@ -1016,7 +1022,7 @@
                                 x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
                             >
                                 <x-icon
-                                    class="h-4 w-4"
+                                    class="relative -left-px top-[-2px] h-4 w-4 sm:left-0 sm:top-0"
                                     name="bootstrap.exclamation-diamond"
                                 />
                             </button>
@@ -1189,11 +1195,11 @@
                                             data-fitty-enabled="false"
                                             data-fitty-overflow-active="false"
                                             data-fitty-step="0.5"
-                                            data-fitty-safe-padding-x="6"
-                                            data-fitty-safe-padding-y="4"
+                                            data-fitty-safe-padding-x="2"
+                                            data-fitty-safe-padding-y="2"
                                             data-fitty-manage-overflow="true"
                                             data-fitty-enable-touch-scroll="true"
-                                            data-fitty-overflow-padding-class="py-2"
+                                            data-fitty-overflow-padding-class="py-1"
                                             data-fitty-overflow-target="text"
                                             data-athkar-shimmer
                                             data-shimmer-duration="3000"
@@ -1220,11 +1226,11 @@
                                             data-fitty-enabled="false"
                                             data-fitty-overflow-active="false"
                                             data-fitty-step="0.5"
-                                            data-fitty-safe-padding-x="6"
-                                            data-fitty-safe-padding-y="4"
+                                            data-fitty-safe-padding-x="2"
+                                            data-fitty-safe-padding-y="2"
                                             data-fitty-manage-overflow="true"
                                             data-fitty-enable-touch-scroll="true"
-                                            data-fitty-overflow-padding-class="py-2"
+                                            data-fitty-overflow-padding-class="py-1"
                                             data-fitty-overflow-target="origin"
                                             dir="rtl"
                                             x-bind:data-fitty-enabled="(activeIndex === index).toString()"
