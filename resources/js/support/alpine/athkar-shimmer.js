@@ -25,17 +25,7 @@ const parseTime = (value, fallback) => {
     return parsed;
 };
 
-const isFastUiMode = () => window.__APP_BROWSER_TEST_FAST_UI === true;
-
 export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisible } = {}) => {
-    if (isFastUiMode()) {
-        return {
-            setup: () => {},
-            stop: () => {},
-            destroy: () => {},
-        };
-    }
-
     const state = {
         target: null,
         timer: null,

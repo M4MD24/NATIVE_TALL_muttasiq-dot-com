@@ -142,6 +142,16 @@ function js_template(string $template, array $bindings = []): string
     return $template;
 }
 
+function isFastBrowserMode(): bool
+{
+    return filter_var(env('BROWSER_TEST_FAST_MODE', false), FILTER_VALIDATE_BOOL);
+}
+
+function testRetrySleepMicroseconds(): int
+{
+    return isFastBrowserMode() ? 20_000 : 200_000;
+}
+
 function waitForScript($page, string $expression, mixed $expected = true): void
 {
     Execution::instance()->waitForExpectation(
@@ -161,7 +171,7 @@ function waitForScript($page, string $expression, mixed $expected = true): void
                         );
                     }
 
-                    usleep(200_000);
+                    usleep(testRetrySleepMicroseconds());
                 }
             }
 
@@ -351,7 +361,7 @@ function safeBrowserResize($page, int $width, int $height): void
 
             return;
         } catch (Throwable) {
-            usleep(200_000);
+            usleep(testRetrySleepMicroseconds());
         }
     }
 }
@@ -481,6 +491,16 @@ JS, ['caption' => $caption])));
 
 function openAthkarGate($page, bool $isMobile): void
 {
+    if (isFastBrowserMode()) {
+        waitForScript($page, homeDataScript('typeof data.applyViewState === "function"'), true);
+        ensureAthkarGateView($page);
+        waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
+        waitForScript($page, 'window.location.hash', '#athkar-app-gate');
+        waitForGateVisible($page);
+
+        return;
+    }
+
     waitForScript($page, homeDataScript('typeof data.applyViewState === "function"'), true);
     waitForScript($page, mainMenuDataScript('data.isTouchDevice !== null'), true);
     waitForScript($page, 'window.location.hash', '#main-menu');
@@ -592,6 +612,12 @@ function confirmAthkarNotice($page): void
 
 function openAthkarReader($page, string $mode, bool $isMobile): void
 {
+    if (isFastBrowserMode()) {
+        openAthkarReaderFast($page, $mode, $isMobile);
+
+        return;
+    }
+
     openAthkarGate($page, $isMobile);
     openAthkarNotice($page, $mode, $isMobile);
     confirmAthkarNotice($page);
@@ -613,6 +639,51 @@ JS));
 
     waitForScript($page, athkarReaderDataScript('data.activeMode'), $mode);
     waitForScript($page, athkarReaderDataScript('data.activeList.length > 0'), true);
+    waitForReaderVisible($page);
+}
+
+function openAthkarReaderFast($page, string $mode, bool $isMobile): void
+{
+    openAthkarGate($page, $isMobile);
+
+    $view = $mode === 'sabah' ? 'athkar-app-sabah' : 'athkar-app-masaa';
+    $hash = '#'.$view;
+
+    if ($page->script(homeDataScript('data.activeView')) !== $view) {
+        forceHomeView($page, $view);
+    }
+
+    if ($page->script('window.location.hash') !== $hash) {
+        setHashOnly($page, $hash, true, true);
+    }
+
+    $page->script(homeDataCommandScript(<<<'JS'
+views['athkar-app-gate'].isReaderVisible = true;
+JS));
+    $page->script(athkarReaderCommandScript(js_template(<<<'JS'
+const mode = {{mode}};
+
+if (typeof data.restoreMode === 'function') {
+  data.restoreMode(mode);
+}
+
+if (data.isNoticeVisible && typeof data.confirmNotice === 'function') {
+  data.confirmNotice();
+}
+
+if (data.views?.['athkar-app-gate']) {
+  data.views['athkar-app-gate'].isReaderVisible = true;
+}
+JS, ['mode' => $mode])));
+
+    setLocalStorageValue($page, 'athkar-active-mode', $mode);
+    setLocalStorageValue($page, 'athkar-reader-visible', true);
+    setLocalStorageValue($page, 'app-active-view', $view);
+
+    waitForScript($page, athkarReaderDataScript('data.activeMode'), $mode);
+    waitForScript($page, athkarReaderDataScript('data.activeList.length > 0'), true);
+    waitForScript($page, homeDataScript('data.activeView'), $view);
+    waitForScript($page, 'window.location.hash', $hash);
     waitForReaderVisible($page);
 }
 
@@ -908,23 +979,25 @@ JS, ['settings' => $settings]));
 
 function waitForAthkarSettings($page, array $settings): void
 {
+    $expressions = [];
+
     foreach ($settings as $key => $value) {
         if (is_bool($value)) {
             $expected = $value ? 'true' : 'false';
-            $expression = "Boolean(data.settings?.{$key}) === {$expected}";
+            $expressions[] = "Boolean(data.settings?.{$key}) === {$expected}";
         } elseif (is_numeric($value)) {
-            $expression = 'Number(data.settings?.'.$key.') === '.(int) $value;
+            $expressions[] = 'Number(data.settings?.'.$key.') === '.(int) $value;
         } else {
             $expected = js_encode($value);
-            $expression = "data.settings?.{$key} === {$expected}";
+            $expressions[] = "data.settings?.{$key} === {$expected}";
         }
-
-        waitForScript(
-            $page,
-            athkarReaderDataScript($expression),
-            true,
-        );
     }
+
+    if ($expressions === []) {
+        return;
+    }
+
+    waitForScript($page, athkarReaderDataScript(implode(' && ', $expressions)), true);
 }
 
 function clickModalAction($page, string $label): void

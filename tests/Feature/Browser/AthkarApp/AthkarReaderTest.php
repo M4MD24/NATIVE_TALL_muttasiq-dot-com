@@ -1354,11 +1354,34 @@ it('shows single-thikr completion button on touch tablets without hover', functi
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
 
     $selector = '[data-athkar-slide][data-active="true"] .sm\\:flex button[aria-label="إتمام الذكر"]';
-    $buttonState = null;
+    waitForScript(
+        $page,
+        js_template(<<<'JS'
+(() => {
+  const button = document.querySelector({{selector}});
+  const bp = window.Alpine?.store?.('bp');
 
-    for ($attempt = 1; $attempt <= 20; $attempt++) {
-        /** @var array<string, mixed> $state */
-        $state = $page->script(js_template(<<<'JS'
+  if (!button || !bp) {
+    return false;
+  }
+
+  const styles = getComputedStyle(button);
+
+  return (
+    bp.isTouch?.() === true &&
+    bp.is?.('sm+') === true &&
+    styles.opacity === '1' &&
+    styles.pointerEvents !== 'none'
+  );
+})()
+JS,
+            ['selector' => $selector],
+        ),
+        true,
+    );
+
+    /** @var array<string, mixed> $buttonState */
+    $buttonState = $page->script(js_template(<<<'JS'
 (() => {
   const button = document.querySelector({{selector}});
   const bp = window.Alpine?.store?.('bp');
@@ -1387,19 +1410,6 @@ it('shows single-thikr completion button on touch tablets without hover', functi
   };
 })()
 JS, ['selector' => $selector]));
-
-        $buttonState = $state;
-
-        if (
-            ($state['exists'] ?? false) === true
-            && ($state['opacity'] ?? '0') === '1'
-            && ($state['pointerEvents'] ?? 'none') !== 'none'
-        ) {
-            break;
-        }
-
-        usleep(200_000);
-    }
 
     expect($buttonState['exists'] ?? false)->toBeTrue('Button state: '.var_export($buttonState, true));
     expect($buttonState['opacity'] ?? null)->toBe('1', 'Button state: '.var_export($buttonState, true));
@@ -1619,6 +1629,7 @@ it('re-arms shimmer when toggling between text and origin layers', function () {
     openAthkarReader($page, 'sabah', false);
     enableMobileContext($page);
     waitForReaderVisible($page);
+    $expectsShimmer = ! isFastBrowserMode();
 
     $originIndex = $page->script(
         athkarReaderDataScript(
@@ -1668,12 +1679,22 @@ JS, ['index' => $originIndex])));
 
     waitForScript(
         $page,
-        <<<'JS'
+        js_template(<<<'JS'
 (() => {
   const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
-  return Boolean(text?.classList.contains('is-shimmering'));
+  const expectsShimmer = Boolean({{expectsShimmer}});
+
+  if (!text) {
+    return false;
+  }
+
+  if (!expectsShimmer) {
+    return true;
+  }
+
+  return text.classList.contains('is-shimmering');
 })()
-JS,
+JS, ['expectsShimmer' => $expectsShimmer]),
         true,
     );
 
@@ -1681,15 +1702,24 @@ JS,
 
     waitForScript(
         $page,
-        <<<'JS'
+        js_template(<<<'JS'
 (() => {
   const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
   const origin = slide?.querySelector('[data-athkar-origin-text]');
   const isVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+  const expectsShimmer = Boolean({{expectsShimmer}});
 
-  return Boolean(isVisible && origin?.classList.contains('is-shimmering'));
+  if (!isVisible || !origin) {
+    return false;
+  }
+
+  if (!expectsShimmer) {
+    return true;
+  }
+
+  return origin.classList.contains('is-shimmering');
 })()
-JS,
+JS, ['expectsShimmer' => $expectsShimmer]),
         true,
     );
 
@@ -1697,15 +1727,24 @@ JS,
 
     waitForScript(
         $page,
-        <<<'JS'
+        js_template(<<<'JS'
 (() => {
   const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
   const text = slide?.querySelector('[data-athkar-text]');
   const isOriginVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+  const expectsShimmer = Boolean({{expectsShimmer}});
 
-  return Boolean(!isOriginVisible && text?.classList.contains('is-shimmering'));
+  if (isOriginVisible || !text) {
+    return false;
+  }
+
+  if (!expectsShimmer) {
+    return true;
+  }
+
+  return text.classList.contains('is-shimmering');
 })()
-JS,
+JS, ['expectsShimmer' => $expectsShimmer]),
         true,
     );
 });
