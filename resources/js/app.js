@@ -4,9 +4,9 @@ import './support/animate-scroll';
 
 import './packages/alpine/hash-actions';
 import './packages/alpine/hooks.js';
+import './packages/alpine/tippy';
 import './packages/nativephp/browser.js';
 import './packages/color';
-import './packages/tippy';
 import './packages/fitty';
 import './packages/anime';
 

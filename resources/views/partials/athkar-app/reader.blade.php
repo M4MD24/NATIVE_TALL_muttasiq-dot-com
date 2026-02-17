@@ -465,6 +465,12 @@
             pointer-events: none;
         }
 
+        .athkar-tap.athkar-tap--overflow-toggle .athkar-main-text.is-main-hidden,
+        .athkar-tap.athkar-tap--overflow-toggle .athkar-origin-text:not(.is-origin-visible) {
+            opacity: 0 !important;
+            transition: none !important;
+        }
+
         .athkar-text-box--touch-scroll:not(.athkar-text-box--origin-scroll) .athkar-main-text {
             position: static;
             inset: auto;
@@ -1160,6 +1166,7 @@
                                     'opacity-30!': isHintOpen(index),
                                     'athkar-tap--pulse': tapPulse.index === index && tapPulse.isActive,
                                     'is-origin-active': isOriginVisible(index),
+                                    'athkar-tap--overflow-toggle': isOverflowToggleTransition(index),
                                 }"
                             >
                                 <div

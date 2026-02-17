@@ -8,6 +8,7 @@ import {
     writeAthkarOverridesToStorage,
     writeAthkarSettingsToStorage,
 } from '../athkar-app-overrides';
+import { createAthkarShimmerController } from '../athkar-shimmer';
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppReader', (config) => ({
@@ -94,13 +95,11 @@ document.addEventListener('alpine:init', () => {
             raf: null,
             settleTimer: null,
         },
-        textShimmer: {
-            target: null,
+        textShimmerController: null,
+        originToggleTransition: {
+            index: null,
+            isOverflowFast: false,
             timer: null,
-            runTimer: null,
-            duration: 1000,
-            delay: 1000,
-            pause: 4000,
         },
         hintIndex: null,
         isMobileCounterOpen: false,
@@ -216,6 +215,10 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.setupTextFit();
+            this.textShimmerController = createAthkarShimmerController({
+                resolveRoot: () => this.$el,
+                resolveIsOriginVisible: () => this.isOriginVisible(this.activeIndex),
+            });
             this.$watch('activeMode', () => {
                 this.hideOrigin();
                 this.queueTextFit();
@@ -891,6 +894,8 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            this.beginOriginToggleTransition(index);
+
             if (this.isOriginVisible(index)) {
                 this.hideOrigin();
             } else {
@@ -901,11 +906,66 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.$nextTick(() => {
+                this.syncVisibleTextBoxState(index);
                 this.stopTextShimmer();
                 this.queueReaderTextFit();
-                this.setupTextShimmer();
-                window.setTimeout(() => this.setupTextShimmer(), 320);
+                this.setupTextShimmer(null, { immediate: true });
+                window.setTimeout(() => {
+                    this.syncVisibleTextBoxState(index);
+                    this.setupTextShimmer(null, { immediate: true });
+                }, 180);
             });
+        },
+        beginOriginToggleTransition(index = this.activeIndex) {
+            if (this.originToggleTransition.timer) {
+                clearTimeout(this.originToggleTransition.timer);
+                this.originToggleTransition.timer = null;
+            }
+
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = activeSlide?.querySelector('[data-athkar-text-box]');
+            const hasOverflow =
+                box?.dataset?.athkarTextOverflow === 'true' || box?.dataset?.athkarOriginOverflow === 'true';
+
+            this.originToggleTransition.index = index;
+            this.originToggleTransition.isOverflowFast = hasOverflow;
+
+            if (!hasOverflow) {
+                return;
+            }
+
+            this.originToggleTransition.timer = setTimeout(() => {
+                this.originToggleTransition.timer = null;
+                this.originToggleTransition.isOverflowFast = false;
+                this.originToggleTransition.index = null;
+            }, 220);
+        },
+        isOverflowToggleTransition(index) {
+            return (
+                this.originToggleTransition.isOverflowFast &&
+                this.originToggleTransition.index === index &&
+                this.activeIndex === index
+            );
+        },
+        syncVisibleTextBoxState(index = this.activeIndex) {
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = activeSlide?.querySelector('[data-athkar-text-box]');
+
+            if (!box) {
+                return;
+            }
+
+            const isOriginTarget = this.isOriginVisible(index);
+            const target = isOriginTarget ? 'origin' : 'text';
+            const isOverflowing = isOriginTarget
+                ? box.dataset.athkarOriginOverflow === 'true'
+                : box.dataset.athkarTextOverflow === 'true';
+
+            box.dataset.athkarScrollTarget = target;
+            box.dataset.athkarTouchScroll = isOverflowing ? 'true' : 'false';
+            box.dataset.athkarTouchOverflow = isOverflowing ? 'true' : 'false';
+            box.classList.toggle('athkar-text-box--touch-scroll', isOverflowing);
+            box.classList.toggle('athkar-text-box--origin-scroll', isOverflowing && isOriginTarget);
         },
         hideOrigin() {
             this.originToggle = {
@@ -1733,125 +1793,11 @@ document.addEventListener('alpine:init', () => {
             this.textScroll.pointerId = null;
             this.textScroll.element = null;
         },
-        setupTextShimmer(text = null) {
-            const activeSlide = this.$el.querySelector('[data-athkar-slide][data-active="true"]');
-            const isOriginActive = this.isOriginVisible(this.activeIndex);
-            const target =
-                text ??
-                activeSlide?.querySelector(
-                    isOriginActive ? '[data-athkar-origin-text]' : '[data-athkar-text]',
-                );
-
-            if (!target || target.classList.contains('athkar-text--muted')) {
-                this.stopTextShimmer();
-                return;
-            }
-
-            activeSlide?.querySelectorAll('[data-athkar-shimmer].is-shimmering').forEach((node) => {
-                if (node !== target) {
-                    node.classList.remove('is-shimmering');
-                }
-            });
-
-            this.attachTextShimmer(target);
-        },
-        attachTextShimmer(text) {
-            if (this.textShimmer.target === text) {
-                if (!this.textShimmer.timer && !this.textShimmer.runTimer) {
-                    this.scheduleTextShimmer();
-                }
-
-                return;
-            }
-
-            this.stopTextShimmer();
-            this.textShimmer.target = text;
-            text.classList.add('athkar-shimmer');
-
-            const parseTime = (value, fallback) => {
-                if (value === null || value === undefined) {
-                    return fallback;
-                }
-
-                const str = String(value).trim();
-                const parsed = Number.parseFloat(str);
-
-                if (!Number.isFinite(parsed)) {
-                    return fallback;
-                }
-
-                if (str.endsWith('ms')) {
-                    return parsed;
-                }
-
-                if (str.endsWith('s')) {
-                    return parsed * 1000;
-                }
-
-                return parsed;
-            };
-
-            const duration = parseTime(text.dataset.shimmerDuration, 1000);
-            const delay = parseTime(text.dataset.shimmerDelay, 1000);
-            const pause = parseTime(text.dataset.shimmerPause, 4000);
-
-            this.textShimmer.duration = Number.isFinite(duration) ? duration : 1000;
-            this.textShimmer.delay = Number.isFinite(delay) ? delay : 1000;
-            this.textShimmer.pause = Number.isFinite(pause) ? pause : 4000;
-
-            text.style.setProperty('--shimmer-duration', `${this.textShimmer.duration}ms`);
-            this.scheduleTextShimmer();
-        },
-        scheduleTextShimmer() {
-            this.clearTextShimmerTimers();
-
-            const { target, delay, duration, pause } = this.textShimmer;
-
-            if (!target) {
-                return;
-            }
-
-            const run = () => {
-                if (!this.textShimmer.target || this.textShimmer.target !== target) {
-                    return;
-                }
-
-                target.classList.add('is-shimmering');
-                this.textShimmer.runTimer = setTimeout(() => {
-                    if (this.textShimmer.target !== target) {
-                        return;
-                    }
-
-                    target.classList.remove('is-shimmering');
-                    this.textShimmer.timer = setTimeout(run, pause);
-                }, duration);
-            };
-
-            this.textShimmer.timer = setTimeout(run, delay);
-        },
-        clearTextShimmerTimers() {
-            if (this.textShimmer.timer) {
-                clearTimeout(this.textShimmer.timer);
-                this.textShimmer.timer = null;
-            }
-
-            if (this.textShimmer.runTimer) {
-                clearTimeout(this.textShimmer.runTimer);
-                this.textShimmer.runTimer = null;
-            }
+        setupTextShimmer(text = null, options = {}) {
+            this.textShimmerController?.setup(text, options);
         },
         stopTextShimmer() {
-            this.clearTextShimmerTimers();
-
-            if (this.textShimmer.target) {
-                this.textShimmer.target.classList.remove('is-shimmering');
-            }
-
-            this.$el
-                ?.querySelectorAll('[data-athkar-shimmer].is-shimmering')
-                .forEach((node) => node.classList.remove('is-shimmering'));
-
-            this.textShimmer.target = null;
+            this.textShimmerController?.stop();
         },
         swipePoint(event) {
             if (event?.touches?.length) {

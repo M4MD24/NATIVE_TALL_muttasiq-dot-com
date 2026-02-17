@@ -308,10 +308,6 @@ const applyOverflowState = ({ textElement, boxElement, overflowState, overflowTa
     }
 
     if (!activeForOverflow) {
-        if ((boxElement.dataset.athkarScrollTarget ?? 'text') === overflowTarget) {
-            clearTouchOverflowState(boxElement, paddingClass);
-        }
-
         return;
     }
 
