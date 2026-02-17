@@ -1041,7 +1041,7 @@
                                 x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
                             >
                                 <x-icon
-                                    class="relative -left-px top-[-2px] h-4 w-4 sm:left-0 sm:top-0"
+                                    class="relative -left-px -top-px h-6 w-6 sm:left-0 sm:top-0"
                                     name="bootstrap.exclamation-diamond"
                                 />
                             </button>

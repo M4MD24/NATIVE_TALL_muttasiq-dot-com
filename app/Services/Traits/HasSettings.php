@@ -9,8 +9,13 @@ use Filament\Actions\Action;
 use Filament\Forms\Components;
 use Filament\Forms\Components\Slider\Enums\PipsMode;
 use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Image;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
 use Filament\Support\Enums\TextSize;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\HtmlString;
 
 trait HasSettings
 {
@@ -35,58 +40,146 @@ trait HasSettings
         $generalDefinitions = Setting::definitionsForGroup(Setting::GROUP_GENERAL);
 
         return Action::make('settings')
-            ->label('الإعدادات')
-            ->modalDescription('وبعض التفضيلات في كيفية عمل التطبيق')
+            ->label('لوحة التحكم')
+            ->modalDescription('بعض المعلومات والتفضيلات في كيفية عمل التطبيق')
             ->modalSubmitActionLabel('حفظ')
             ->fillForm(fn (): array => $this->loadSettings())
             ->schema([
-                Fieldset::make('العامة')
-                    ->columns([
-                        'default' => 1,
-                        'md' => 2,
-                    ])
-                    ->schema([
-                        Components\Slider::make(self::MAIN_TEXT_SIZE_RANGE)
-                            ->label('1. نطاق حجم النصوص المحورية (الأدنى/الأقصى).')
-                            ->range(
-                                minValue: Setting::MIN_MAIN_TEXT_SIZE_MIN,
-                                maxValue: Setting::MAX_MAIN_TEXT_SIZE_MAX,
-                            )
-                            ->default([
-                                (int) ($generalDefinitions[Setting::MINIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
-                                (int) ($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
-                            ])
-                            ->step(1)
-                            ->fillTrack([false, true, false])
-                            ->pips(PipsMode::Steps, density: 1),
+                Tabs::make('Tabs')
+                    ->tabs([
+                        Tab::make('الإعدادات')
+                            ->icon('heroicon-s-adjustments-horizontal')
+                            ->schema([
+                                Fieldset::make('العامة')
+                                    ->columns([
+                                        'default' => 1,
+                                        'md' => 2,
+                                    ])
+                                    ->schema([
+                                        Components\Slider::make(self::MAIN_TEXT_SIZE_RANGE)
+                                            ->label('1. نطاق حجم النصوص المحورية (الأدنى/الأقصى).')
+                                            ->extraFieldWrapperAttributes(['class' => 'pb-6 sm:pb-8 md:pb-0'])
+                                            ->range(
+                                                minValue: Setting::MIN_MAIN_TEXT_SIZE_MIN,
+                                                maxValue: Setting::MAX_MAIN_TEXT_SIZE_MAX,
+                                            )
+                                            ->default([
+                                                (int) ($generalDefinitions[Setting::MINIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
+                                                (int) ($generalDefinitions[Setting::MAXIMUM_MAIN_TEXT_SIZE]['default'] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
+                                            ])
+                                            ->step(1)
+                                            ->fillTrack([false, true, false])
+                                            ->pips(PipsMode::Steps, density: 1),
 
-                        Components\Checkbox::make('does_skip_notice_panels')
-                            ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
-                            ->label($generalDefinitions['does_skip_notice_panels']['label']),
-                    ]),
-                Fieldset::make('الأذكار')
-                    ->columns([
-                        'default' => 1,
-                        'md' => 2,
-                        'xl' => 3,
-                    ])
-                    ->schema([
-                        Components\Checkbox::make('does_automatically_switch_completed_athkar')
-                            ->default((bool) ($athkarDefinitions['does_automatically_switch_completed_athkar']['default'] ?? true))
-                            ->label($athkarDefinitions['does_automatically_switch_completed_athkar']['label']),
+                                        Components\Checkbox::make('does_skip_notice_panels')
+                                            ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
+                                            ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-2 sm:mt-3 md:mt-0'])
+                                            ->label($generalDefinitions['does_skip_notice_panels']['label']),
+                                    ]),
 
-                        Components\Checkbox::make('does_clicking_switch_athkar_too')
-                            ->default((bool) ($athkarDefinitions['does_clicking_switch_athkar_too']['default'] ?? true))
-                            ->label($athkarDefinitions['does_clicking_switch_athkar_too']['label'])
-                            ->belowContent([
-                                Text::make((string) ($athkarDefinitions['does_clicking_switch_athkar_too']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                                Fieldset::make('الأذكار')
+                                    ->columns([
+                                        'default' => 1,
+                                        'md' => 2,
+                                        'xl' => 3,
+                                    ])
+                                    ->schema([
+                                        Components\Checkbox::make('does_automatically_switch_completed_athkar')
+                                            ->default((bool) ($athkarDefinitions['does_automatically_switch_completed_athkar']['default'] ?? true))
+                                            ->label($athkarDefinitions['does_automatically_switch_completed_athkar']['label']),
+
+                                        Components\Checkbox::make('does_clicking_switch_athkar_too')
+                                            ->default((bool) ($athkarDefinitions['does_clicking_switch_athkar_too']['default'] ?? true))
+                                            ->label($athkarDefinitions['does_clicking_switch_athkar_too']['label'])
+                                            ->belowContent([
+                                                Text::make((string) ($athkarDefinitions['does_clicking_switch_athkar_too']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                                            ]),
+
+                                        Components\Checkbox::make('does_prevent_switching_athkar_until_completion')
+                                            ->default((bool) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['default'] ?? true))
+                                            ->label($athkarDefinitions['does_prevent_switching_athkar_until_completion']['label'])
+                                            ->belowContent([
+                                                Text::make((string) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                                            ]),
+                                    ]),
                             ]),
 
-                        Components\Checkbox::make('does_prevent_switching_athkar_until_completion')
-                            ->default((bool) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['default'] ?? true))
-                            ->label($athkarDefinitions['does_prevent_switching_athkar_until_completion']['label'])
-                            ->belowContent([
-                                Text::make((string) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                        Tab::make('تحديثات')
+                            ->icon('material-design.update')
+                            ->schema([
+                                Text::make(fn (): HtmlString => $this->changelogsMarkdown())
+                                    ->extraAttributes(['class' => 'block w-full']),
+                            ]),
+
+                        Tab::make('حولنا')
+                            ->icon('phosphor.warning-diamond-fill')
+                            ->schema([
+                                Text::make('تطبيق متسق')
+                                    ->size(TextSize::Large)
+                                    ->color('black')
+                                    ->extraAttributes(['class' => 'block w-full text-center -mb-5']),
+
+                                Image::make(
+                                    url: asset('icon.png'),
+                                    alt: 'Muttasiq application icono',
+                                )
+                                    ->imageSize('10rem')
+                                    ->alignCenter()
+                                    ->extraAttributes([
+                                        'class' => 'mx-auto cursor-pointer border-0',
+                                        'role' => 'button',
+                                        'tabindex' => '0',
+                                        'x-on:click' => open_link_native_aware('https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com'),
+                                        'x-on:keydown.enter.prevent' => open_link_native_aware('https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com'),
+                                        'x-on:keydown.space.prevent' => open_link_native_aware('https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com'),
+                                    ]),
+
+                                Text::make('روابط سريعة:')
+                                    ->size(TextSize::Small)
+                                    ->color('gray')
+                                    ->extraAttributes(['class' => 'block w-full text-center']),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_source_code',
+                                    label: 'الترميز مفتوح المصدر',
+                                    url: 'https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com',
+                                    icon: 'heroicon-s-code-bracket',
+                                ),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_main_missions',
+                                    label: 'المهام الرئيسية للتطبيق',
+                                    url: 'https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/?tab=readme-ov-file#%D8%A7%D9%84%D9%85%D9%87%D8%A7%D9%85',
+                                    icon: 'heroicon-s-clipboard-document-list',
+                                ),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_discussions',
+                                    label: 'الاقتراحات ونقاشها',
+                                    url: 'https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/discussions',
+                                    icon: 'heroicon-s-chat-bubble-left-right',
+                                ),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_bug_reports',
+                                    label: 'التبليغ عن الأخطاء',
+                                    url: 'https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues',
+                                    icon: 'bootstrap.x-circle-fill',
+                                ),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_current_development',
+                                    label: 'التطوير التفصيلي الحالي',
+                                    url: 'https://github.com/users/GoodM4ven/projects/5/views/1',
+                                    icon: 'ant-design.code',
+                                ),
+
+                                $this->developmentLinkAction(
+                                    name: 'open_project_support',
+                                    label: 'دعم المشروع',
+                                    url: 'https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com?tab=readme-ov-file#%D8%A7%D9%84%D8%AF%D8%B9%D9%85',
+                                    icon: 'bootstrap.lightning-charge-fill',
+                                ),
                             ]),
                     ]),
             ])
@@ -147,5 +240,64 @@ trait HasSettings
         return Setting::normalizeSettings(
             array_intersect_key($settings, self::settingsDefaults()),
         );
+    }
+
+    private function developmentLinkAction(string $name, string $label, string $url, string $icon): Action
+    {
+        return Action::make($name)
+            ->label($label)
+            ->icon($icon)
+            ->link()
+            ->extraAttributes(['class' => 'flex w-fit mx-auto items-center gap-1.5 whitespace-nowrap text-center'])
+            ->actionJs(open_link_native_aware(url: $url));
+    }
+
+    private function changelogsMarkdown(): HtmlString
+    {
+        $markdown = File::get(public_path('docs/updates/changelogs.md'));
+
+        $markdown = preg_replace('/^\s*<div align="right">\s*/', '', $markdown) ?? $markdown;
+        $markdown = preg_replace('/\s*<\/div>\s*$/', '', $markdown) ?? $markdown;
+        $markdown = str_replace('src="images/', 'src="/docs/updates/images/', $markdown);
+        $markdown = str_replace("src='images/", "src='/docs/updates/images/", $markdown);
+        $markdown = str_replace('](images/', '](/docs/updates/images/', $markdown);
+
+        $html = str($markdown)
+            ->markdown()
+            ->sanitizeHtml()
+            ->toString();
+
+        $html = preg_replace_callback(
+            '/<a\b[^>]*href="([^"]+)"[^>]*>/i',
+            function (array $matches): string {
+                $tag = $matches[0];
+
+                if (str_contains($tag, 'x-on:click.prevent=')) {
+                    return $tag;
+                }
+
+                $href = html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $openLinkNativeAware = htmlspecialchars(open_link_native_aware($href), ENT_QUOTES, 'UTF-8');
+
+                return rtrim(substr($tag, 0, -1))
+                    .' x-on:click.prevent="'.$openLinkNativeAware.'"'
+                    .' x-on:keydown.enter.prevent="'.$openLinkNativeAware.'"'
+                    .' x-on:keydown.space.prevent="'.$openLinkNativeAware.'">';
+            },
+            $html,
+        ) ?? $html;
+
+        return new HtmlString(<<<HTML
+            <article class="mx-auto w-full max-w-3xl text-right leading-7
+                [&_h2]:mt-8 [&_h2:first-child]:mt-0 [&_h2]:mb-4 [&_h2]:border-b [&_h2]:border-slate-200 [&_h2]:pb-2 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-800 dark:[&_h2]:border-slate-700 dark:[&_h2]:text-slate-100
+                [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-700 dark:[&_h3]:text-slate-200
+                [&_p]:my-1 [&_p]:text-sm [&_p]:text-slate-600 dark:[&_p]:text-slate-300
+                [&_ul]:my-2 [&_ul]:list-disc [&_ul]:list-inside [&_ul]:space-y-1
+                [&_li]:text-sm [&_li]:text-slate-700 dark:[&_li]:text-slate-200
+                [&_a]:font-medium [&_a]:text-slate-700 [&_a]:underline [&_a]:decoration-2 [&_a]:decoration-slate-400 [&_a]:underline-offset-6 hover:[&_a]:text-slate-900 dark:[&_a]:text-slate-200 dark:[&_a]:decoration-slate-500 dark:hover:[&_a]:text-white
+                [&_img]:my-4 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-h-80 [&_img]:rounded-lg [&_img]:border [&_img]:border-slate-200 dark:[&_img]:border-slate-700">
+                {$html}
+            </article>
+            HTML);
     }
 }

@@ -8,6 +8,7 @@ return [
 
         'app_description' => 'تطبيق يعين على الإسلام والالتزام باتساق ويسر بإذن الله...',
         'app_keywords' => 'islam, muslim, thikr, athkar',
+        'app_version' => env('NATIVEPHP_APP_VERSION'),
 
         'admin_path' => env('ADMIN_PATH', 'admin'),
 
@@ -58,7 +59,7 @@ return [
         'filament' => [
             'background_colors' => [
                 'shell' => [
-                    'light' => null,
+                    'light' => '#FEFEFE',
                     'dark' => '#505358',
                 ],
                 'surface' => [

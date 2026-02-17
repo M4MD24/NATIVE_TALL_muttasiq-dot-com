@@ -8,7 +8,7 @@
 أفكار المشروع مستعرَضة عن طريق فيديو في [منشور التليجرام](https://t.me/tiqaniy/29) هذا:<br> 
 
 <a href="https://t.me/tiqaniy/29" target="_blank">
-    <img width="100%" alt="telegram post screenshot" src=".assets/images/screenshots/desktop/home-main-menu.png" />
+    <img width="100%" alt="telegram post screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
 </a>
 
 ### المتصفح
@@ -16,9 +16,9 @@
 لتجربة التطبيق الآن من أي متصفح:<br>
 https://muttasiq.com
 
-<img src=".assets/images/screenshots/desktop/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
+<img src="public/docs/updates/images/v-0-1-0/web/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
 <br><br>
-<img src=".assets/images/screenshots/desktop/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
+<img src="public/docs/updates/images/v-0-1-0/web/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
 
 ### الأندرويد
 
