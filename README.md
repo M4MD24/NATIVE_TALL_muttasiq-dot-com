@@ -8,7 +8,7 @@
 أفكار المشروع مستعرَضة عن طريق فيديو في [منشور التليجرام](https://t.me/tiqaniy/29) هذا:<br> 
 
 <a href="https://t.me/tiqaniy/29" target="_blank">
-    <img width="100%" alt="telegram post screenshot" src="https://github.com/user-attachments/assets/470e98bf-deea-46cd-8459-d822734ce90b" />
+    <img width="100%" alt="telegram post screenshot" src=".assets/images/screenshots/desktop/home-main-menu.png" />
 </a>
 
 ### المتصفح
