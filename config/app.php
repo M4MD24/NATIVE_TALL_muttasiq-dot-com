@@ -59,15 +59,19 @@ return [
         'filament' => [
             'background_colors' => [
                 'shell' => [
-                    'light' => '#FEFEFE',
-                    'dark' => '#505358',
+                    'light' => '#FFFFFF', // ! Settled
+                    'dark' => '#201f25', // ! Settled
                 ],
                 'surface' => [
-                    'light' => '#F7F7FA',
+                    'light' => '#FFFFFF', // ! Settled
+                    'dark' => '#201f25', // ! Settled
+                ],
+                'surface_raised' => [
+                    'light' => '#FFFFFF',
                     'dark' => '#201f25',
                 ],
                 'surface_muted' => [
-                    'light' => '#F7F7FA',
+                    'light' => '#FFFFFF',
                     'dark' => '#201f25',
                 ],
             ],

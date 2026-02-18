@@ -40,7 +40,6 @@ class FilamentServiceProvider extends PanelProvider
             ->colors(config('app.custom.colors'))
             ->font('Readex Pro')
             ->viteTheme('resources/css/core/filament/panels.css')
-            ->darkMode(false)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([])
@@ -89,14 +88,32 @@ class FilamentServiceProvider extends PanelProvider
             key: 'shell.dark',
             fallback: $this->themeBackgroundFallback(name: 'background-dark', fallback: '#201f25'),
         );
+        $surfaceLight = $this->resolveFilamentBackground(
+            key: 'surface.light',
+            fallback: $this->themeBackgroundFallback(name: 'gray-50', fallback: '#f9fafb'),
+        );
+        $surfaceDark = $this->resolveFilamentBackground(
+            key: 'surface.dark',
+            fallback: $this->themeBackgroundFallback(name: 'gray-900', fallback: '#111827'),
+        );
+        $surfaceRaisedLight = $this->resolveFilamentBackground(
+            key: 'surface_raised.light',
+            fallback: $surfaceLight,
+        );
+        $surfaceRaisedDark = $this->resolveFilamentBackground(
+            key: 'surface_raised.dark',
+            fallback: $surfaceDark,
+        );
 
         return [
             'fi-shell-bg-light' => $shellLight,
             'fi-shell-bg-dark' => $shellDark,
-            'fi-surface-bg-light' => $this->resolveFilamentBackground('surface.light', $shellLight),
-            'fi-surface-bg-dark' => $this->resolveFilamentBackground('surface.dark', $shellDark),
-            'fi-surface-muted-bg-light' => $this->resolveFilamentBackground('surface_muted.light', $shellLight),
-            'fi-surface-muted-bg-dark' => $this->resolveFilamentBackground('surface_muted.dark', $shellDark),
+            'fi-surface-bg-light' => $surfaceLight,
+            'fi-surface-bg-dark' => $surfaceDark,
+            'fi-surface-raised-bg-light' => $surfaceRaisedLight,
+            'fi-surface-raised-bg-dark' => $surfaceRaisedDark,
+            'fi-surface-muted-bg-light' => $this->resolveFilamentBackground('surface_muted.light', $surfaceLight),
+            'fi-surface-muted-bg-dark' => $this->resolveFilamentBackground('surface_muted.dark', $surfaceDark),
         ];
     }
 
