@@ -50,10 +50,10 @@ trait HasSettings
             ->label('لوحة التحكم')
             ->modalDescription('بعض المعلومات والتفضيلات في كيفية عمل التطبيق')
             ->modalSubmitActionLabel('حفظ')
-            ->fillForm(fn(): array => $this->loadSettings())
+            ->fillForm(fn (): array => $this->loadSettings())
             ->schema([
                 Tabs::make('Tabs')
-                    ->activeTab(fn(): int => $this->settingsActiveTab)
+                    ->activeTab(fn (): int => $this->settingsActiveTab)
                     ->tabs([
                         Tab::make('الإعدادات')
                             ->icon('heroicon-s-adjustments-horizontal')
@@ -126,7 +126,7 @@ trait HasSettings
                         Tab::make('تحديثات')
                             ->icon('material-design.update')
                             ->schema([
-                                Text::make(fn(): HtmlString => $this->changelogsMarkdown())
+                                Text::make(fn (): HtmlString => $this->changelogsMarkdown())
                                     ->extraAttributes(['class' => 'block w-full']),
                             ]),
 
@@ -321,9 +321,9 @@ trait HasSettings
                 $openLinkNativeAware = htmlspecialchars(open_link_native_aware($href), ENT_QUOTES, 'UTF-8');
 
                 return rtrim(substr($tag, 0, -1))
-                    . ' x-on:click.prevent="' . $openLinkNativeAware . '"'
-                    . ' x-on:keydown.enter.prevent="' . $openLinkNativeAware . '"'
-                    . ' x-on:keydown.space.prevent="' . $openLinkNativeAware . '">';
+                    .' x-on:click.prevent="'.$openLinkNativeAware.'"'
+                    .' x-on:keydown.enter.prevent="'.$openLinkNativeAware.'"'
+                    .' x-on:keydown.space.prevent="'.$openLinkNativeAware.'">';
             },
             $html,
         ) ?? $html;

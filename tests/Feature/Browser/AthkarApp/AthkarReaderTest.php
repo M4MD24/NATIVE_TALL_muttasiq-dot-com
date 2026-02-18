@@ -503,7 +503,7 @@ it('returns to gate then opens athkar manager from the reader top mode button', 
 
     waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
     waitForScript($page, 'window.location.hash', '#athkar-app-gate');
-    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 10_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
     waitForScript(
         $page,
         <<<'JS'
@@ -532,7 +532,7 @@ JS,
 })()
 JS,
         true,
-        10_000,
+        5_000,
     );
 });
 
@@ -549,7 +549,7 @@ it('opens athkar manager as a modal on touch layouts and limits drag handles to 
 
     waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
     waitForScript($page, 'window.location.hash', '#athkar-app-gate');
-    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 10_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
     waitForScript(
         $page,
         <<<'JS'
@@ -577,7 +577,7 @@ JS,
 })()
 JS,
         true,
-        10_000,
+        5_000,
     );
     waitForScriptWithTimeout(
         $page,
@@ -595,7 +595,7 @@ JS,
 })()
 JS,
         true,
-        10_000,
+        5_000,
     );
     waitForScriptWithTimeout(
         $page,
@@ -618,7 +618,7 @@ JS,
 })()
 JS,
         true,
-        10_000,
+        5_000,
     );
 });
 
@@ -630,7 +630,7 @@ it('preserves athkar manager scroll after opening and closing a card modal', fun
 
     safeClick($page, '[data-athkar-open-manager]');
 
-    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 10_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
     waitForScript($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true);
 
     $page->script(<<<'JS'
@@ -654,7 +654,7 @@ JS);
         $page,
         'document.querySelectorAll(".fi-modal.fi-modal-open").length >= 2',
         true,
-        10_000,
+        5_000,
     );
 
     $page->script(<<<'JS'
@@ -693,9 +693,9 @@ JS);
         $page,
         'document.querySelectorAll(".fi-modal.fi-modal-open").length <= 1',
         true,
-        10_000,
+        5_000,
     );
-    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 10_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 5_000);
 
     waitForScript(
         $page,
