@@ -8,10 +8,7 @@
         x-data="{
             settingsModalId: @js('fi-' . $this->getId() . '-action-0'),
         }"
-        x-on:open-settings-modal.window="
-            $wire.syncClientSettings(window.getAthkarSettingsFromStorage?.() ?? {});
-            $wire.mountAction('settings');
-        "
+        x-on:open-settings-modal.window="$wire.openSettingsModal(window.getAthkarSettingsFromStorage?.() ?? {}, $event.detail?.tab ?? null)"
         x-on:x-modal-opened.window="if ($event.detail?.id === settingsModalId) isSettingsOpen = true;"
         x-on:close-modal.window="if ($event.detail?.id === settingsModalId) isSettingsOpen = false;"
         x-on:close-modal-quietly.window="if ($event.detail?.id === settingsModalId) isSettingsOpen = false;"

@@ -6,14 +6,12 @@
 
 - مستعرض للتحديثات داخل التطبيق
 - مستعرض للمعلومات حول التطبيق بروابط خارجية
-- إضافة شريط مختف أسفل الشاشة لنسخة التطبيق الحالية
+- إضافة شريط مختف أسفل الشاشة لنسخة التطبيق الحالية والانتقال لإظهار التحديثات
 
-<img src="images/v-0-5-0/web/???.png" alt="App changelogs (updates) modal - light mode" height="320"/>
-
-<br>
+<img src="images/v-0-5-0/web/changelogs-modal.png" alt="App changelogs (updates) modal - light mode" height="320"/>
 
 
-## v0.4.0
+## [v0.4.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/70)
 
 ### المحرك
 
@@ -21,10 +19,8 @@
 
 <img src="images/v-0-4-0/web/???.png" alt="Responsive overflow handling for athar app reader - light mode" height="320"/>
 
-<br>
 
-
-## v0.3.0
+## [v0.3.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/64)
 
 ### المحرك
 
@@ -32,10 +28,8 @@
 
 <img src="images/v-0-3-0/web/settings-font-sizing.png" alt="App settings modal - including font sizing - light mode" height="320"/>
 
-<br>
 
-
-## v0.2.0
+## [v0.2.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/35)
 
 ### أذكار الصباح والمساء
 
@@ -46,19 +40,15 @@
 
 <img src="images/v-0-2-0/web/athkar-app-manager.png" alt="The athkar app manager - light mode" height="320"/>
 
-<br>
 
-
-## v0.1.1
+## [v0.1.1](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/4)
 
 ### المحرك
 
 - إصلاح خطأ تعميم الإعدادات من قاعدة البيانات
 
-<br>
 
-
-## v0.1.0
+## [v0.1.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com?tab=readme-ov-file#%D9%85%D9%8F%D8%AA%D9%91%D9%8E%D8%B3%D9%90%D9%82)
 
 ### المحرك
 

@@ -47,6 +47,109 @@ it('shows settings and color scheme buttons by default', function () {
         ->assertVisible('[data-testid="color-scheme-switch-button"]');
 });
 
+it('cycles the copyright panel and keeps it visible while hovering on desktop', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(shell && data && data.isVisible === false);
+})()
+JS, true);
+
+    $prepared = (bool) $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  const bp = window.Alpine?.store?.('bp');
+  if (!data || !bp) {
+    return false;
+  }
+  bp.hasTouch = false;
+  data.waitDuration = 120;
+  data.visibleDuration = 80;
+  data.queueNextReveal(20);
+  return true;
+})()
+JS);
+
+    expect($prepared)->toBeTrue();
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === true);
+})()
+JS, true);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === false);
+})()
+JS, true);
+
+    $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  window.__copyrightHoverAt = Date.now();
+  shell?.dispatchEvent(new Event('mouseenter', { bubbles: true }));
+  return true;
+})()
+JS);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === true && (Date.now() - (window.__copyrightHoverAt ?? 0)) >= 170);
+})()
+JS, true);
+
+    $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  shell?.dispatchEvent(new Event('mouseleave', { bubbles: true }));
+  return true;
+})()
+JS);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === false);
+})()
+JS, true);
+});
+
+it('opens settings on the updates tab when requested', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $page->script('window.dispatchEvent(new CustomEvent("open-settings-modal", { detail: { tab: "updates" } }));');
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($page, <<<'JS'
+(() => {
+  const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
+  if (!activeTab) {
+    return false;
+  }
+  const label = (activeTab.textContent ?? '').replace(/\s+/g, ' ').trim();
+  return label.includes('تحديثات');
+})()
+JS, true);
+});
+
 it('adds the main menu hash on a fresh load', function () {
     $page = visit('/');
 

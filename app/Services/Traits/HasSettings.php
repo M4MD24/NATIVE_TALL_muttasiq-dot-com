@@ -8,11 +8,12 @@ use App\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components;
 use Filament\Forms\Components\Slider\Enums\PipsMode;
-use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Image;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\HtmlString;
@@ -21,10 +22,16 @@ trait HasSettings
 {
     private const MAIN_TEXT_SIZE_RANGE = 'main_text_size_range';
 
+    private const SETTINGS_TAB_INDEX = 1;
+
+    private const UPDATES_TAB_INDEX = 2;
+
     /**
      * @var array<string, bool|int>
      */
     public array $clientSettings = [];
+
+    public int $settingsActiveTab = self::SETTINGS_TAB_INDEX;
 
     /**
      * @return array<string, bool|int>
@@ -43,14 +50,19 @@ trait HasSettings
             ->label('لوحة التحكم')
             ->modalDescription('بعض المعلومات والتفضيلات في كيفية عمل التطبيق')
             ->modalSubmitActionLabel('حفظ')
-            ->fillForm(fn (): array => $this->loadSettings())
+            ->fillForm(fn(): array => $this->loadSettings())
             ->schema([
                 Tabs::make('Tabs')
+                    ->activeTab(fn(): int => $this->settingsActiveTab)
                     ->tabs([
                         Tab::make('الإعدادات')
                             ->icon('heroicon-s-adjustments-horizontal')
                             ->schema([
-                                Fieldset::make('العامة')
+                                Text::make('العامة')
+                                    ->color('black')
+                                    ->weight(FontWeight::Medium),
+
+                                Grid::make()
                                     ->columns([
                                         'default' => 1,
                                         'md' => 2,
@@ -77,7 +89,14 @@ trait HasSettings
                                             ->label($generalDefinitions['does_skip_notice_panels']['label']),
                                     ]),
 
-                                Fieldset::make('الأذكار')
+                                Text::make(new HtmlString('<hr class="border-0 h-px bg-linear-to-r from-transparent via-gray-400 to-transparent mt-5">'))
+                                    ->extraAttributes(['class' => 'w-full']),
+
+                                Text::make('الأذكار')
+                                    ->color('black')
+                                    ->weight(FontWeight::Medium),
+
+                                Grid::make()
                                     ->columns([
                                         'default' => 1,
                                         'md' => 2,
@@ -107,7 +126,7 @@ trait HasSettings
                         Tab::make('تحديثات')
                             ->icon('material-design.update')
                             ->schema([
-                                Text::make(fn (): HtmlString => $this->changelogsMarkdown())
+                                Text::make(fn(): HtmlString => $this->changelogsMarkdown())
                                     ->extraAttributes(['class' => 'block w-full']),
                             ]),
 
@@ -119,6 +138,11 @@ trait HasSettings
                                     ->color('black')
                                     ->extraAttributes(['class' => 'block w-full text-center -mb-5']),
 
+                                Text::make(config('app.custom.app_description'))
+                                    ->size(TextSize::Small)
+                                    ->color('gray')
+                                    ->extraAttributes(['class' => 'block w-full text-center mt-2']),
+
                                 Image::make(
                                     url: asset('icon.png'),
                                     alt: 'Muttasiq application icono',
@@ -126,7 +150,7 @@ trait HasSettings
                                     ->imageSize('10rem')
                                     ->alignCenter()
                                     ->extraAttributes([
-                                        'class' => 'mx-auto cursor-pointer border-0',
+                                        'class' => 'mx-auto cursor-pointer border-0 -mt-5',
                                         'role' => 'button',
                                         'tabindex' => '0',
                                         'x-on:click' => open_link_native_aware('https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com'),
@@ -135,9 +159,9 @@ trait HasSettings
                                     ]),
 
                                 Text::make('روابط سريعة:')
-                                    ->size(TextSize::Small)
+                                    ->size(TextSize::Medium)
                                     ->color('gray')
-                                    ->extraAttributes(['class' => 'block w-full text-center']),
+                                    ->extraAttributes(['class' => 'block w-full text-center -mt-3']),
 
                                 $this->developmentLinkAction(
                                     name: 'open_source_code',
@@ -201,6 +225,23 @@ trait HasSettings
             });
     }
 
+    public function setSettingsActiveTab(?string $tab = null): void
+    {
+        $this->settingsActiveTab = $tab === 'updates'
+            ? self::UPDATES_TAB_INDEX
+            : self::SETTINGS_TAB_INDEX;
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    public function openSettingsModal(array $settings = [], ?string $tab = null): void
+    {
+        $this->syncClientSettings($settings);
+        $this->setSettingsActiveTab($tab);
+        $this->mountAction('settings');
+    }
+
     /**
      * @param  array<string, mixed>  $settings
      */
@@ -248,7 +289,7 @@ trait HasSettings
             ->label($label)
             ->icon($icon)
             ->link()
-            ->extraAttributes(['class' => 'flex w-fit mx-auto items-center gap-1.5 whitespace-nowrap text-center'])
+            ->extraAttributes(['class' => 'flex w-fit mx-auto text-[0.8rem]! items-center gap-1.5 whitespace-nowrap text-center -mt-3'])
             ->actionJs(open_link_native_aware(url: $url));
     }
 
@@ -280,22 +321,22 @@ trait HasSettings
                 $openLinkNativeAware = htmlspecialchars(open_link_native_aware($href), ENT_QUOTES, 'UTF-8');
 
                 return rtrim(substr($tag, 0, -1))
-                    .' x-on:click.prevent="'.$openLinkNativeAware.'"'
-                    .' x-on:keydown.enter.prevent="'.$openLinkNativeAware.'"'
-                    .' x-on:keydown.space.prevent="'.$openLinkNativeAware.'">';
+                    . ' x-on:click.prevent="' . $openLinkNativeAware . '"'
+                    . ' x-on:keydown.enter.prevent="' . $openLinkNativeAware . '"'
+                    . ' x-on:keydown.space.prevent="' . $openLinkNativeAware . '">';
             },
             $html,
         ) ?? $html;
 
         return new HtmlString(<<<HTML
             <article class="mx-auto w-full max-w-3xl text-right leading-7
-                [&_h2]:mt-8 [&_h2:first-child]:mt-0 [&_h2]:mb-4 [&_h2]:border-b [&_h2]:border-slate-200 [&_h2]:pb-2 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-800 dark:[&_h2]:border-slate-700 dark:[&_h2]:text-slate-100
-                [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-700 dark:[&_h3]:text-slate-200
-                [&_p]:my-1 [&_p]:text-sm [&_p]:text-slate-600 dark:[&_p]:text-slate-300
+                [&_h2]:mt-12 [&_h2:first-child]:mt-0 [&_h2]:mb-4 [&_h2]:border-b [&_h2]:border-gray-200 [&_h2]:pb-2 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-800 dark:[&_h2]:border-gray-700 dark:[&_h2]:text-gray-100
+                [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-gray-700 dark:[&_h3]:text-gray-200
+                [&_p]:my-1 [&_p]:text-sm [&_p]:text-gray-600 dark:[&_p]:text-gray-300
                 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:list-inside [&_ul]:space-y-1
-                [&_li]:text-sm [&_li]:text-slate-700 dark:[&_li]:text-slate-200
-                [&_a]:font-medium [&_a]:text-slate-700 [&_a]:underline [&_a]:decoration-2 [&_a]:decoration-slate-400 [&_a]:underline-offset-6 hover:[&_a]:text-slate-900 dark:[&_a]:text-slate-200 dark:[&_a]:decoration-slate-500 dark:hover:[&_a]:text-white
-                [&_img]:my-4 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-h-80 [&_img]:rounded-lg [&_img]:border [&_img]:border-slate-200 dark:[&_img]:border-slate-700">
+                [&_li]:text-sm [&_li]:text-gray-700 dark:[&_li]:text-gray-200
+                [&_a]:font-medium [&_a]:text-gray-700 hover:[&_a]:text-gray-900 dark:[&_a]:text-gray-200 dark:[&_a]:decoration-gray-500 dark:hover:[&_a]:text-white
+                [&_img]:my-4 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-h-80 [&_img]:rounded-lg [&_img]:border [&_img]:border-gray-200 dark:[&_img]:border-gray-700">
                 {$html}
             </article>
             HTML);

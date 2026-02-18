@@ -67,8 +67,8 @@ return [
                     'dark' => '#201f25',
                 ],
                 'surface_muted' => [
-                    'light' => null,
-                    'dark' => null,
+                    'light' => '#F7F7FA',
+                    'dark' => '#201f25',
                 ],
             ],
         ],
