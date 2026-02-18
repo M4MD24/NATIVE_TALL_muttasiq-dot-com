@@ -1,5 +1,6 @@
 @props([
     'onClickCallback' => null,
+    'buttonClasses' => '',
     'iconClasses' => '',
     'iconName',
     'caption',
@@ -9,8 +10,125 @@
     $locked = !$onClickCallback;
 @endphp
 
+@once
+    @assets
+        <style>
+            .item-unlocked-indicator {
+                position: relative;
+                isolation: isolate;
+                overflow: hidden;
+            }
+
+            .item-unlocked-indicator::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                border-radius: 0.75rem;
+                box-shadow:
+                    0 6px 13px 0 color-mix(in srgb, var(--primary-500) 14%, transparent),
+                    0 24px 24px 0 color-mix(in srgb, var(--primary-500) 12%, transparent),
+                    0 55px 33px 0 color-mix(in srgb, var(--primary-500) 7%, transparent),
+                    0 97px 39px 0 color-mix(in srgb, var(--primary-500) 2%, transparent),
+                    0 152px 43px 0 color-mix(in srgb, var(--primary-500) 0%, transparent);
+                opacity: 0;
+                animation: main-menu-unlock-hover-echo 2.8s ease-in-out infinite;
+                animation-delay: -1.1s;
+            }
+
+            .item-unlocked-indicator::after {
+                content: '';
+                position: absolute;
+                inset: 1px;
+                pointer-events: none;
+                border-radius: 0.68rem;
+                background: linear-gradient(112deg,
+                        transparent 22%,
+                        color-mix(in srgb, white 94%, transparent) 50%,
+                        transparent 78%);
+                transform: translateX(-175%) skewX(-18deg);
+                opacity: 0;
+                animation: main-menu-unlock-shimmer 2.8s ease-in-out infinite;
+                animation-delay: -0.9s;
+            }
+
+            .dark .item-unlocked-indicator::before {
+                box-shadow:
+                    0 6px 13px 0 color-mix(in srgb, var(--primary-100) 14%, transparent),
+                    0 24px 24px 0 color-mix(in srgb, var(--primary-100) 12%, transparent),
+                    0 55px 33px 0 color-mix(in srgb, var(--primary-100) 7%, transparent),
+                    0 97px 39px 0 color-mix(in srgb, var(--primary-100) 2%, transparent),
+                    0 152px 43px 0 color-mix(in srgb, var(--primary-100) 0%, transparent);
+            }
+
+            .dark .item-unlocked-indicator::after {
+                background: linear-gradient(112deg,
+                        transparent 22%,
+                        color-mix(in srgb, var(--primary-50) 68%, transparent) 50%,
+                        transparent 78%);
+            }
+
+            .item-unlocked-indicator.fill-primary-500::before {
+                animation-duration: 2.1s;
+            }
+
+            .item-unlocked-indicator.fill-primary-500::after {
+                animation-duration: 2.1s;
+            }
+
+            .item-unlocked-indicator-icon {
+                filter: saturate(1.06);
+            }
+
+            @keyframes main-menu-unlock-hover-echo {
+
+                0%,
+                40%,
+                100% {
+                    opacity: 0;
+                }
+
+                54% {
+                    opacity: 0.68;
+                }
+
+                74% {
+                    opacity: 0;
+                }
+            }
+
+            @keyframes main-menu-unlock-shimmer {
+
+                0%,
+                44% {
+                    opacity: 0;
+                    transform: translateX(-175%) skewX(-18deg);
+                }
+
+                58% {
+                    opacity: 0.84;
+                }
+
+                76% {
+                    opacity: 0;
+                    transform: translateX(175%) skewX(-18deg);
+                }
+
+                100% {
+                    opacity: 0;
+                    transform: translateX(175%) skewX(-18deg);
+                }
+            }
+        </style>
+    @endassets
+@endonce
+
 <div
-    class="flex h-20 w-20 cursor-pointer select-none items-center justify-center rounded-xl border border-transparent transition-colors will-change-[border-color,box-shadow]"
+    class="{{ twMerge([
+        'item-unlocked-indicator' => !$locked,
+        'flex h-20 w-20 cursor-pointer select-none items-center justify-center rounded-xl border border-transparent transition-colors will-change-[border-color,box-shadow]',
+        $buttonClasses,
+    ]) }}"
     data-main-menu-item
     data-caption="{{ $caption }}"
     data-icon-name="{{ $iconName }}"
@@ -73,7 +191,11 @@
 
         @if ($locked)
             <span
-                class="{{ twMerge('will-change-[transform,opacity] absolute inset-0 z-0 flex h-8 w-8 items-center justify-center transform-gpu transition-[opacity,transform]', $iconClasses) }}"
+                class="{{ twMerge([
+                    'item-unlocked-indicator-icon' => !$locked,
+                    'will-change-[transform,opacity] absolute inset-0 z-0 flex h-8 w-8 items-center justify-center transform-gpu transition-[opacity,transform]',
+                    $iconClasses,
+                ]) }}"
                 x-cloak
                 x-data="{ ready: false }"
                 x-init="() => setTimeout((ready = true), 100);"
