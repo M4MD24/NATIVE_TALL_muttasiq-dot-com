@@ -235,6 +235,16 @@ The assets used for the app so far can be found in this online [Penpot](https://
 - [https://nativephp.com/plugins](https://nativephp.com/plugins)
 
 
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+You may redistribute and/or modify this program under the terms of the AGPL v3.
+See the full license text in [`LICENSE`](./LICENSE).
+
+Copyright (C) 2026 Muttasiq Contributors.
+
+
 ## Credits
 
 ### Contributors
