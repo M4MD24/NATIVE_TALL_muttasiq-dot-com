@@ -160,7 +160,7 @@ trait HasSettings
 
                                 Text::make('روابط سريعة:')
                                     ->size(TextSize::Medium)
-                                    ->color('gray')
+                                    ->color('black')
                                     ->extraAttributes(['class' => 'block w-full text-center -mt-3']),
 
                                 $this->developmentLinkAction(

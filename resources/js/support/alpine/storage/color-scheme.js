@@ -28,7 +28,7 @@ document.addEventListener('alpine:init', () => {
     const colorSchemeStore = window.Alpine.store('colorScheme');
 
     document.addEventListener('livewire:init', () => {
-        window.Livewire.dispatchTo('home', 'color-scheme-initialized', {
+        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-initialized', {
             isDarkModeOn: colorSchemeStore.isDarkModeOn,
         });
     });
@@ -41,7 +41,7 @@ document.addEventListener('alpine:init', () => {
         document.documentElement.style.colorScheme = isDarkModeOn ? 'dark' : 'light';
         document.documentElement.style.backgroundColor = colorSchemeStore.bodyBackgroundColor;
 
-        window.Livewire.dispatchTo('home', 'color-scheme-toggled', {
+        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', {
             isDarkModeOn: isDarkModeOn,
         });
     });

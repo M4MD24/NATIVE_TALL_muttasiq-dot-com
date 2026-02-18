@@ -47,6 +47,28 @@ it('shows settings and color scheme buttons by default', function () {
         ->assertVisible('[data-testid="color-scheme-switch-button"]');
 });
 
+it('uses the dark app icon in settings after toggling dark mode', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $page->script("window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', { isDarkModeOn: false });");
+
+    hashAction($page, '#toggle-color-scheme', false);
+    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme')?.isDarkModeOn)", true);
+
+    openSettingsModal($page);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const icon = document.querySelector('.fi-modal-window img[alt="Muttasiq application icono"]');
+  const src = icon?.getAttribute('src');
+  return Boolean(src && src.includes('icon-dark.png'));
+})()
+JS, true);
+});
+
 it('cycles the copyright panel and keeps it visible while hovering on desktop', function () {
     $page = visit('/');
 
