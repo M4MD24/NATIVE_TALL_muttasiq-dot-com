@@ -9,12 +9,12 @@
         "dev": "vite"
     },
     "devDependencies": {
-        "@openai/codex": "^0.101.0",
+        "@openai/codex": "^0.103.0",
         "@tailwindcss/vite": "^4.1.18",
         "blade-formatter": "^1.44.2",
         "concurrently": "^9.0.1",
         "eslint": "^10.0.0",
-        "eslint-plugin-unused-imports": "^1.1.3",
+        "eslint-plugin-unused-imports": "^4.4.1",
         "laravel-vite-plugin": "^2.0.0",
         "playwright": "^1.58.2",
         "prettier": "^3.7.4",

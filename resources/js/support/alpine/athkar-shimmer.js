@@ -1,6 +1,6 @@
 const defaultDurationMs = 1000;
 const defaultDelayMs = 1000;
-const defaultPauseMs = 4000;
+const defaultPauseMs = 8000;
 
 const parseTime = (value, fallback) => {
     if (value === null || value === undefined) {
