@@ -177,6 +177,7 @@ https://muttasiq.com
 
 <div align="left">
 
+
 ## Coding
 
 ### Rules
@@ -188,11 +189,17 @@ https://muttasiq.com
    - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI since it’s ephemeral). If you have a fix for [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), feel free to open a PR; otherwise, **rebooting your system** if things get unstable is the recommended workaround.
 4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/mobile/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
 
+### Setup
+
+1. We recommend [Ubuntu](https://ubuntu.com) (LTS) for stable and upgradable development environment.
+2. Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI [Bash](https://www.gnu.org/software/bash) scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
+3. We strongly advocate for using [VSCodium](https://vscodium.com), especially for those who are new to the development world.
+4. Check out all of our VSC configurations set in this [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_NATIVE_tall-standards) wikipedia, which also contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
+5. And whatever we advised to do for quick learning about this stack, please make sure you read the [development section](#development) up top.
+
 ### Tools and Guides
 
-- Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI [Bash](https://www.gnu.org/software/bash) scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
 - For reproducing the [favicon](./resources/views/partials/favicon.blade.php) variences, use this [favycon](https://github.com/ruisaraiva19/favycon) tool.
-- [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_WEB_tall-standards) wikipedia contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
 
 
 ## Design
