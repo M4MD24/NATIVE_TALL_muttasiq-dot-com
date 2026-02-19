@@ -182,7 +182,7 @@ https://muttasiq.com
 ### Rules
 
 0. Focus on the main [missions](#المهام) detailed in [discussions](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/discussions) and assigned in the [project](https://github.com/users/GoodM4ven/projects/5/views/1) view. So unless it's a bug fix, **do not work on any new feature without having an [issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues) and being assigned to**.
-1. Use and maintain the 3 root-directory ([`native-dev`](./native-dev.sh), [`native-run`](./native-run.sh), and [`native-watch`](./native-watch.sh)) bash scripts to run and watch the web app, run the native app, and run and watch the native app respectively.
+1. Use and maintain the root-directory bash scripts to run and watch all available platform applications.
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
    - The process includes running [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only, not in `--parallel`, because the current [Playwright](https://playwright.dev) and PestPHP integration is buggy, including direct mobile emulation support. **This means tests may take a longer time in this mode** but at least they work! This doesn't apply to CI, because it's ephemeral in there.
