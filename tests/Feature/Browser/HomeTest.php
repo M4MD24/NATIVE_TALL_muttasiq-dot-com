@@ -43,7 +43,7 @@ it('shows settings and color scheme buttons by default', function () {
     resetBrowserState($page);
 
     $page
-        ->assertVisible('[data-stack-item][x-data] [data-testid="settings-button"]')
+        ->assertVisible('[data-stack-item][x-data] [data-testid="control-panel-button"]')
         ->assertVisible('[data-testid="color-scheme-switch-button"]');
 });
 
@@ -58,7 +58,7 @@ it('uses the dark app icon in settings after toggling dark mode', function () {
     hashAction($page, '#toggle-color-scheme', false);
     waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme')?.isDarkModeOn)", true);
 
-    openSettingsModal($page);
+    openControlPanelModal($page);
 
     waitForScript($page, <<<'JS'
 (() => {
@@ -157,7 +157,7 @@ it('opens settings on the updates tab when requested', function () {
 
     waitForScript($page, 'Boolean(window.Livewire)', true);
 
-    $page->script('window.dispatchEvent(new CustomEvent("open-settings-modal", { detail: { tab: "updates" } }));');
+    $page->script('window.dispatchEvent(new CustomEvent("open-control-panel-modal", { detail: { tab: "updates" } }));');
 
     waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
     waitForScript($page, <<<'JS'

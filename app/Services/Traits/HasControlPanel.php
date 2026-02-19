@@ -18,42 +18,42 @@ use Filament\Support\Enums\TextSize;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\HtmlString;
 
-trait HasSettings
+trait HasControlPanel
 {
     private const MAIN_TEXT_SIZE_RANGE = 'main_text_size_range';
 
-    private const SETTINGS_TAB_INDEX = 1;
+    private const CONTROL_PANEL_TAB_INDEX = 1;
 
     private const UPDATES_TAB_INDEX = 2;
 
     /**
      * @var array<string, bool|int>
      */
-    public array $clientSettings = [];
+    public array $clientControlPanel = [];
 
-    public int $settingsActiveTab = self::SETTINGS_TAB_INDEX;
+    public int $controlPanelActiveTab = self::CONTROL_PANEL_TAB_INDEX;
 
     /**
      * @return array<string, bool|int>
      */
-    public static function settingsDefaults(): array
+    public static function controlPanelDefaults(): array
     {
         return Setting::defaults();
     }
 
-    public function settingsAction(): Action
+    public function controlPanelAction(): Action
     {
         $athkarDefinitions = Setting::definitionsForGroup(Setting::GROUP_ATHKAR);
         $generalDefinitions = Setting::definitionsForGroup(Setting::GROUP_GENERAL);
 
-        return Action::make('settings')
+        return Action::make('controlPanel')
             ->label('لوحة التحكم')
             ->modalDescription('بعض المعلومات والتفضيلات في كيفية عمل التطبيق')
             ->modalSubmitActionLabel('حفظ')
-            ->fillForm(fn (): array => $this->loadSettings())
+            ->fillForm(fn (): array => $this->loadControlPanel())
             ->schema([
                 Tabs::make('Tabs')
-                    ->activeTab(fn (): int => $this->settingsActiveTab)
+                    ->activeTab(fn (): int => $this->controlPanelActiveTab)
                     ->tabs([
                         Tab::make('الإعدادات')
                             ->icon('heroicon-s-adjustments-horizontal')
@@ -216,70 +216,70 @@ trait HasSettings
                     $data[Setting::MAXIMUM_MAIN_TEXT_SIZE] = max($minimumSize, $maximumSize);
                 }
 
-                $savedSettings = Setting::normalizeSettings($data);
+                $savedControlPanel = Setting::normalizeSettings($data);
 
-                $this->clientSettings = $savedSettings;
-                $this->dispatch('settings-updated', settings: $savedSettings);
+                $this->clientControlPanel = $savedControlPanel;
+                $this->dispatch('control-panel-updated', controlPanel: $savedControlPanel);
 
                 notify(iconName: 'mdi.content-save-check', title: 'تم حفظ الإعدادات بنجاح');
             });
     }
 
-    public function setSettingsActiveTab(?string $tab = null): void
+    public function setControlPanelActiveTab(?string $tab = null): void
     {
-        $this->settingsActiveTab = $tab === 'updates'
+        $this->controlPanelActiveTab = $tab === 'updates'
             ? self::UPDATES_TAB_INDEX
-            : self::SETTINGS_TAB_INDEX;
+            : self::CONTROL_PANEL_TAB_INDEX;
     }
 
     /**
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $controlPanel
      */
-    public function openSettingsModal(array $settings = [], ?string $tab = null): void
+    public function openControlPanelModal(array $controlPanel = [], ?string $tab = null): void
     {
-        $this->syncClientSettings($settings);
-        $this->setSettingsActiveTab($tab);
-        $this->mountAction('settings');
+        $this->syncClientControlPanel($controlPanel);
+        $this->setControlPanelActiveTab($tab);
+        $this->mountAction('controlPanel');
     }
 
     /**
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $controlPanel
      */
-    public function syncClientSettings(array $settings): void
+    public function syncClientControlPanel(array $controlPanel): void
     {
-        $this->clientSettings = $this->filterSettings($settings);
+        $this->clientControlPanel = $this->filterControlPanel($controlPanel);
     }
 
     /**
      * @return array<string, bool|int|list<int>>
      */
-    private function loadSettings(): array
+    private function loadControlPanel(): array
     {
-        $storedSettings = Setting::query()
-            ->whereIn('name', array_keys(self::settingsDefaults()))
+        $storedControlPanelValues = Setting::query()
+            ->whereIn('name', array_keys(self::controlPanelDefaults()))
             ->pluck('value', 'name')
             ->all();
 
-        $normalizedSettings = Setting::normalizeSettings(
-            array_replace(self::settingsDefaults(), $storedSettings, $this->clientSettings),
+        $normalizedControlPanelValues = Setting::normalizeSettings(
+            array_replace(self::controlPanelDefaults(), $storedControlPanelValues, $this->clientControlPanel),
         );
 
-        $normalizedSettings[self::MAIN_TEXT_SIZE_RANGE] = [
-            (int) ($normalizedSettings[Setting::MINIMUM_MAIN_TEXT_SIZE] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
-            (int) ($normalizedSettings[Setting::MAXIMUM_MAIN_TEXT_SIZE] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
+        $normalizedControlPanelValues[self::MAIN_TEXT_SIZE_RANGE] = [
+            (int) ($normalizedControlPanelValues[Setting::MINIMUM_MAIN_TEXT_SIZE] ?? Setting::MIN_MAIN_TEXT_SIZE_DEFAULT),
+            (int) ($normalizedControlPanelValues[Setting::MAXIMUM_MAIN_TEXT_SIZE] ?? Setting::MAX_MAIN_TEXT_SIZE_DEFAULT),
         ];
 
-        return $normalizedSettings;
+        return $normalizedControlPanelValues;
     }
 
     /**
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $controlPanel
      * @return array<string, bool|int>
      */
-    private function filterSettings(array $settings): array
+    private function filterControlPanel(array $controlPanel): array
     {
         return Setting::normalizeSettings(
-            array_intersect_key($settings, self::settingsDefaults()),
+            array_intersect_key($controlPanel, self::controlPanelDefaults()),
         );
     }
 

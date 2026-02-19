@@ -23,7 +23,7 @@
         typeLabels: @js(\App\Services\Enums\ThikrType::labels()),
     })"
     x-on:close-athkar-mode.window="closeMode()"
-    x-on:settings-updated.window="applySettings($event.detail?.settings)"
+    x-on:control-panel-updated.window="applySettings($event.detail?.controlPanel)"
     x-on:athkar-gate-open="openMode($event.detail?.mode)"
     x-on:keydown.escape.window="if (activeMode && !isCompletionVisible) closeMode()"
     x-transition:enter="transition-all ease-out duration-750 delay-400"

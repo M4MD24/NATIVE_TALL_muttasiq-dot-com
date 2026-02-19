@@ -3,10 +3,10 @@
     data-stack-item
     x-transition
     x-cloak
-    x-show="!views['main-menu'].isOpen && !isSettingsOpen && !isAthkarManagerOpen"
+    x-show="!views['main-menu'].isOpen && !isControlPanelOpen && !isAthkarManagerOpen"
 >
     <x-action-button
-        data-testid="settings-button"
+        data-testid="control-panel-button"
         :iconName="'material-design.grid-view'"
         x-on:click="$viewNav('main-menu', { force: true })"
     />

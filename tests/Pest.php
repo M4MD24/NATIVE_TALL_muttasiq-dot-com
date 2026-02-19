@@ -374,16 +374,16 @@ function visitMobile(string $path = '/')
     return visit($path);
 }
 
-function openSettingsModal($page): void
+function openControlPanelModal($page): void
 {
-    waitForScript($page, 'Boolean(document.querySelector(\'[data-testid="settings-button"]\'))');
+    waitForScript($page, 'Boolean(document.querySelector(\'[data-testid="control-panel-button"]\'))');
     waitForScript($page, 'Boolean(window.Livewire)');
-    scriptClick($page, '[data-stack-item][x-data] [data-testid="settings-button"]');
+    scriptClick($page, '[data-stack-item][x-data] [data-testid="control-panel-button"]');
 
     $isOpen = $page->script('Boolean(document.querySelector(".fi-modal-window"))');
 
     if (! $isOpen) {
-        $page->script('window.dispatchEvent(new CustomEvent("open-settings-modal"));');
+        $page->script('window.dispatchEvent(new CustomEvent("open-control-panel-modal"));');
     }
 
     waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))');
@@ -962,7 +962,7 @@ function setAthkarSettings($page, array $settings): void
     $page->script(js_template(<<<'JS'
 (() => {
   const settings = {{settings}};
-  window.dispatchEvent(new CustomEvent('settings-updated', { detail: { settings } }));
+  window.dispatchEvent(new CustomEvent('control-panel-updated', { detail: { controlPanel: settings } }));
   const el = document.querySelector('[x-data^="athkarAppReader"]');
   if (!el || !window.Alpine) {
     return;
