@@ -335,8 +335,8 @@ trait HasControlPanel
                 [&_p]:my-1 [&_p]:text-sm [&_p]:text-gray-600 dark:[&_p]:text-gray-300
                 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:list-inside [&_ul]:space-y-1
                 [&_li]:text-sm [&_li]:text-gray-700 dark:[&_li]:text-gray-200
-                [&_a]:font-medium [&_a]:text-gray-700 hover:[&_a]:text-gray-900 dark:[&_a]:text-gray-200 dark:[&_a]:decoration-gray-500 dark:hover:[&_a]:text-white
-                [&_img]:my-4 [&_img]:mx-auto [&_img]:h-auto [&_img]:max-h-80 [&_img]:rounded-lg [&_img]:border [&_img]:border-gray-200 dark:[&_img]:border-gray-700">
+                [&_a]:font-medium [&_a]:text-info-600 hover:[&_a]:text-info-700 dark:[&_a]:text-primary-400 dark:hover:[&_a]:text-primary-500
+                [&_img]:my-4 [&_img]:mx-auto [&_img]:h-auto [&_img]:rounded-lg [&_img]:border [&_img]:border-gray-200 dark:[&_img]:border-gray-700">
                 {$html}
             </article>
             HTML);
