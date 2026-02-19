@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Providers\FilamentServiceProvider;
+use Filament\Support\Colors\Color;
 
 use function Pest\Laravel\get;
 
@@ -72,6 +73,24 @@ it('falls back to surface colors when raised colors are not configured', functio
     expect($variables['fi-surface-raised-bg-dark'])->toBe('#dddddd');
 });
 
+it('builds dark primary css variables from the configured filament override', function () {
+    config()->set('app.custom.filament.color_overrides.primary.dark', '#5ea9bd');
+
+    $provider = new FilamentServiceProvider(app());
+
+    $variables = (fn (): array => $this->filamentCssVariables())
+        ->call($provider);
+
+    $expectedPalette = Color::generatePalette('#5ea9bd');
+
+    expect($variables)->toHaveKeys([
+        'fi-primary-dark-50',
+        'fi-primary-dark-500',
+        'fi-primary-dark-950',
+    ]);
+    expect($variables['fi-primary-dark-500'])->toBe(Color::convertToOklch((string) $expectedPalette[500]));
+});
+
 it('renders registered filament css variables in the app layout', function () {
     config()->set('app.custom.filament.background_colors', [
         'shell' => [
@@ -97,4 +116,5 @@ it('renders registered filament css variables in the app layout', function () {
     $response->assertSuccessful();
     $response->assertSee('--fi-shell-bg-light:', false);
     $response->assertSee('--fi-surface-raised-bg-dark:', false);
+    $response->assertSee('--fi-primary-dark-500:', false);
 });

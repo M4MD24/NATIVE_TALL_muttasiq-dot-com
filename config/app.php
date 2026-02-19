@@ -57,6 +57,11 @@ return [
         ],
 
         'filament' => [
+            'color_overrides' => [
+                'primary' => [
+                    'dark' => '#4A6972',
+                ],
+            ],
             'background_colors' => [
                 'shell' => [
                     'light' => '#FFFFFF', // ! Settled

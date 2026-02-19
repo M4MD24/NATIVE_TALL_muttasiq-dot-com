@@ -12,6 +12,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Livewire\Notifications;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
 use Filament\Support\Facades\FilamentAsset;
@@ -64,7 +65,7 @@ class FilamentServiceProvider extends PanelProvider
     public function boot(): void
     {
         FilamentColor::register(config('app.custom.colors'));
-        FilamentAsset::registerCssVariables($this->filamentBackgroundCssVariables());
+        FilamentAsset::registerCssVariables($this->filamentCssVariables());
 
         Notifications::alignment(Alignment::End);
         Notifications::verticalAlignment(VerticalAlignment::End);
@@ -73,6 +74,17 @@ class FilamentServiceProvider extends PanelProvider
             PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('@ineresh'),
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function filamentCssVariables(): array
+    {
+        return [
+            ...$this->filamentBackgroundCssVariables(),
+            ...$this->filamentDarkPrimaryCssVariables(),
+        ];
     }
 
     /**
@@ -115,6 +127,82 @@ class FilamentServiceProvider extends PanelProvider
             'fi-surface-muted-bg-light' => $this->resolveFilamentBackground('surface_muted.light', $surfaceLight),
             'fi-surface-muted-bg-dark' => $this->resolveFilamentBackground('surface_muted.dark', $surfaceDark),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function filamentDarkPrimaryCssVariables(): array
+    {
+        $variables = [];
+
+        foreach ($this->resolveFilamentDarkPrimaryPalette() as $shade => $color) {
+            $variables["fi-primary-dark-{$shade}"] = $color;
+        }
+
+        return $variables;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function resolveFilamentDarkPrimaryPalette(): array
+    {
+        $overridePalette = $this->normalizeFilamentPalette(config('app.custom.filament.color_overrides.primary.dark'));
+
+        if ($overridePalette !== []) {
+            return $overridePalette;
+        }
+
+        $registeredPrimaryPalette = $this->normalizeFilamentPalette(config('app.custom.colors.primary'));
+
+        if ($registeredPrimaryPalette !== []) {
+            return $registeredPrimaryPalette;
+        }
+
+        return $this->normalizeFilamentPalette('#0a4457');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function normalizeFilamentPalette(mixed $palette): array
+    {
+        if (is_string($palette)) {
+            $palette = trim($palette);
+
+            if ($palette === '') {
+                return [];
+            }
+
+            try {
+                $palette = Color::generatePalette($palette);
+            } catch (\Throwable) {
+                return [];
+            }
+        }
+
+        if (! is_array($palette)) {
+            return [];
+        }
+
+        $normalizedPalette = [];
+
+        foreach ([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as $shade) {
+            $shadeColor = $palette[$shade] ?? $palette[(string) $shade] ?? null;
+
+            if (! is_string($shadeColor) || trim($shadeColor) === '') {
+                continue;
+            }
+
+            try {
+                $normalizedPalette[$shade] = Color::convertToOklch($shadeColor);
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return $normalizedPalette;
     }
 
     protected function resolveFilamentBackground(string $key, string $fallback): string
