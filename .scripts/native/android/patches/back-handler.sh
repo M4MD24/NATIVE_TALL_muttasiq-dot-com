@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"
 
-python3 - "$root_dir" <<'PY'
-import re
+python3 - "${root_dir}" <<'PY'
 import sys
 from pathlib import Path
 
 root_dir = Path(sys.argv[1])
 
 
-def replace_kotlin_block(text: str, new_block: str) -> tuple[str, bool]:
+def patch_main_activity(path: Path) -> tuple[bool, bool]:
+    if not path.exists():
+        print(f"[native-back-handler] skip missing: {path}")
+        return False, False
+
+    text = path.read_text()
+
     if "window.__nativeBackAction" in text:
-        return text, False
+        print(f"[native-back-handler] already ok: {path}")
+        return False, False
 
     original_block = (
         "        onBackPressedDispatcher.addCallback(this) {\n"
@@ -25,19 +31,6 @@ def replace_kotlin_block(text: str, new_block: str) -> tuple[str, bool]:
         "        }\n"
     )
 
-    if original_block not in text:
-        return text, False
-
-    return text.replace(original_block, new_block, 1), True
-
-
-def patch_main_activity(path: Path) -> bool:
-    if not path.exists():
-        print(f"[native-back-handler] skip missing: {path}")
-        return False
-
-    text = path.read_text()
-
     new_block = (
         "        onBackPressedDispatcher.addCallback(this) {\n"
         "            val js =\n"
@@ -45,7 +38,7 @@ def patch_main_activity(path: Path) -> bool:
         "                    \"catch (e) { return false; } })();\"\n"
         "\n"
         "            webView.evaluateJavascript(js) { value ->\n"
-        "                val handled = value?.trim()?.trim('\"') == \"true\"\n"
+        "                val handled = value?.trim()?.trim('\\\"') == \"true\"\n"
         "                if (handled) {\n"
         "                    return@evaluateJavascript\n"
         "                }\n"
@@ -59,15 +52,13 @@ def patch_main_activity(path: Path) -> bool:
         "        }\n"
     )
 
-    updated_text, changed = replace_kotlin_block(text, new_block)
+    if original_block not in text:
+        print(f"[native-back-handler] error: expected onBackPressed block not found in {path}")
+        return False, True
 
-    if changed:
-        path.write_text(updated_text)
-        print(f"[native-back-handler] patched: {path}")
-    else:
-        print(f"[native-back-handler] already ok: {path}")
-
-    return changed
+    path.write_text(text.replace(original_block, new_block, 1))
+    print(f"[native-back-handler] patched: {path}")
+    return True, False
 
 
 paths = [
@@ -76,6 +67,11 @@ paths = [
     root_dir / "nativephp/android/app/src/main/java/com/nativephp/mobile/ui/MainActivity.kt",
 ]
 
+had_error = False
 for path in paths:
-    patch_main_activity(path)
+    _, error = patch_main_activity(path)
+    had_error = had_error or error
+
+if had_error:
+    raise SystemExit(1)
 PY

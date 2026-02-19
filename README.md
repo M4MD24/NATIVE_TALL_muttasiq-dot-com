@@ -187,7 +187,7 @@ https://muttasiq.com
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
    - The process includes running [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only, not in `--parallel`, because the current [Playwright](https://playwright.dev) and PestPHP integration is buggy, including direct mobile emulation support. **This means tests may take a longer time in this mode** but at least they work! This doesn't apply to CI, because it's ephemeral in there.
    - If you have any idea how to fix [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), please PR. Otherwise, **rebooting your system** if it gets wild is the way to go!
-4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
+4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
 
 ### Tools and Guides
 
