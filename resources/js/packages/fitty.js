@@ -668,8 +668,8 @@ window.addEventListener('athkar-fitty-refit', (event) => {
     const targets = Array.isArray(event?.detail?.targets) ? event.detail.targets : null;
     refitTargets(targets);
 });
-window.addEventListener('settings-updated', (event) => {
-    latestSettingsOverride = event?.detail?.settings ?? null;
+window.addEventListener('control-panel-updated', (event) => {
+    latestSettingsOverride = event?.detail?.controlPanel ?? null;
     refitTargets();
 });
 window.addEventListener(

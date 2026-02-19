@@ -6,10 +6,13 @@
 
 @import './packages/tippy.css';
 
+@source '../**/*.js';
+@source '../**/*.blade.php';
+@source '../../app/Filament/**/*.php';
+@source '../../app/Livewire/**/*.php';
+@source '../../app/Services/**/*.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
 
 @font-face {
     font-family: 'Cairo';

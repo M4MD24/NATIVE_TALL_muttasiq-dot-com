@@ -6,7 +6,7 @@
         x-show="isBodyVisible"
         x-data="{
             lock: null,
-            isSettingsOpen: false,
+            isControlPanelOpen: false,
             isAthkarManagerOpen: false,
             activeView: $persist('main-menu').as('app-active-view'),
             viewTree: {
@@ -85,8 +85,8 @@
             '#toggle-color-scheme': () => runHashAction(() => {
                 $store.colorScheme.toggle();
             }),
-            '#settings': () => runHashAction(() => {
-                $dispatch('open-settings-modal');
+            '#control-panel': () => runHashAction(() => {
+                $dispatch('open-control-panel-modal');
             }),
             '#athkar-app-gate': () => runHashAction(() => {
                 $dispatch('switch-view', { to: 'athkar-app-gate' });
@@ -110,7 +110,7 @@
                 @include('partials.home-button')
             @endif
             <livewire:color-scheme-switcher />
-            <livewire:settings />
+            <livewire:control-panel />
         </x-buttons-stack>
 
         @include('partials.colorful-background')
@@ -119,5 +119,7 @@
             @include('partials.main-menu')
             @include('partials.athkar-app.index')
         </main>
+
+        @include('partials.copyright-and-version')
     </div>
 </x-app>

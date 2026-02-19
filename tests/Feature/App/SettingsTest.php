@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Settings;
+use App\Livewire\ControlPanel;
 use App\Models\Setting;
 
 use function Pest\Livewire\livewire;
@@ -22,10 +22,10 @@ it('does not persist settings changes globally', function () {
         'maximum_main_text_size' => 20,
     ];
 
-    livewire(Settings::class)
-        ->callAction('settings', data: $payload)
+    livewire(ControlPanel::class)
+        ->callAction('controlPanel', data: $payload)
         ->assertHasNoFormErrors()
-        ->assertDispatched('settings-updated');
+        ->assertDispatched('control-panel-updated');
 
     $updatedSettings = Setting::query()->pluck('value', 'name')->all();
 
@@ -33,8 +33,8 @@ it('does not persist settings changes globally', function () {
 });
 
 it('normalizes the main text size range in the settings modal', function () {
-    livewire(Settings::class)
-        ->callAction('settings', data: [
+    livewire(ControlPanel::class)
+        ->callAction('controlPanel', data: [
             'main_text_size_range' => [
                 Setting::MIN_MAIN_TEXT_SIZE_MIN - 1,
                 Setting::MAX_MAIN_TEXT_SIZE_MAX + 1,
@@ -42,20 +42,20 @@ it('normalizes the main text size range in the settings modal', function () {
         ])
         ->assertHasFormErrors(['main_text_size_range.0', 'main_text_size_range.1']);
 
-    livewire(Settings::class)
-        ->callAction('settings', data: [
+    livewire(ControlPanel::class)
+        ->callAction('controlPanel', data: [
             'main_text_size_range' => [19, 16],
         ])
         ->assertHasNoFormErrors()
-        ->assertSet('clientSettings.minimum_main_text_size', 16)
-        ->assertSet('clientSettings.maximum_main_text_size', 19);
+        ->assertSet('clientControlPanel.minimum_main_text_size', 16)
+        ->assertSet('clientControlPanel.maximum_main_text_size', 19);
 });
 
 it('accepts a valid main text size range in the settings modal', function () {
-    livewire(Settings::class)
-        ->callAction('settings', data: [
+    livewire(ControlPanel::class)
+        ->callAction('controlPanel', data: [
             'main_text_size_range' => [14, 19],
         ])
         ->assertHasNoFormErrors()
-        ->assertDispatched('settings-updated');
+        ->assertDispatched('control-panel-updated');
 });

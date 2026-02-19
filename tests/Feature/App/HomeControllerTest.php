@@ -7,6 +7,19 @@ use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
 
+function copyrightVersionShellClasses(string $content): string
+{
+    $matched = preg_match(
+        '/<div\s+class="([^"]*)"\s+data-testid="copyright-version-shell"/',
+        $content,
+        $matches,
+    );
+
+    expect($matched)->toBe(1);
+
+    return $matches[1];
+}
+
 it('fetches athkar from the remote api on mobile', function () {
     config([
         'nativephp-internal.running' => true,
@@ -38,6 +51,13 @@ it('fetches athkar from the remote api on mobile', function () {
     $response->assertSuccessful();
     $response->assertViewHas('athkar', $payload);
 
+    $shellClasses = copyrightVersionShellClasses($response->getContent());
+
+    expect($shellClasses)
+        ->toContain('bottom-7')
+        ->not->toContain('bottom-3')
+        ->not->toContain('mb-7');
+
     Http::assertSent(function (HttpRequest $request): bool {
         return $request->url() === route('api.athkar.index');
     });
@@ -67,6 +87,12 @@ it('uses local athkar payload on non-mobile requests', function () {
                 && $item['origin'] === 'مرجع';
         });
     });
+
+    $shellClasses = copyrightVersionShellClasses($response->getContent());
+
+    expect($shellClasses)
+        ->toContain('bottom-3')
+        ->not->toContain('bottom-7');
 
     Http::assertNothingSent();
 });
@@ -103,4 +129,16 @@ it('falls back to local athkar payload on mobile when api request fails', functi
     Http::assertSent(function (HttpRequest $request): bool {
         return $request->url() === route('api.athkar.index');
     });
+});
+
+it('renders the shared origin-indicator icon class without pixel offset hacks', function () {
+    $response = get('/');
+
+    $response->assertSuccessful()
+        ->assertSee('athkar-origin-indicator__icon', false);
+
+    $content = $response->getContent();
+
+    expect(substr_count($content, 'athkar-origin-indicator__icon'))->toBeGreaterThanOrEqual(2)
+        ->and($content)->not->toContain('-left-px -top-px');
 });

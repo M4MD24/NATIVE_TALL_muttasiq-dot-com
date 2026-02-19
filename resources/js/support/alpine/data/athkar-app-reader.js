@@ -978,28 +978,74 @@ document.addEventListener('alpine:init', () => {
             return this.hasOrigin(index);
         },
         get activeList() {
-            return this.activeMode ? this.athkarFor(this.activeMode) : [];
+            const mode = this.activeMode;
+
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return [];
+            }
+
+            const athkar = Array.isArray(this.athkar) ? this.athkar : [];
+
+            return athkar.filter((item) => item?.time === 'shared' || item?.time === mode);
         },
         get activeIndex() {
-            return this.activeMode ? (this.progress[this.activeMode]?.index ?? 0) : 0;
+            const mode = this.activeMode;
+
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return 0;
+            }
+
+            const index = Number(this.progress?.[mode]?.index ?? 0);
+
+            if (!Number.isFinite(index) || index < 0) {
+                return 0;
+            }
+
+            return Math.trunc(index);
         },
         get totalRequiredCount() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
-            return this.activeList.reduce(
-                (total, _, index) => total + this.requiredCount(index),
-                0,
-            );
+            return activeList.reduce((total, item, index) => {
+                const requiredCount =
+                    typeof this.requiredCount === 'function'
+                        ? Number(this.requiredCount(index))
+                        : Number(item?.count ?? 1);
+
+                if (!Number.isFinite(requiredCount) || requiredCount < 0) {
+                    return total;
+                }
+
+                return total + requiredCount;
+            }, 0);
         },
         get totalCompletedCount() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
-            return this.activeList.reduce((total, _, index) => {
-                return total + this.countAt(index);
+            const mode = this.activeMode;
+            const counts = Array.isArray(this.progress?.[mode]?.counts)
+                ? this.progress[mode].counts
+                : [];
+
+            return activeList.reduce((total, _, index) => {
+                const completedCount =
+                    typeof this.countAt === 'function'
+                        ? Number(this.countAt(index))
+                        : Number(counts[index] ?? 0);
+
+                if (!Number.isFinite(completedCount) || completedCount < 0) {
+                    return total;
+                }
+
+                return total + completedCount;
             }, 0);
         },
         textLetterCount(text) {
@@ -1020,40 +1066,120 @@ document.addEventListener('alpine:init', () => {
             }
         },
         get totalRequiredLetters() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
-            return this.activeList.reduce((total, item, index) => {
-                const letters = this.textLetterCount(item?.text);
+            const countLetters = (text) => {
+                if (typeof this.textLetterCount === 'function') {
+                    return this.textLetterCount(text);
+                }
 
-                return total + letters * this.requiredCount(index);
+                const normalized = String(text ?? '');
+
+                if (!normalized) {
+                    return 0;
+                }
+
+                try {
+                    const letters = normalized.match(/\p{L}/gu);
+
+                    return letters ? letters.length : 0;
+                } catch (_) {
+                    const stripped = normalized.replace(/\s+/gu, '');
+
+                    return stripped ? Array.from(stripped).length : 0;
+                }
+            };
+
+            return activeList.reduce((total, item, index) => {
+                const letters = countLetters(item?.text);
+                const requiredCount =
+                    typeof this.requiredCount === 'function'
+                        ? Number(this.requiredCount(index))
+                        : Number(item?.count ?? 1);
+
+                if (!Number.isFinite(requiredCount) || requiredCount < 0) {
+                    return total;
+                }
+
+                return total + letters * requiredCount;
             }, 0);
         },
         get totalCompletedLetters() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
-            return this.activeList.reduce((total, item, index) => {
-                const letters = this.textLetterCount(item?.text);
-                const required = this.requiredCount(index);
-                const completed = Math.min(this.countAt(index), required);
+            const mode = this.activeMode;
+            const counts = Array.isArray(this.progress?.[mode]?.counts)
+                ? this.progress[mode].counts
+                : [];
+            const countLetters = (text) => {
+                if (typeof this.textLetterCount === 'function') {
+                    return this.textLetterCount(text);
+                }
+
+                const normalized = String(text ?? '');
+
+                if (!normalized) {
+                    return 0;
+                }
+
+                try {
+                    const letters = normalized.match(/\p{L}/gu);
+
+                    return letters ? letters.length : 0;
+                } catch (_) {
+                    const stripped = normalized.replace(/\s+/gu, '');
+
+                    return stripped ? Array.from(stripped).length : 0;
+                }
+            };
+
+            return activeList.reduce((total, item, index) => {
+                const letters = countLetters(item?.text);
+                const requiredCount =
+                    typeof this.requiredCount === 'function'
+                        ? Number(this.requiredCount(index))
+                        : Number(item?.count ?? 1);
+                const completedCount =
+                    typeof this.countAt === 'function'
+                        ? Number(this.countAt(index))
+                        : Number(counts[index] ?? 0);
+
+                if (
+                    !Number.isFinite(requiredCount) ||
+                    requiredCount < 0 ||
+                    !Number.isFinite(completedCount) ||
+                    completedCount < 0
+                ) {
+                    return total;
+                }
+
+                const completed = Math.min(completedCount, requiredCount);
 
                 return total + letters * completed;
             }, 0);
         },
         get totalRemainingLetters() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
             return Math.max(this.totalRequiredLetters - this.totalCompletedLetters, 0);
         },
         get slideProgressPercent() {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
             const totalLetters = this.totalRequiredLetters;
 
-            if (!this.activeList.length || !totalLetters) {
+            if (!activeList.length || !totalLetters) {
                 return 0;
             }
 
@@ -1063,13 +1189,56 @@ document.addEventListener('alpine:init', () => {
             return Math.min(100, Math.max(0, percent));
         },
         get maxNavigableIndex() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 0;
             }
 
-            if (this.shouldPreventSwitching()) {
-                const firstIncomplete = this.activeList.findIndex((_, index) => {
-                    return !this.isItemComplete(index);
+            const shouldPreventSwitching =
+                typeof this.shouldPreventSwitching === 'function'
+                    ? this.shouldPreventSwitching()
+                    : (() => {
+                          const value =
+                              this.settings?.does_prevent_switching_athkar_until_completion;
+
+                          if (typeof value === 'boolean') {
+                              return value;
+                          }
+
+                          if (value === 1 || value === '1') {
+                              return true;
+                          }
+
+                          if (value === 0 || value === '0') {
+                              return false;
+                          }
+
+                          return true;
+                      })();
+
+            if (shouldPreventSwitching) {
+                const mode = this.activeMode;
+                const counts = Array.isArray(this.progress?.[mode]?.counts)
+                    ? this.progress[mode].counts
+                    : [];
+                const firstIncomplete = activeList.findIndex((item, index) => {
+                    if (typeof this.isItemComplete === 'function') {
+                        return !this.isItemComplete(index);
+                    }
+
+                    const requiredCount = Number(item?.count ?? 1);
+                    const completedCount = Number(counts[index] ?? 0);
+
+                    if (!Number.isFinite(requiredCount) || requiredCount <= 0) {
+                        return false;
+                    }
+
+                    if (!Number.isFinite(completedCount) || completedCount < 0) {
+                        return true;
+                    }
+
+                    return completedCount < requiredCount;
                 });
 
                 if (firstIncomplete !== -1) {
@@ -1077,7 +1246,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            return this.activeList.length - 1;
+            return activeList.length - 1;
         },
         settingValue(name, fallback) {
             const value = this.settings?.[name];
@@ -1118,7 +1287,9 @@ document.addEventListener('alpine:init', () => {
             return this.isAllComplete() || this.isModeComplete(this.activeMode);
         },
         get navPreviewIndex() {
-            return this.nav.isActive ? this.nav.dragIndex : this.nav.hoverIndex;
+            const nav = this.nav ?? {};
+
+            return nav.isActive ? nav.dragIndex : nav.hoverIndex;
         },
         navIsRtl() {
             const track = this.$refs?.athkarNav;
@@ -1155,20 +1326,32 @@ document.addEventListener('alpine:init', () => {
             return `${segment * (index + 0.5)}%`;
         },
         get navGradient() {
-            if (!this.activeList.length) {
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (!activeList.length) {
                 return 'linear-gradient(90deg, var(--athkar-nav-pending) 0% 100%)';
             }
 
-            const direction = this.navIsRtl() ? 270 : 90;
-            const segment = this.segmentWidthPercent();
-            const stops = this.activeList.map((_, index) => {
+            const direction = typeof this.navIsRtl === 'function' && this.navIsRtl() ? 270 : 90;
+            const segment = 100 / activeList.length;
+            const mode = this.activeMode;
+            const counts = Array.isArray(this.progress?.[mode]?.counts)
+                ? this.progress[mode].counts
+                : [];
+            const maxNavigableIndex = Number(this.maxNavigableIndex ?? 0);
+            const stops = activeList.map((item, index) => {
                 const start = (index * segment).toFixed(4);
                 const end = ((index + 1) * segment).toFixed(4);
                 let color = 'var(--athkar-nav-pending)';
 
-                if (this.isItemComplete(index)) {
+                const isItemComplete =
+                    typeof this.isItemComplete === 'function'
+                        ? this.isItemComplete(index)
+                        : Number(counts[index] ?? 0) >= Number(item?.count ?? 1);
+
+                if (isItemComplete) {
                     color = 'var(--athkar-nav-complete)';
-                } else if (index <= this.maxNavigableIndex) {
+                } else if (index <= maxNavigableIndex) {
                     color = 'var(--athkar-nav-available)';
                 }
 

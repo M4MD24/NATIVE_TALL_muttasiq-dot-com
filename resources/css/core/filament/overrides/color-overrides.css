@@ -7,10 +7,34 @@
         background-color: var(--fi-shell-bg-dark);
     }
 
+    :where(.dark, .dark *) :is(.fi-body, .fi-modal, .fi-dropdown-panel, .fi-no) {
+        --primary-50: var(--fi-primary-dark-50);
+        --primary-100: var(--fi-primary-dark-100);
+        --primary-200: var(--fi-primary-dark-200);
+        --primary-300: var(--fi-primary-dark-300);
+        --primary-400: var(--fi-primary-dark-400);
+        --primary-500: var(--fi-primary-dark-500);
+        --primary-600: var(--fi-primary-dark-600);
+        --primary-700: var(--fi-primary-dark-700);
+        --primary-800: var(--fi-primary-dark-800);
+        --primary-900: var(--fi-primary-dark-900);
+        --primary-950: var(--fi-primary-dark-950);
+        --color-primary-50: var(--fi-primary-dark-50);
+        --color-primary-100: var(--fi-primary-dark-100);
+        --color-primary-200: var(--fi-primary-dark-200);
+        --color-primary-300: var(--fi-primary-dark-300);
+        --color-primary-400: var(--fi-primary-dark-400);
+        --color-primary-500: var(--fi-primary-dark-500);
+        --color-primary-600: var(--fi-primary-dark-600);
+        --color-primary-700: var(--fi-primary-dark-700);
+        --color-primary-800: var(--fi-primary-dark-800);
+        --color-primary-900: var(--fi-primary-dark-900);
+        --color-primary-950: var(--fi-primary-dark-950);
+    }
+
     .fi-topbar,
     .fi-sidebar,
     .fi-body-has-topbar .fi-sidebar-header,
-    .fi-simple-main,
     .fi-modal > .fi-modal-window-ctn > .fi-modal-window,
     .fi-section:not(.fi-section-not-contained):not(.fi-aside),
     .fi-section:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
@@ -21,7 +45,6 @@
     :where(.dark, .dark *) .fi-topbar,
     :where(.dark, .dark *) .fi-sidebar,
     :where(.dark, .dark *) .fi-body-has-topbar .fi-sidebar-header,
-    :where(.dark, .dark *) .fi-simple-main,
     :where(.dark, .dark *) .fi-modal > .fi-modal-window-ctn > .fi-modal-window,
     :where(.dark, .dark *) .fi-section:not(.fi-section-not-contained):not(.fi-aside),
     :where(.dark, .dark *)
@@ -29,6 +52,24 @@
         > .fi-section-content-ctn,
     :where(.dark, .dark *) .fi-dropdown-panel {
         background-color: var(--fi-surface-bg-dark);
+    }
+
+    .fi-simple-main,
+    .fi-sc-tabs.fi-contained,
+    .fi-tabs:not(.fi-contained),
+    .fi-ta-ctn,
+    .fi-ta-filters-before-content-ctn,
+    .fi-ta-filters-after-content-ctn {
+        background-color: var(--fi-surface-raised-bg-light);
+    }
+
+    :where(.dark, .dark *) .fi-simple-main,
+    :where(.dark, .dark *) .fi-sc-tabs.fi-contained,
+    :where(.dark, .dark *) .fi-tabs:not(.fi-contained),
+    :where(.dark, .dark *) .fi-ta-ctn,
+    :where(.dark, .dark *) .fi-ta-filters-before-content-ctn,
+    :where(.dark, .dark *) .fi-ta-filters-after-content-ctn {
+        background-color: var(--fi-surface-raised-bg-dark);
     }
 
     .fi-modal.fi-modal-has-sticky-header

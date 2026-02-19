@@ -6,4 +6,5 @@ return [
     App\Providers\FilamentServiceProvider::class,
     App\Providers\InereshServiceProvider::class,
     App\Providers\LazyCssServiceProvider::class,
+    App\Providers\NativeServiceProvider::class,
 ];
