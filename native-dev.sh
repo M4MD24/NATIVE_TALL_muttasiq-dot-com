@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-./.scripts/prepare.sh
-./.scripts/web/prepare.sh
+./.scripts/support/prepare.sh
+./.scripts/web/support/prepare.sh
 
 composer dev

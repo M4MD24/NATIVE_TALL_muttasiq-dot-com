@@ -104,3 +104,15 @@ it('falls back to local athkar payload on mobile when api request fails', functi
         return $request->url() === route('api.athkar.index');
     });
 });
+
+it('renders the shared origin-indicator icon class without pixel offset hacks', function () {
+    $response = get('/');
+
+    $response->assertSuccessful()
+        ->assertSee('athkar-origin-indicator__icon', false);
+
+    $content = $response->getContent();
+
+    expect(substr_count($content, 'athkar-origin-indicator__icon'))->toBeGreaterThanOrEqual(2)
+        ->and($content)->not->toContain('-left-px -top-px');
+});

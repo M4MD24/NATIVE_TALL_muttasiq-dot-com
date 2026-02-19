@@ -516,11 +516,15 @@
         }
 
         .athkar-origin-indicator {
+            --athkar-origin-size: 42px;
+            --athkar-origin-inset: 5px;
+            --athkar-origin-icon-size: 26px;
+            --athkar-origin-corner-radius: 7px;
             position: relative;
             display: inline-grid;
             place-items: center;
-            inline-size: 2.6rem;
-            block-size: 2.6rem;
+            inline-size: var(--athkar-origin-size);
+            block-size: var(--athkar-origin-size);
             padding: 0;
             border: none;
             background: transparent;
@@ -531,9 +535,9 @@
         .athkar-origin-indicator::before {
             content: "";
             position: absolute;
-            inset: 0.28rem;
+            inset: var(--athkar-origin-inset);
             transform: rotate(45deg);
-            border-radius: 0.42rem;
+            border-radius: var(--athkar-origin-corner-radius);
             border: 1px solid color-mix(in srgb, var(--info-300) 65%, transparent);
             background: color-mix(in srgb, var(--info-50) 92%, transparent);
             box-shadow: 0 6px 14px color-mix(in srgb, var(--gray-900) 12%, transparent);
@@ -543,6 +547,13 @@
         .athkar-origin-indicator>* {
             position: relative;
             z-index: 1;
+        }
+
+        .athkar-origin-indicator__icon {
+            display: block;
+            flex-shrink: 0;
+            inline-size: var(--athkar-origin-icon-size);
+            block-size: var(--athkar-origin-icon-size);
         }
 
         .athkar-origin-indicator:focus-visible {
@@ -556,13 +567,17 @@
         }
 
         .athkar-origin-indicator--mobile {
-            inline-size: 2.45rem;
-            block-size: 2.45rem;
+            --athkar-origin-size: 40px;
+            --athkar-origin-inset: 4px;
+            --athkar-origin-icon-size: 24px;
+            --athkar-origin-corner-radius: 7px;
         }
 
         .athkar-origin-indicator--desktop {
-            inline-size: 3.05rem;
-            block-size: 3.05rem;
+            --athkar-origin-size: 50px;
+            --athkar-origin-inset: 5px;
+            --athkar-origin-icon-size: 40px;
+            --athkar-origin-corner-radius: 8px;
         }
 
         .athkar-origin-indicator.is-active {
@@ -1041,7 +1056,7 @@
                                 x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
                             >
                                 <x-icon
-                                    class="relative -left-px -top-px h-6 w-6 sm:left-0 sm:top-0"
+                                    class="athkar-origin-indicator__icon"
                                     name="bootstrap.exclamation-diamond"
                                 />
                             </button>
@@ -1162,7 +1177,7 @@
                                         x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
                                     >
                                         <x-icon
-                                            class="h-10 w-10"
+                                            class="athkar-origin-indicator__icon"
                                             name="bootstrap.exclamation-diamond"
                                         />
                                     </button>

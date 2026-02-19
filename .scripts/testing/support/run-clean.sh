@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-preflight_script="${root_dir}/.scripts/test-preflight.sh"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+preflight_script="${root_dir}/.scripts/testing/support/preflight.sh"
 
 if [[ ! -x "${preflight_script}" ]]; then
     echo "Missing executable preflight script at ${preflight_script}" >&2
@@ -10,7 +10,7 @@ if [[ ! -x "${preflight_script}" ]]; then
 fi
 
 if [[ "$#" -eq 0 ]]; then
-    echo "Usage: .scripts/run-tests-clean.sh <command> [args...]" >&2
+    echo "Usage: .scripts/testing/support/run-clean.sh <command> [args...]" >&2
     exit 64
 fi
 

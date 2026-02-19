@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 state_file="${root_dir}/vendor/pestphp/pest-plugin-browser/.temp/playwright-server.json"
 temp_dir="${root_dir}/vendor/pestphp/pest-plugin-browser/.temp"
 project_playwright_bin="${root_dir}/node_modules/.bin/playwright"

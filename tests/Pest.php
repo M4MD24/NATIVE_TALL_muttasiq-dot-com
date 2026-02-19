@@ -100,7 +100,7 @@ function runPlaywrightBrowserPreflight(): void
         return;
     }
 
-    $scriptPath = dirname(__DIR__).'/.scripts/test-preflight.sh';
+    $scriptPath = dirname(__DIR__).'/.scripts/testing/support/preflight.sh';
 
     if (! file_exists($scriptPath) || ! is_executable($scriptPath)) {
         return;

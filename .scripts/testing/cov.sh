@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 project_name="$(basename "${root_dir}")"
 container_project_root="/var/www/html/${project_name}"
 plugin_cache_relative_path="vendor/pest-plugins.json"
 
 run_pest_coverage() {
-    .scripts/run-tests-clean.sh \
+    .scripts/testing/support/run-clean.sh \
         vendor/bin/pest \
         tests/Unit \
         tests/Feature/App \
@@ -38,7 +38,7 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 0
 fi
 
-container_name="${TESTCOV_CONTAINER:-}"
+container_name="${TESTCOV_CONTAINER:-${TEST_CONTAINER:-${TESTING_CONTAINER:-}}}"
 
 if [[ -z "${container_name}" ]]; then
     container_lines="$(docker ps --format '{{.Names}} {{.Label "com.docker.compose.service"}} {{.Label "com.docker.compose.project"}}' 2>/dev/null || true)"
@@ -50,6 +50,11 @@ if [[ -z "${container_name}" ]]; then
             container_name="$(awk '$2 == "app" { print $1; exit }' <<<"${container_lines}")"
         fi
     fi
+fi
+
+if [[ -n "${container_name}" ]] && ! docker ps --format '{{.Names}}' 2>/dev/null | grep -Fxq "${container_name}"; then
+    run_testcov_in_current_shell "$@"
+    exit 0
 fi
 
 if [[ -z "${container_name}" ]]; then
@@ -75,7 +80,7 @@ docker exec \
             sed -i '"'"'/"Pest\\\\Browser\\\\Plugin"/d'"'"' "${plugin_cache_file}"
         fi
 
-        .scripts/run-tests-clean.sh \
+        .scripts/testing/support/run-clean.sh \
             vendor/bin/pest \
             tests/Unit \
             tests/Feature/App \

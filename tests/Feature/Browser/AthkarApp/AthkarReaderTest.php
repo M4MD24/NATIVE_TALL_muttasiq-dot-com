@@ -815,6 +815,27 @@ JS);
         $page,
         <<<'JS'
 (() => {
+  const originIcon = document.querySelector('[data-athkar-slide][data-active="true"] .athkar-origin-indicator--mobile .athkar-origin-indicator__icon');
+  if (!originIcon) {
+    return false;
+  }
+
+  const iconClassName = String(originIcon.className ?? '');
+
+  return (
+    originIcon.classList.contains('athkar-origin-indicator__icon') &&
+    !iconClassName.includes('-left-px') &&
+    !iconClassName.includes('-top-px')
+  );
+})()
+JS,
+        true,
+    );
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
   const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
   if (!slide) {
     return false;
