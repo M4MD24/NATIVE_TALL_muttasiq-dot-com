@@ -172,6 +172,50 @@ it('opens settings on the updates tab when requested', function () {
 JS, true);
 });
 
+it('opens the updates tab from the version button on touch devices', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $keptVisible = (bool) $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  if (!shell || !data) {
+    return false;
+  }
+
+  data.clearLoopTimers();
+  data.isVisible = false;
+  data.isTouching = false;
+  data.visibleDuration = 300;
+
+  shell.dispatchEvent(new Event('touchstart', { bubbles: true, cancelable: true }));
+  shell.dispatchEvent(new Event('touchend', { bubbles: true, cancelable: true }));
+
+  return data.isVisible === true;
+})()
+JS);
+
+    expect($keptVisible)->toBeTrue();
+
+    $page->click('[data-testid="copyright-version-button"]');
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($page, <<<'JS'
+(() => {
+  const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
+  if (!activeTab) {
+    return false;
+  }
+  const label = (activeTab.textContent ?? '').replace(/\s+/g, ' ').trim();
+  return label.includes('تحديثات');
+})()
+JS, true);
+});
+
 it('adds the main menu hash on a fresh load', function () {
     $page = visit('/');
 

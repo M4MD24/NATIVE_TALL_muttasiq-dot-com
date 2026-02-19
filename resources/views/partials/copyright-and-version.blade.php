@@ -50,6 +50,16 @@
             this.isVisible = false;
             this.queueNextReveal();
         },
+        releaseVisibleAfter(delay) {
+            this.clearLoopTimers();
+            this.isVisible = true;
+            this.hideTimeoutId = setTimeout(() => {
+                if (this.isHovering || this.isTouching) {
+                    return;
+                }
+                this.releaseVisible();
+            }, delay);
+        },
         handleMouseEnter() {
             if (this.isTouchDevice()) {
                 return;
@@ -76,7 +86,7 @@
                 return;
             }
             this.isTouching = false;
-            this.releaseVisible();
+            this.releaseVisibleAfter(this.visibleDuration);
         },
         init() {
             this.queueNextReveal();
