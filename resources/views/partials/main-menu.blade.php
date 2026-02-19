@@ -52,6 +52,4 @@
             :caption="'المحفوظات'"
         />
     </x-main-menu>
-
-    @include('partials.copyright-and-version')
 </div>

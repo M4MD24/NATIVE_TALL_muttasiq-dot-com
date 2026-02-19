@@ -119,5 +119,7 @@
             @include('partials.main-menu')
             @include('partials.athkar-app.index')
         </main>
+
+        @include('partials.copyright-and-version')
     </div>
 </x-app>
