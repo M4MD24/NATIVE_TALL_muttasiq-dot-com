@@ -20,4 +20,8 @@
     .mobile-platform .fi-no {
         padding-bottom: calc(2rem + var(--inset-bottom, 0px));
     }
+
+    :where([dir='rtl']) .fi-sc-text:not(.fi-badge) {
+        line-height: var(--tw-leading, 1.6);
+    }
 }
