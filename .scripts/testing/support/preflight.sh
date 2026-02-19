@@ -2,10 +2,29 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+script_name="$(basename "${BASH_SOURCE[0]}")"
 state_file="${root_dir}/vendor/pestphp/pest-plugin-browser/.temp/playwright-server.json"
 temp_dir="${root_dir}/vendor/pestphp/pest-plugin-browser/.temp"
 project_playwright_bin="${root_dir}/node_modules/.bin/playwright"
 project_name="$(basename "${root_dir}")"
+
+detect_runtime_mode() {
+    if [[ -f /.dockerenv ]]; then
+        printf '%s\n' "docker"
+
+        return
+    fi
+
+    if [[ -r /proc/1/cgroup ]] && grep -Eq '(docker|containerd|kubepods)' /proc/1/cgroup; then
+        printf '%s\n' "docker"
+
+        return
+    fi
+
+    printf '%s\n' "local"
+}
+
+echo "[testing:${script_name}] mode=$(detect_runtime_mode)" >&2
 
 collect_descendant_pids() {
     local pid="$1"

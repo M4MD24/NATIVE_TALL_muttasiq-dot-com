@@ -2,6 +2,7 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+script_name="$(basename "${BASH_SOURCE[0]}")"
 project_name="$(basename "${root_dir}")"
 container_project_root="/var/www/html/${project_name}"
 run_clean_script="${root_dir}/.scripts/testing/support/run-clean.sh"
@@ -49,9 +50,23 @@ resolve_test_container() {
     printf '%s\n' "${container_name}"
 }
 
+print_runtime_indicator() {
+    local mode="$1"
+    local container_name="${2:-}"
+
+    if [[ "${mode}" == "docker" ]]; then
+        echo "[testing:${script_name}] mode=docker container=${container_name}" >&2
+
+        return
+    fi
+
+    echo "[testing:${script_name}] mode=local" >&2
+}
+
 run_local() (
     set -euo pipefail
     cd "${root_dir}"
+    print_runtime_indicator "local"
 
     plugin_cache_file="${plugin_cache_relative_path}"
     backup_file=""
@@ -69,6 +84,8 @@ run_local() (
 run_in_container() {
     local container_name="$1"
     shift
+
+    print_runtime_indicator "docker" "${container_name}"
 
     docker exec \
         -e PEST_ENABLE_BROWSER_PLUGIN=0 \

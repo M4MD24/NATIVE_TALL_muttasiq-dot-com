@@ -165,8 +165,11 @@ function waitForScript($page, string $expression, mixed $expected = true): void
                     break;
                 } catch (Throwable $exception) {
                     if ($attempt === 2) {
+                        $underlyingMessage = trim((string) $exception->getMessage());
+                        $details = $underlyingMessage !== '' ? ' | cause: '.$underlyingMessage : '';
+
                         throw new RuntimeException(
-                            'Browser script execution failed for expression: '.$expression,
+                            'Browser script execution failed for expression: '.$expression.$details,
                             previous: $exception,
                         );
                     }

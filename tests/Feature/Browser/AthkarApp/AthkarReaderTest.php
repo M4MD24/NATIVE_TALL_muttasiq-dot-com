@@ -1997,6 +1997,8 @@ it('resets athkar progress when the day changes', function () {
     );
 
     waitForScript($page, athkarReaderDataScript('data.activeMode'), null);
+    waitForScript($page, athkarReaderDataScript('Array.isArray(data.activeList)'), true);
+    waitForScript($page, athkarReaderDataScript('data.totalRequiredCount'), 0);
     waitForScript(
         $page,
         athkarReaderDataScript('data.progress.sabah.counts.every((count) => Number(count) === 0)'),

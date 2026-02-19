@@ -2,10 +2,13 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+script_name="$(basename "${BASH_SOURCE[0]}")"
 project_name="$(basename "${root_dir}")"
 container_project_root="/var/www/html/${project_name}"
 run_clean_script="${root_dir}/.scripts/testing/support/run-clean.sh"
 browser_tests_path="${BROWSER_TESTS_PATH:-tests/Feature/Browser}"
+plugin_cache_relative_path="vendor/pest-plugins.json"
+browser_plugin_signature='Pest\\Browser\\Plugin'
 
 if [[ ! -x "${run_clean_script}" ]]; then
     echo "Missing executable script at ${run_clean_script}" >&2
@@ -49,6 +52,21 @@ resolve_test_container() {
     printf '%s\n' "${container_name}"
 }
 
+print_runtime_indicator() {
+    local mode="$1"
+    local container_name="${2:-}"
+    local cpu_cores="${3:-}"
+    local parallel_processes="${4:-}"
+
+    if [[ "${mode}" == "docker" ]]; then
+        echo "[testing:${script_name}] mode=docker container=${container_name} cpu=${cpu_cores} processes=${parallel_processes}" >&2
+
+        return
+    fi
+
+    echo "[testing:${script_name}] mode=local" >&2
+}
+
 run_browser_command() {
     if command -v timeout >/dev/null 2>&1; then
         "${run_clean_script}" timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
@@ -65,8 +83,32 @@ run_browser_command() {
     "${run_clean_script}" php artisan test --compact "${browser_tests_path}" "$@"
 }
 
+ensure_local_browser_plugin_cache() {
+    local plugin_cache_file="${root_dir}/${plugin_cache_relative_path}"
+
+    if [[ -f "${plugin_cache_file}" ]] && grep -Fq "${browser_plugin_signature}" "${plugin_cache_file}"; then
+        return
+    fi
+
+    if command -v composer >/dev/null 2>&1; then
+        (
+            cd "${root_dir}"
+            composer pest:dump-plugins >/dev/null 2>&1 || true
+        )
+    fi
+
+    if [[ -f "${plugin_cache_file}" ]] && grep -Fq "${browser_plugin_signature}" "${plugin_cache_file}"; then
+        return
+    fi
+
+    echo "Missing Pest Browser plugin cache entry. Run 'composer pest:dump-plugins'." >&2
+    exit 1
+}
+
 run_local() (
     cd "${root_dir}"
+    ensure_local_browser_plugin_cache
+    print_runtime_indicator "local"
     run_browser_command "$@"
 )
 
@@ -76,22 +118,103 @@ run_in_container() {
 
     docker exec \
         -e "BROWSER_TESTS_PATH=${browser_tests_path}" \
+        -e "TESTING_SCRIPT_NAME=${script_name}" \
+        -e "TESTING_CONTAINER_NAME=${container_name}" \
+        -e "TEST_RESERVED_CORES=${TEST_RESERVED_CORES:-1}" \
+        -e "TEST_MAX_PROCESSES=${TEST_MAX_PROCESSES:-8}" \
+        -e "TEST_BROWSER_MAX_PROCESSES=${TEST_BROWSER_MAX_PROCESSES:-}" \
+        -e "TEST_CPU_CORES=${TEST_CPU_CORES:-}" \
         -w "${container_project_root}" \
         "${container_name}" \
         sh -lc '
             set -eu
 
+            ensure_container_browser_plugin_cache() {
+                plugin_cache_file="'"${plugin_cache_relative_path}"'"
+                browser_plugin_signature='"'"${browser_plugin_signature}"'"'
+
+                if [ -f "${plugin_cache_file}" ] && grep -Fq "${browser_plugin_signature}" "${plugin_cache_file}"; then
+                    return
+                fi
+
+                if command -v composer >/dev/null 2>&1; then
+                    composer pest:dump-plugins >/dev/null 2>&1 || true
+                fi
+
+                if [ -f "${plugin_cache_file}" ] && grep -Fq "${browser_plugin_signature}" "${plugin_cache_file}"; then
+                    return
+                fi
+
+                echo "Missing Pest Browser plugin cache entry. Run composer pest:dump-plugins." >&2
+                exit 1
+            }
+
+            detect_cpu_cores() {
+                cpu_cores="${TEST_CPU_CORES:-}"
+
+                if [ -n "${cpu_cores}" ] && printf "%s" "${cpu_cores}" | grep -Eq "^[0-9]+$" && [ "${cpu_cores}" -gt 0 ]; then
+                    printf "%s\n" "${cpu_cores}"
+                    return 0
+                fi
+
+                if command -v nproc >/dev/null 2>&1; then
+                    cpu_cores="$(nproc 2>/dev/null || true)"
+                elif command -v getconf >/dev/null 2>&1; then
+                    cpu_cores="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
+                else
+                    cpu_cores=""
+                fi
+
+                if [ -z "${cpu_cores}" ] || ! printf "%s" "${cpu_cores}" | grep -Eq "^[0-9]+$" || [ "${cpu_cores}" -lt 1 ]; then
+                    cpu_cores=1
+                fi
+
+                printf "%s\n" "${cpu_cores}"
+            }
+
+            resolve_parallel_processes() {
+                cpu_cores="$1"
+                reserved_cores="${TEST_RESERVED_CORES:-1}"
+                max_processes="${TEST_BROWSER_MAX_PROCESSES:-${TEST_MAX_PROCESSES:-8}}"
+
+                if ! printf "%s" "${reserved_cores}" | grep -Eq "^[0-9]+$"; then
+                    reserved_cores=1
+                fi
+
+                if ! printf "%s" "${max_processes}" | grep -Eq "^[0-9]+$" || [ "${max_processes}" -lt 1 ]; then
+                    max_processes=8
+                fi
+
+                parallel_processes=$(( cpu_cores - reserved_cores ))
+
+                if [ "${parallel_processes}" -lt 1 ]; then
+                    parallel_processes=1
+                fi
+
+                if [ "${parallel_processes}" -gt "${max_processes}" ]; then
+                    parallel_processes="${max_processes}"
+                fi
+
+                printf "%s\n" "${parallel_processes}"
+            }
+
+            cpu_cores="$(detect_cpu_cores)"
+            parallel_processes="$(resolve_parallel_processes "${cpu_cores}")"
+            ensure_container_browser_plugin_cache
+
+            echo "[testing:${TESTING_SCRIPT_NAME}] mode=docker container=${TESTING_CONTAINER_NAME} cpu=${cpu_cores} processes=${parallel_processes}" >&2
+
             if command -v timeout >/dev/null 2>&1; then
-                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --parallel --processes=10 "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
             if [ -x /usr/bin/timeout ]; then
-                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --parallel --processes=10 "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
-            .scripts/testing/support/run-clean.sh php artisan test --parallel --processes=10 "${BROWSER_TESTS_PATH}" "$@"
+            .scripts/testing/support/run-clean.sh php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
         ' sh "$@"
 }
 
