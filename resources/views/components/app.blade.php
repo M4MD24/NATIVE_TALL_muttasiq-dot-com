@@ -68,8 +68,6 @@
         {{ $slot }}
     </div>
 
-    @include('partials.copyright-and-version')
-
     @livewire('notifications')
 
     <!-- Body Scripts --> {{-- ! Reloads on every refresh --}}

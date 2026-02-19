@@ -1,5 +1,8 @@
 <div
-    class="fixed inset-x-0 bottom-3 z-20 flex justify-center px-4 sm:px-6"
+    class="fixed inset-x-0 bottom-3 z-20 flex justify-center px-4 sm:px-6 opacity-0 transition-opacity w-full sm:w-auto max-w-full sm:max-w-none overflow-hidden"
+    x-bind:class="{
+        'opacity-100!': views['main-menu'].isOpen || views['athkar-app-gate'].isOpen,
+    }"
     data-testid="copyright-version-shell"
     x-data="{
         isVisible: false,
@@ -89,7 +92,7 @@
     x-on:touchcancel.passive="handleTouchEnd()"
 >
     <div
-        class="relative rounded-2xl border border-white/70 bg-gray-100/30 px-4 py-3 text-[1rem] text-gray-600 opacity-0 ring-1 ring-gray-200/70 transition-opacity duration-500 ease-out sm:px-6 sm:py-4 dark:border-white/10 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-white/10"
+        class="relative rounded-2xl border border-white/70 bg-gray-100/30 px-4 py-3 text-[0.8rem] sm:text-[1rem] text-gray-600 opacity-0 ring-1 ring-gray-200/70 transition-opacity duration-500 ease-out sm:px-6 sm:py-4 dark:border-white/10 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-white/10"
         data-testid="copyright-version-panel"
         x-bind:class="isVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'"
     >
