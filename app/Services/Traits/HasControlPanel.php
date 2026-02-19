@@ -85,7 +85,7 @@ trait HasControlPanel
 
                                         Components\Checkbox::make('does_skip_notice_panels')
                                             ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
-                                            ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-2 sm:mt-3 md:mt-0'])
+                                            ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-1 sm:mt-3 md:mt-0'])
                                             ->label($generalDefinitions['does_skip_notice_panels']['label']),
                                     ]),
 
