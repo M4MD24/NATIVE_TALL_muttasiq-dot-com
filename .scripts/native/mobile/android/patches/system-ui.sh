@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../" && pwd)"
 
 python3 - "${root_dir}" <<'PY'
 import re
@@ -712,15 +712,6 @@ for main_activity_path in [
     root_dir / "nativephp/android/app/src/main/java/com/nativephp/mobile/ui/MainActivity.kt",
 ]:
     _, error = patch_main_activity(main_activity_path)
-    if error:
-        raise SystemExit(1)
-
-for patch_fn, target_path in [
-    (patch_top_bar_component, root_dir / "vendor/nativephp/mobile/src/Edge/Components/Navigation/TopBar.php"),
-    (patch_bottom_nav_component, root_dir / "vendor/nativephp/mobile/src/Edge/Components/Navigation/BottomNav.php"),
-    (patch_edge_component, root_dir / "vendor/nativephp/mobile/src/Edge/Edge.php"),
-]:
-    _, error = patch_fn(target_path)
     if error:
         raise SystemExit(1)
 PY
