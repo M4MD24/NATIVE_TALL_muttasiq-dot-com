@@ -2016,16 +2016,16 @@
         },
         {
             "name": "goodm4ven/tailwind-merge",
-            "version": "v1.1.9",
+            "version": "v1.1.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge.git",
-                "reference": "54a93f235cd08d0053faa89980a391f77e656cff"
+                "reference": "a714b1b576565340193d5c2eb45263990c554ea8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge/zipball/54a93f235cd08d0053faa89980a391f77e656cff",
-                "reference": "54a93f235cd08d0053faa89980a391f77e656cff",
+                "url": "https://api.github.com/repos/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge/zipball/a714b1b576565340193d5c2eb45263990c554ea8",
+                "reference": "a714b1b576565340193d5c2eb45263990c554ea8",
                 "shasum": ""
             },
             "require": {
@@ -2093,7 +2093,7 @@
             ],
             "support": {
                 "issues": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge/issues",
-                "source": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge/tree/v1.1.9"
+                "source": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_tailwind-merge/tree/v1.1.10"
             },
             "funding": [
                 {
@@ -2109,7 +2109,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-02-03T13:54:52+00:00"
+            "time": "2026-02-19T08:31:59+00:00"
         },
         {
             "name": "graham-campbell/result-type",
