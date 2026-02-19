@@ -7,6 +7,7 @@ import './packages/alpine/hooks.js';
 import './packages/alpine/tippy';
 import './packages/nativephp/browser.js';
 import './packages/color';
+import './packages/day';
 import './packages/fitty';
 import './packages/anime';
 

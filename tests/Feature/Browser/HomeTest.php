@@ -43,8 +43,177 @@ it('shows settings and color scheme buttons by default', function () {
     resetBrowserState($page);
 
     $page
-        ->assertVisible('[data-stack-item][x-data] [data-testid="settings-button"]')
+        ->assertVisible('[data-stack-item][x-data] [data-testid="control-panel-button"]')
         ->assertVisible('[data-testid="color-scheme-switch-button"]');
+});
+
+it('uses the dark app icon in settings after toggling dark mode', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $page->script("window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', { isDarkModeOn: false });");
+
+    hashAction($page, '#toggle-color-scheme', false);
+    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme')?.isDarkModeOn)", true);
+
+    openControlPanelModal($page);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const icon = document.querySelector('.fi-modal-window img[alt="Muttasiq application icono"]');
+  const src = icon?.getAttribute('src');
+  return Boolean(src && src.includes('icon-dark.png'));
+})()
+JS, true);
+});
+
+it('cycles the copyright panel and keeps it visible while hovering on desktop', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(shell && data && data.isVisible === false);
+})()
+JS, true);
+
+    $prepared = (bool) $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  const bp = window.Alpine?.store?.('bp');
+  if (!data || !bp) {
+    return false;
+  }
+  bp.hasTouch = false;
+  data.waitDuration = 120;
+  data.visibleDuration = 80;
+  data.queueNextReveal(20);
+  return true;
+})()
+JS);
+
+    expect($prepared)->toBeTrue();
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === true);
+})()
+JS, true);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === false);
+})()
+JS, true);
+
+    $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  window.__copyrightHoverAt = Date.now();
+  shell?.dispatchEvent(new Event('mouseenter', { bubbles: true }));
+  return true;
+})()
+JS);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === true && (Date.now() - (window.__copyrightHoverAt ?? 0)) >= 170);
+})()
+JS, true);
+
+    $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  shell?.dispatchEvent(new Event('mouseleave', { bubbles: true }));
+  return true;
+})()
+JS);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  return Boolean(data?.isVisible === false);
+})()
+JS, true);
+});
+
+it('opens settings on the updates tab when requested', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $page->script('window.dispatchEvent(new CustomEvent("open-control-panel-modal", { detail: { tab: "updates" } }));');
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($page, <<<'JS'
+(() => {
+  const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
+  if (!activeTab) {
+    return false;
+  }
+  const label = (activeTab.textContent ?? '').replace(/\s+/g, ' ').trim();
+  return label.includes('تحديثات');
+})()
+JS, true);
+});
+
+it('opens the updates tab from the version button on touch devices', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $keptVisible = (bool) $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+  if (!shell || !data) {
+    return false;
+  }
+
+  data.clearLoopTimers();
+  data.isVisible = false;
+  data.isTouching = false;
+  data.visibleDuration = 300;
+
+  shell.dispatchEvent(new Event('touchstart', { bubbles: true, cancelable: true }));
+  shell.dispatchEvent(new Event('touchend', { bubbles: true, cancelable: true }));
+
+  return data.isVisible === true;
+})()
+JS);
+
+    expect($keptVisible)->toBeTrue();
+
+    $page->click('[data-testid="copyright-version-button"]');
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($page, <<<'JS'
+(() => {
+  const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
+  if (!activeTab) {
+    return false;
+  }
+  const label = (activeTab.textContent ?? '').replace(/\s+/g, ' ').trim();
+  return label.includes('تحديثات');
+})()
+JS, true);
 });
 
 it('adds the main menu hash on a fresh load', function () {

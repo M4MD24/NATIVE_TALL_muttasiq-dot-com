@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-preflight_script="${root_dir}/.scripts/test-preflight.sh"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+script_name="$(basename "${BASH_SOURCE[0]}")"
+preflight_script="${root_dir}/.scripts/testing/support/preflight.sh"
 
 if [[ ! -x "${preflight_script}" ]]; then
     echo "Missing executable preflight script at ${preflight_script}" >&2
@@ -10,11 +11,33 @@ if [[ ! -x "${preflight_script}" ]]; then
 fi
 
 if [[ "$#" -eq 0 ]]; then
-    echo "Usage: .scripts/run-tests-clean.sh <command> [args...]" >&2
+    echo "Usage: .scripts/testing/support/run-clean.sh <command> [args...]" >&2
     exit 64
 fi
 
 child_pid=""
+detect_runtime_mode() {
+    if [[ -f /.dockerenv ]]; then
+        printf '%s\n' "docker"
+
+        return
+    fi
+
+    if [[ -r /proc/1/cgroup ]] && grep -Eq '(docker|containerd|kubepods)' /proc/1/cgroup; then
+        printf '%s\n' "docker"
+
+        return
+    fi
+
+    printf '%s\n' "local"
+}
+
+print_runtime_indicator() {
+    local mode
+    mode="$(detect_runtime_mode)"
+    echo "[testing:${script_name}] mode=${mode} command=$*" >&2
+}
+
 collect_descendant_pids() {
     local pid="$1"
     local children=()
@@ -63,6 +86,8 @@ cleanup() {
 
     "${preflight_script}" || true
 }
+
+print_runtime_indicator "$@"
 
 "${preflight_script}"
 trap cleanup EXIT INT TERM

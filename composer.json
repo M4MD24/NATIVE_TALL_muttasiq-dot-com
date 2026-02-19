@@ -90,23 +90,23 @@
         ],
         "test": [
             "@optimize",
-            ".scripts/run-tests-clean.sh vendor/bin/pest --exclude-group=browser"
+            ".scripts/testing/test.sh"
         ],
-        "testel": [
+        "testparal": [
             "@optimize",
-            ".scripts/run-tests-clean.sh vendor/bin/pest --parallel --exclude-group=browser"
+            ".scripts/testing/paral.sh"
         ],
         "testcov": [
             "@optimize",
-            ".scripts/testcov.sh"
+            ".scripts/testing/cov.sh"
         ],
         "testbrowser": [
             "@optimize",
-            ".scripts/run-tests-clean.sh /usr/bin/timeout 5m php artisan test --compact tests/Feature/Browser"
+            ".scripts/testing/browser.sh"
         ],
         "testall": [
             "@optimize",
-            "@testel",
+            "@testparal",
             "@testbrowser"
         ],
         "green": [

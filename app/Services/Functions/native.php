@@ -37,3 +37,16 @@ if (! function_exists('is_platform')) {
 } else {
     throw new Exception('The function `is_platform` already exists.');
 }
+
+if (! function_exists('open_link_native_aware')) {
+    function open_link_native_aware(string $url): string
+    {
+        if (is_platform('mobile')) {
+            return "await window.browser.open(`{$url}`)";
+        }
+
+        return "window.open(`{$url}`, `_blank`, `noopener`)";
+    }
+} else {
+    throw new Exception('The function `open_link_native_aware` already exists.');
+}

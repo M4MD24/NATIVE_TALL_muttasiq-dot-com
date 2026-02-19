@@ -292,9 +292,7 @@
                     <button
                         class="athkar-notice__seal whitespace-nowrap"
                         type="button"
-                        x-on:click="{{ is_platform('mobile')
-                            ? 'await browser.open(`https://t.me/Ruqyah011/4730`)'
-                            : 'window.open(`https://t.me/Ruqyah011/4730`, `_blank`, `noopener`)' }}"
+                        x-on:click="{{ open_link_native_aware('https://t.me/Ruqyah011/4730') }}"
                     >
                         <img
                             src="{{ asset('images/references/alruqya-alshariyya.jpg') }}"

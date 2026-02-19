@@ -8,7 +8,7 @@
 أفكار المشروع مستعرَضة عن طريق فيديو في [منشور التليجرام](https://t.me/tiqaniy/29) هذا:<br> 
 
 <a href="https://t.me/tiqaniy/29" target="_blank">
-    <img width="100%" alt="telegram post screenshot" src="https://github.com/user-attachments/assets/470e98bf-deea-46cd-8459-d822734ce90b" />
+    <img width="100%" alt="telegram post screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
 </a>
 
 ### المتصفح
@@ -16,9 +16,9 @@
 لتجربة التطبيق الآن من أي متصفح:<br>
 https://muttasiq.com
 
-<img src=".assets/images/screenshots/desktop/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
+<img src="public/docs/updates/images/v-0-1-0/web/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
 <br><br>
-<img src=".assets/images/screenshots/desktop/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
+<img src="public/docs/updates/images/v-0-1-0/web/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
 
 ### الأندرويد
 
@@ -233,6 +233,16 @@ The assets used for the app so far can be found in this online [Penpot](https://
 - [https://laravel-package-ocean.com](https://laravel-package-ocean.com)
 - [https://filamentphp.com/plugins](https://filamentphp.com/plugins)
 - [https://nativephp.com/plugins](https://nativephp.com/plugins)
+
+
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+You may redistribute and/or modify this program under the terms of the AGPL v3.
+See the full license text in [`LICENSE`](./LICENSE).
+
+Copyright (C) 2026 Muttasiq Contributors.
 
 
 ## Credits

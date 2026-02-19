@@ -14,20 +14,29 @@
 
     $fiSurfaceBackgroundLight = $resolveFilamentBackground(
         config('app.custom.filament.background_colors.surface.light'),
-        $fiShellBackgroundLight,
+        theme_color('gray-50', '#f9fafb'),
     );
     $fiSurfaceBackgroundDark = $resolveFilamentBackground(
         config('app.custom.filament.background_colors.surface.dark'),
-        $fiShellBackgroundDark,
+        theme_color('gray-900', '#111827'),
+    );
+
+    $fiSurfaceRaisedBackgroundLight = $resolveFilamentBackground(
+        config('app.custom.filament.background_colors.surface_raised.light'),
+        $fiSurfaceBackgroundLight,
+    );
+    $fiSurfaceRaisedBackgroundDark = $resolveFilamentBackground(
+        config('app.custom.filament.background_colors.surface_raised.dark'),
+        $fiSurfaceBackgroundDark,
     );
 
     $fiSurfaceMutedBackgroundLight = $resolveFilamentBackground(
         config('app.custom.filament.background_colors.surface_muted.light'),
-        $fiShellBackgroundLight,
+        $fiSurfaceBackgroundLight,
     );
     $fiSurfaceMutedBackgroundDark = $resolveFilamentBackground(
         config('app.custom.filament.background_colors.surface_muted.dark'),
-        $fiShellBackgroundDark,
+        $fiSurfaceBackgroundDark,
     );
 @endphp
 
@@ -37,6 +46,8 @@
         --fi-shell-bg-dark: {{ $fiShellBackgroundDark }};
         --fi-surface-bg-light: {{ $fiSurfaceBackgroundLight }};
         --fi-surface-bg-dark: {{ $fiSurfaceBackgroundDark }};
+        --fi-surface-raised-bg-light: {{ $fiSurfaceRaisedBackgroundLight }};
+        --fi-surface-raised-bg-dark: {{ $fiSurfaceRaisedBackgroundDark }};
         --fi-surface-muted-bg-light: {{ $fiSurfaceMutedBackgroundLight }};
         --fi-surface-muted-bg-dark: {{ $fiSurfaceMutedBackgroundDark }};
     }

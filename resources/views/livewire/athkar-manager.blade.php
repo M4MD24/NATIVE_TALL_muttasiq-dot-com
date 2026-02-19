@@ -7,7 +7,7 @@
         }"
         x-transition
         x-cloak
-        x-show="!isSettingsOpen && !isAthkarManagerOpen && views['athkar-app-gate'].isOpen"
+        x-show="!isControlPanelOpen && !isAthkarManagerOpen && views['athkar-app-gate'].isOpen"
         x-on:x-modal-opened.window="if ($event.detail?.id === managerModalId) isAthkarManagerOpen = true;"
         x-on:close-modal.window="if ($event.detail?.id === managerModalId) isAthkarManagerOpen = false;"
         x-on:close-modal-quietly.window="if ($event.detail?.id === managerModalId) isAthkarManagerOpen = false;"
