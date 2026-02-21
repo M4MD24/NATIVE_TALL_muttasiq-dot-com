@@ -131,6 +131,36 @@ it('falls back to local athkar payload on mobile when api request fails', functi
     });
 });
 
+it('uses local athkar payload on mobile when app url has a non-http scheme', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'ios',
+        'app.custom.native_end_points.athkar' => 'athkar',
+        'app.url' => 'php://127.0.0.1',
+    ]);
+
+    Http::fake();
+
+    $thikr = Thikr::factory()->create([
+        'type' => ThikrType::Supplication,
+        'origin' => null,
+    ]);
+
+    $response = get('/');
+
+    $response->assertSuccessful();
+    $response->assertViewHas('athkar', function (array $athkar) use ($thikr): bool {
+        return collect($athkar)->contains(function (array $item) use ($thikr): bool {
+            return $item['id'] === $thikr->id
+                && $item['type'] === ThikrType::Supplication->value
+                && $item['is_original'] === false
+                && $item['origin'] === null;
+        });
+    });
+
+    Http::assertNothingSent();
+});
+
 it('renders the shared origin-indicator icon class without pixel offset hacks', function () {
     $response = get('/');
 

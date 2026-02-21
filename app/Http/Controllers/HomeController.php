@@ -43,6 +43,10 @@ class HomeController extends Controller
         }
 
         $url = $this->resolveAthkarApiUrl();
+        if ($url === null) {
+            return Thikr::defaultsPayload();
+        }
+
         try {
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::acceptJson()
@@ -73,7 +77,7 @@ class HomeController extends Controller
         return Thikr::defaultsPayload();
     }
 
-    private function resolveAthkarApiUrl(): string
+    private function resolveAthkarApiUrl(): ?string
     {
         $configuredAthkarEndpoint = (string) config('app.custom.native_end_points.athkar', 'athkar');
 
@@ -82,6 +86,16 @@ class HomeController extends Controller
         }
 
         $applicationUrl = rtrim((string) config('app.url'), '/');
+        $applicationUrlScheme = parse_url($applicationUrl, PHP_URL_SCHEME);
+
+        if (! is_string($applicationUrlScheme) || ! in_array(strtolower($applicationUrlScheme), ['http', 'https'], true)) {
+            Log::warning('Skipping Athkar API request because APP_URL does not use an HTTP scheme.', [
+                'app_url' => $applicationUrl,
+            ]);
+
+            return null;
+        }
+
         $relativeAthkarPath = route('api.athkar.index', [], false);
 
         return $applicationUrl.$relativeAthkarPath;
