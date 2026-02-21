@@ -12,7 +12,7 @@
 
 @php
     $baseButtonClasses =
-        'grid h-10 w-10 rotate-45 items-center justify-center Xrounded-lg border-2 shadow transition-all outline-none rounded-md focus:ring-2 will-change-auto in-data-loading:opacity-0!';
+        'relative grid h-10 w-10 rotate-45 place-items-center overflow-hidden Xrounded-lg border-2 shadow transition-all outline-none rounded-md focus:ring-2 will-change-auto in-data-loading:opacity-0! [&_svg]:h-8 [&_svg]:w-8 [&_svg]:shrink-0';
     $defaultButtonClasses = $useInvertedStyle
         ? 'border-primary-500 shadow-primary-500/30 dark:border-primary-100/60 dark:active:border-primary-400 dark:shadow-primary-500/30 bg-[var(--background)] dark:bg-[var(--background-dark)] focus:ring-primary-300 focus:dark:ring-primary-50 active:ring-primary-300 active:dark:ring-primary-300'
         : 'border-primary-500 shadow-primary-500/30 dark:border-primary-400 dark:shadow-primary-500/30 bg-primary-600 dark:bg-primary-50 focus:ring-primary-200 focus:dark:ring-primary-50 active:ring-primary-300 active:dark:ring-primary-200';
