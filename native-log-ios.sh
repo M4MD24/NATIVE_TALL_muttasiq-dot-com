@@ -90,21 +90,32 @@ fi
 booted_udid="$(xcrun simctl list devices booted | grep -Eo '[A-F0-9-]{36}' | head -n 1 || true)"
 
 data_container=""
+app_container=""
 if [[ -n "${booted_udid}" && -n "${app_id}" ]]; then
     data_container="$(xcrun simctl get_app_container "${booted_udid}" "${app_id}" data 2>/dev/null || true)"
+    app_container="$(xcrun simctl get_app_container "${booted_udid}" "${app_id}" app 2>/dev/null || true)"
 fi
+
+app_executable=""
+if [[ -n "${app_container}" && -f "${app_container}/Info.plist" ]]; then
+    app_executable="$(plutil -extract CFBundleExecutable raw -o - "${app_container}/Info.plist" 2>/dev/null || true)"
+fi
+app_executable="${app_executable:-NativePHP-simulator}"
 
 append_section "Detected Values"
 printf 'APP_ID=%s\n' "${app_id:-}" >>"${output_file}"
 printf 'BOOTED_UDID=%s\n' "${booted_udid:-}" >>"${output_file}"
 printf 'DATA_CONTAINER=%s\n' "${data_container:-}" >>"${output_file}"
+printf 'APP_CONTAINER=%s\n' "${app_container:-}" >>"${output_file}"
+printf 'APP_EXECUTABLE=%s\n' "${app_executable:-}" >>"${output_file}"
 
 run_capture "xcrun --version" xcrun --version
 run_capture "Xcode version" xcodebuild -version
 run_capture "Booted simulators" xcrun simctl list devices booted
 
-if [[ -n "${booted_udid}" ]]; then
-    run_capture "Installed apps (booted simulator)" xcrun simctl listapps "${booted_udid}"
+if [[ -n "${booted_udid}" && -n "${app_id}" ]]; then
+    run_capture "App bundle container path" xcrun simctl get_app_container "${booted_udid}" "${app_id}" app
+    run_capture "App data container path" xcrun simctl get_app_container "${booted_udid}" "${app_id}" data
 fi
 
 if [[ -n "${data_container}" ]]; then
@@ -118,8 +129,28 @@ fi
 
 run_capture \
     "Simulator unified logs (last 20m, NativePHP/Laravel/WebKit keywords)" \
-    xcrun simctl spawn booted log show --style compact --last 20m --predicate \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
     'eventMessage CONTAINS[c] "nativephp" OR eventMessage CONTAINS[c] "laravel" OR eventMessage CONTAINS[c] "webkit" OR process CONTAINS[c] "nativephp"'
+
+run_capture \
+    "App process logs only (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "process == \"${app_executable}\""
+
+run_capture \
+    "App process WebKit/navigation failures (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "process == \"${app_executable}\" AND (eventMessage CONTAINS[c] \"WKErrorDomain\" OR eventMessage CONTAINS[c] \"didFail\" OR eventMessage CONTAINS[c] \"navigation\" OR eventMessage CONTAINS[c] \"provisional\" OR eventMessage CONTAINS[c] \"webview\" OR eventMessage CONTAINS[c] \"Failed to load\")"
+
+run_capture \
+    "App process JS console errors (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "process == \"${app_executable}\" AND (eventMessage CONTAINS[c] \"JS error\" OR eventMessage CONTAINS[c] \"JS exception\" OR eventMessage CONTAINS[c] \"Uncaught\" OR eventMessage CONTAINS[c] \"Unhandled Promise\" OR eventMessage CONTAINS[c] \"TypeError\" OR eventMessage CONTAINS[c] \"ReferenceError\" OR eventMessage CONTAINS[c] \"SyntaxError\")"
+
+run_capture \
+    "App process JS console lines (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "process == \"${app_executable}\" AND eventMessage CONTAINS \"JS \""
 
 append_file_tail "nativephp/ios-build.log (tail)" "${project_root}/nativephp/ios-build.log" 500
 append_file_tail "build-ios.txt (tail)" "${project_root}/build-ios.txt" 500
