@@ -122,6 +122,13 @@ if [[ -n "${data_container}" ]]; then
     run_capture "Application Support directory" ls -la "${data_container}/Library/Application Support"
     append_file_tail "nativephp_debug.log (tail)" "${data_container}/Library/Application Support/nativephp_debug.log" 500
     append_file_tail "laravel.log (tail)" "${data_container}/Library/Application Support/storage/logs/laravel.log" 500
+    run_capture "Bundled app root (Documents/app)" ls -la "${data_container}/Documents/app"
+    run_capture "Bundled Vite build directory" ls -la "${data_container}/Documents/app/public/build"
+    run_capture "Bundled Vite build assets" ls -la "${data_container}/Documents/app/public/build/assets"
+    run_capture "Bundled Vite manifest (head)" head -n 200 "${data_container}/Documents/app/public/build/manifest.json"
+    run_capture \
+        "Bundled app .env key values (selected)" \
+        /bin/bash -lc "grep -E '^(APP_ENV|APP_URL|ASSET_URL|NATIVEPHP_RUNNING|NATIVEPHP_APP_ID|NATIVEPHP_APP_VERSION|VITE_DEV_SERVER_URL)=' \"${data_container}/Documents/app/.env\" || true"
 else
     append_section "App Container"
     printf 'Could not resolve app data container. Ensure simulator is booted and app is installed.\n' >>"${output_file}"
@@ -151,6 +158,16 @@ run_capture \
     "App process JS console lines (last 20m)" \
     xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
     "process == \"${app_executable}\" AND eventMessage CONTAINS \"JS \""
+
+run_capture \
+    "WebKit WebContent process JS/errors (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "process == \"com.apple.WebKit.WebContent\" AND (eventMessage CONTAINS[c] \"JS\" OR eventMessage CONTAINS[c] \"Uncaught\" OR eventMessage CONTAINS[c] \"TypeError\" OR eventMessage CONTAINS[c] \"ReferenceError\" OR eventMessage CONTAINS[c] \"SyntaxError\" OR eventMessage CONTAINS[c] \"Failed\" OR eventMessage CONTAINS[c] \"error\" OR eventMessage CONTAINS[c] \"exception\")"
+
+run_capture \
+    "WebKit helper processes lifecycle/errors (last 20m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+    "(process == \"com.apple.WebKit.WebContent\" OR process == \"com.apple.WebKit.Networking\" OR process == \"com.apple.WebKit.GPU\") AND (eventMessage CONTAINS[c] \"launch\" OR eventMessage CONTAINS[c] \"terminated\" OR eventMessage CONTAINS[c] \"crash\" OR eventMessage CONTAINS[c] \"error\" OR eventMessage CONTAINS[c] \"fail\" OR eventMessage CONTAINS[c] \"suspend\" OR eventMessage CONTAINS[c] \"resume\")"
 
 if [[ -n "${app_id}" ]]; then
     run_capture \
