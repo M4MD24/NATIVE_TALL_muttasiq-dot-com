@@ -109,6 +109,8 @@ printf 'DATA_CONTAINER=%s\n' "${data_container:-}" >>"${output_file}"
 printf 'APP_CONTAINER=%s\n' "${app_container:-}" >>"${output_file}"
 printf 'APP_EXECUTABLE=%s\n' "${app_executable:-}" >>"${output_file}"
 
+run_capture "Host clock" date
+run_capture "Simulator clock" xcrun simctl spawn "${booted_udid:-booted}" date
 run_capture "xcrun --version" xcrun --version
 run_capture "Xcode version" xcodebuild -version
 run_capture "Booted simulators" xcrun simctl list devices booted
@@ -129,10 +131,28 @@ if [[ -n "${data_container}" ]]; then
     run_capture \
         "Bundled app .env key values (selected)" \
         /bin/bash -lc "grep -E '^(APP_ENV|APP_URL|ASSET_URL|NATIVEPHP_RUNNING|NATIVEPHP_APP_ID|NATIVEPHP_APP_VERSION|VITE_DEV_SERVER_URL)=' \"${data_container}/Documents/app/.env\" || true"
+    run_capture \
+        "nativephp_debug.log staleness check" \
+        /bin/bash -lc "if [[ ! -f \"${data_container}/Library/Application Support/nativephp_debug.log\" ]]; then echo \"missing log file: ${data_container}/Library/Application Support/nativephp_debug.log\"; else grep -Eo '\\[[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}\\]' \"${data_container}/Library/Application Support/nativephp_debug.log\" | tail -n 1 | sed 's/^/last_nativephp_debug_timestamp=/' || true; fi; date '+host_now=%Y-%m-%d %H:%M:%S %Z'"
 else
     append_section "App Container"
     printf 'Could not resolve app data container. Ensure simulator is booted and app is installed.\n' >>"${output_file}"
 fi
+
+run_capture \
+    "App process logs only (last 5m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 5m --predicate \
+    "process == \"${app_executable}\""
+
+run_capture \
+    "App + WebKit logs (last 5m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 5m --predicate \
+    "process == \"${app_executable}\" OR process == \"com.apple.WebKit.WebContent\" OR process == \"com.apple.WebKit.Networking\" OR process == \"com.apple.WebKit.GPU\""
+
+run_capture \
+    "App/WebKit navigation + load failures (last 5m)" \
+    xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 5m --predicate \
+    "(process == \"${app_executable}\" OR process == \"com.apple.WebKit.WebContent\") AND (eventMessage CONTAINS[c] \"didFail\" OR eventMessage CONTAINS[c] \"provisional\" OR eventMessage CONTAINS[c] \"navigation\" OR eventMessage CONTAINS[c] \"Failed to load\" OR eventMessage CONTAINS[c] \"Unable to\" OR eventMessage CONTAINS[c] \"error\")"
 
 run_capture \
     "Simulator unified logs (last 20m, NativePHP/Laravel/WebKit keywords)" \
