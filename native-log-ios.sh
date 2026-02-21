@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+project_root="${script_dir}"
+output_file="${script_dir}/native-log-ios.txt"
+
+read_env_var() {
+    local key="$1"
+    local env_file="${2:-${project_root}/.env}"
+
+    if [[ ! -f "${env_file}" ]]; then
+        return 1
+    fi
+
+    local line
+    line="$(grep -E "^${key}=" "${env_file}" | tail -n 1 || true)"
+
+    if [[ -z "${line}" ]]; then
+        return 1
+    fi
+
+    line="${line#*=}"
+    line="${line%\"}"
+    line="${line#\"}"
+    line="${line%\'}"
+    line="${line#\'}"
+
+    printf '%s' "${line}"
+}
+
+append_section() {
+    local title="$1"
+    printf '\n===== %s =====\n' "${title}" >>"${output_file}"
+}
+
+run_capture() {
+    local title="$1"
+    shift
+
+    append_section "${title}"
+    printf '+ %s\n' "$*" >>"${output_file}"
+
+    if "$@" >>"${output_file}" 2>&1; then
+        return 0
+    fi
+
+    local status=$?
+    printf 'Command failed with exit code: %s\n' "${status}" >>"${output_file}"
+}
+
+append_file_tail() {
+    local title="$1"
+    local file_path="$2"
+    local lines="${3:-400}"
+
+    append_section "${title}"
+
+    if [[ ! -f "${file_path}" ]]; then
+        printf 'Missing file: %s\n' "${file_path}" >>"${output_file}"
+        return 0
+    fi
+
+    printf '+ tail -n %s %s\n' "${lines}" "${file_path}" >>"${output_file}"
+    if tail -n "${lines}" "${file_path}" >>"${output_file}" 2>&1; then
+        return 0
+    fi
+
+    local status=$?
+    printf 'Command failed with exit code: %s\n' "${status}" >>"${output_file}"
+}
+
+{
+    printf 'native-log-ios generated at: %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+    printf 'working directory: %s\n' "${project_root}"
+} >"${output_file}"
+
+if ! command -v xcrun >/dev/null 2>&1; then
+    append_section "Error"
+    printf 'xcrun not found in PATH.\n' >>"${output_file}"
+    printf 'Wrote %s\n' "${output_file}"
+    exit 1
+fi
+
+app_id="${APP_ID:-${NATIVEPHP_APP_ID:-}}"
+if [[ -z "${app_id}" ]]; then
+    app_id="$(read_env_var "NATIVEPHP_APP_ID" || true)"
+fi
+
+booted_udid="$(xcrun simctl list devices booted | grep -Eo '[A-F0-9-]{36}' | head -n 1 || true)"
+
+data_container=""
+if [[ -n "${booted_udid}" && -n "${app_id}" ]]; then
+    data_container="$(xcrun simctl get_app_container "${booted_udid}" "${app_id}" data 2>/dev/null || true)"
+fi
+
+append_section "Detected Values"
+printf 'APP_ID=%s\n' "${app_id:-}" >>"${output_file}"
+printf 'BOOTED_UDID=%s\n' "${booted_udid:-}" >>"${output_file}"
+printf 'DATA_CONTAINER=%s\n' "${data_container:-}" >>"${output_file}"
+
+run_capture "xcrun --version" xcrun --version
+run_capture "Xcode version" xcodebuild -version
+run_capture "Booted simulators" xcrun simctl list devices booted
+
+if [[ -n "${booted_udid}" ]]; then
+    run_capture "Installed apps (booted simulator)" xcrun simctl listapps "${booted_udid}"
+fi
+
+if [[ -n "${data_container}" ]]; then
+    run_capture "Application Support directory" ls -la "${data_container}/Library/Application Support"
+    append_file_tail "nativephp_debug.log (tail)" "${data_container}/Library/Application Support/nativephp_debug.log" 500
+    append_file_tail "laravel.log (tail)" "${data_container}/Library/Application Support/storage/logs/laravel.log" 500
+else
+    append_section "App Container"
+    printf 'Could not resolve app data container. Ensure simulator is booted and app is installed.\n' >>"${output_file}"
+fi
+
+run_capture \
+    "Simulator unified logs (last 20m, NativePHP/Laravel/WebKit keywords)" \
+    xcrun simctl spawn booted log show --style compact --last 20m --predicate \
+    'eventMessage CONTAINS[c] "nativephp" OR eventMessage CONTAINS[c] "laravel" OR eventMessage CONTAINS[c] "webkit" OR process CONTAINS[c] "nativephp"'
+
+append_file_tail "nativephp/ios-build.log (tail)" "${project_root}/nativephp/ios-build.log" 500
+append_file_tail "build-ios.txt (tail)" "${project_root}/build-ios.txt" 500
+
+printf 'Wrote %s\n' "${output_file}"
