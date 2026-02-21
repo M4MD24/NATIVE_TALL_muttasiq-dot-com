@@ -49,7 +49,19 @@ class InereshServiceProvider extends ServiceProvider
                                 }
                             };
 
-                            Livewire.hook('morph.updated', updateHandler);
+                            const registerHook = () => {
+                                if (!window.Livewire?.hook) {
+                                    return;
+                                }
+
+                                window.Livewire.hook('morph.updated', updateHandler);
+                            };
+
+                            if (window.Livewire?.hook) {
+                                registerHook();
+                            } else {
+                                document.addEventListener('livewire:init', registerHook, { once: true });
+                            }
 
                             cleanup(() => {
                                 if (rafId) cancelAnimationFrame(rafId);

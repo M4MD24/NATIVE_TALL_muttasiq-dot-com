@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -26,7 +27,32 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::unguard();
         Livewire::useScriptTagAttributes(['defer' => true]);
+        $this->configureNativeIosUrlGeneration();
         $this->disableViteHotFileWhenUnavailable();
+    }
+
+    private function configureNativeIosUrlGeneration(): void
+    {
+        if (! config('nativephp-internal.running')) {
+            return;
+        }
+
+        $platform = strtolower((string) config('nativephp-internal.platform', ''));
+        if ($platform !== 'ios') {
+            return;
+        }
+
+        URL::forceRootUrl('php://127.0.0.1');
+        URL::forceScheme('php');
+
+        if (! app()->bound('livewire')) {
+            return;
+        }
+
+        $livewirePrefix = ltrim((string) app('livewire')->getUriPrefix(), '/');
+        config([
+            'livewire.asset_url' => '/'.$livewirePrefix.'/livewire.js',
+        ]);
     }
 
     private function disableViteHotFileWhenUnavailable(): void
