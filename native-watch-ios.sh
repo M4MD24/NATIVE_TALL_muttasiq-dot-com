@@ -9,4 +9,7 @@ watchman shutdown-server
 ./.scripts/native/mobile/ios/patches/system-ui.sh
 ./.scripts/native/mobile/ios/patches/back-handler.sh
 
-php artisan native:run ios --watch
+simulator_udid="$("./.scripts/native/mobile/ios/support/select-simulator.sh")"
+echo "[native-watch:ios] using simulator ${simulator_udid}"
+
+php artisan native:run ios "${simulator_udid}" --build=debug --watch
