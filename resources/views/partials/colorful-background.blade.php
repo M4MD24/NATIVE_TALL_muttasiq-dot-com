@@ -22,7 +22,7 @@
             <x-goodmaven::blurred-image
                 class="h-full w-full scale-110 object-cover blur-md"
                 alt="Morning background"
-                :imagePath="asset('images/background/morning.png')"
+                :imagePath="asset('images/background/morning.webp')"
                 :thumbnailImagePath="asset('images/background/morning-blur-thumbnail.png')"
                 :isDisplayEnforced="true"
             />
@@ -36,7 +36,7 @@
             <x-goodmaven::blurred-image
                 class="h-full w-full scale-110 object-cover blur-md"
                 alt="Night background"
-                :imagePath="asset('images/background/night.png')"
+                :imagePath="asset('images/background/night.webp')"
                 :thumbnailImagePath="asset('images/background/night-blur-thumbnail.png')"
                 :isDisplayEnforced="true"
             />

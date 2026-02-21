@@ -1861,16 +1861,16 @@
         },
         {
             "name": "goodm4ven/blurred-image",
-            "version": "v1.3.1",
+            "version": "v1.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_blurred-image.git",
-                "reference": "838559085dbd14ea86ee721b37e51d1e72f834e2"
+                "reference": "ee7304fd9db17b63e41c60f675cc6a53bcbe92da"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GoodM4ven/PACKAGE_LARAVEL_blurred-image/zipball/838559085dbd14ea86ee721b37e51d1e72f834e2",
-                "reference": "838559085dbd14ea86ee721b37e51d1e72f834e2",
+                "url": "https://api.github.com/repos/GoodM4ven/PACKAGE_LARAVEL_blurred-image/zipball/ee7304fd9db17b63e41c60f675cc6a53bcbe92da",
+                "reference": "ee7304fd9db17b63e41c60f675cc6a53bcbe92da",
                 "shasum": ""
             },
             "require": {
@@ -1940,7 +1940,7 @@
             ],
             "support": {
                 "issues": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_blurred-image/issues",
-                "source": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_blurred-image/tree/v1.3.1"
+                "source": "https://github.com/GoodM4ven/PACKAGE_LARAVEL_blurred-image/tree/v1.3.2"
             },
             "funding": [
                 {
@@ -1956,7 +1956,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-02-03T14:05:17+00:00"
+            "time": "2026-02-21T20:31:14+00:00"
         },
         {
             "name": "goodm4ven/tailwind-merge",
