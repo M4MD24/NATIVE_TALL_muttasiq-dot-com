@@ -152,6 +152,24 @@ run_capture \
     xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
     "process == \"${app_executable}\" AND eventMessage CONTAINS \"JS \""
 
+if [[ -n "${app_id}" ]]; then
+    run_capture \
+        "WebKit helper process logs scoped to app (last 20m)" \
+        xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+        "(process CONTAINS[c] \"WebKit\" OR process CONTAINS[c] \"webkit\" OR process CONTAINS[c] \"BrowserEngineKit\") AND (eventMessage CONTAINS[c] \"${app_id}\" OR eventMessage CONTAINS[c] \"app<${app_id}\" OR eventMessage CONTAINS[c] \"${app_executable}\")"
+
+    run_capture \
+        "WebKit helper process errors scoped to app (last 20m)" \
+        xcrun simctl spawn "${booted_udid:-booted}" log show --style compact --last 20m --predicate \
+        "(process CONTAINS[c] \"WebKit\" OR process CONTAINS[c] \"webkit\" OR process CONTAINS[c] \"BrowserEngineKit\") AND (eventMessage CONTAINS[c] \"${app_id}\" OR eventMessage CONTAINS[c] \"app<${app_id}\" OR eventMessage CONTAINS[c] \"${app_executable}\") AND (eventMessage CONTAINS[c] \"error\" OR eventMessage CONTAINS[c] \"fail\" OR eventMessage CONTAINS[c] \"crash\" OR eventMessage CONTAINS[c] \"terminated\" OR eventMessage CONTAINS[c] \"provisional\" OR eventMessage CONTAINS[c] \"navigation\")"
+else
+    append_section "WebKit helper process logs scoped to app (last 20m)"
+    printf 'Skipping section because APP_ID is empty.\n' >>"${output_file}"
+
+    append_section "WebKit helper process errors scoped to app (last 20m)"
+    printf 'Skipping section because APP_ID is empty.\n' >>"${output_file}"
+fi
+
 append_file_tail "nativephp/ios-build.log (tail)" "${project_root}/nativephp/ios-build.log" 500
 append_file_tail "build-ios.txt (tail)" "${project_root}/build-ios.txt" 500
 
