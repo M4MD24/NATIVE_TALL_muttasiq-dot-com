@@ -18,7 +18,9 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => filter_var(env('NATIVEPHP_RUNNING', false), FILTER_VALIDATE_BOOL)
+        ? 'sqlite'
+        : env('DB_CONNECTION', 'sqlite'),
 
     /*
     |--------------------------------------------------------------------------

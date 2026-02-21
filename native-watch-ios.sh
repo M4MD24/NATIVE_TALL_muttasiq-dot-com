@@ -11,5 +11,6 @@ watchman shutdown-server
 
 simulator_udid="$("./.scripts/native/mobile/ios/support/select-simulator.sh")"
 echo "[native-watch:ios] using simulator ${simulator_udid}"
+xcrun simctl shutdown "${simulator_udid}" >/dev/null 2>&1 || true
 
 php artisan native:run ios "${simulator_udid}" --build=debug --watch
