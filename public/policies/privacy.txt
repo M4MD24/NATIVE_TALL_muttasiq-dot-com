@@ -1,0 +1,40 @@
+Muttasiq Privacy Policy
+Last updated: February 22, 2026
+
+This Privacy Policy explains how the Muttasiq app and website handle user and device data.
+
+1) Scope
+- This policy applies to the Muttasiq web app and NativePHP mobile builds that use the same codebase.
+
+2) What We Collect
+- We do not require account registration for normal app usage.
+- We do not collect payment data inside the app.
+- We store user preferences locally (for example reading and display settings) in browser/device storage.
+
+3) Network Usage
+- The app may request athkar content from configured endpoints (for example: https://muttasiq.com/api/athkar).
+- Standard technical request metadata (such as IP address and user agent) may be processed by hosting/network infrastructure.
+
+4) Admin Access
+- The administration panel is for project maintainers only.
+- In NativePHP runtime builds, admin routes are disabled and not available to end users.
+
+5) Data Sharing
+- We do not sell personal data.
+- We do not share user data with third parties for advertising.
+
+6) Data Retention
+- Local app settings remain on the user's browser/device unless deleted by the user or by uninstalling/clearing app data.
+
+7) Children
+- This app is not designed to collect personal information from children.
+
+8) Security
+- We apply reasonable technical measures to protect the service, but no system can be guaranteed 100% secure.
+
+9) Changes to This Policy
+- We may update this policy when app behavior or legal requirements change.
+- The latest version will always be published at /policies/privacy.txt.
+
+10) Contact
+- Project discussions: https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/discussions
