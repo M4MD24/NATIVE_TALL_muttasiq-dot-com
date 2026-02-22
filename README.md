@@ -5,11 +5,7 @@
 
 تطبيق يهدف للاتساق مع الإسلام لله ربّ العالمين، خطوة بخطوة، وبيُسر وسهولة بإذن الله. تطبيق بترميز واحد لكل المنصات، مصنوع بتقنيات حديثة، ومصمم بواجهة جذابة؛ ولا حول ولا قوة إلا بالله...
 
-أفكار المشروع مستعرَضة عن طريق فيديو في [منشور التليجرام](https://t.me/tiqaniy/29) هذا:<br> 
-
-<a href="https://t.me/tiqaniy/29" target="_blank">
-    <img width="100%" alt="telegram post screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
-</a>
+<img width="100%" alt="screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
 
 ### المتصفح
 
