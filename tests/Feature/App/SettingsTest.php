@@ -2,6 +2,7 @@
 
 use App\Livewire\ControlPanel;
 use App\Models\Setting;
+use App\Providers\AppServiceProvider;
 
 use function Pest\Livewire\livewire;
 
@@ -58,4 +59,26 @@ it('accepts a valid main text size range in the settings modal', function () {
         ])
         ->assertHasNoFormErrors()
         ->assertDispatched('control-panel-updated');
+});
+
+it('keeps changelog image urls renderable when running in native ios runtime', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'ios',
+    ]);
+
+    $provider = app()->getProvider(AppServiceProvider::class);
+    expect($provider)->not->toBeNull();
+
+    $provider->boot();
+
+    $component = app(ControlPanel::class);
+    $method = new ReflectionMethod($component, 'changelogsMarkdown');
+    $method->setAccessible(true);
+
+    $html = $method->invoke($component)->toHtml();
+
+    expect($html)
+        ->toContain('src="/docs/updates/images/')
+        ->not->toContain('src="php://127.0.0.1/docs/updates/images/');
 });
