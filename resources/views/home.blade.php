@@ -117,7 +117,7 @@
 
         <main @class([
             'fixed inset-0 grid place-items-center sm:mt-0 dark:text-white',
-            'mt-[calc(4rem+max(0px,calc(var(--inset-top,0px)-20px)))]' => is_platform('ios'),
+            'mt-22' => is_platform('ios'),
             'mt-16' => ! is_platform('ios'),
         ])>
             @include('partials.main-menu')
