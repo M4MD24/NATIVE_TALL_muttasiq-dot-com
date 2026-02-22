@@ -33,6 +33,29 @@ function homeMainClasses(string $content): string
     return $matches[1];
 }
 
+function buttonsStackClasses(string $content): string
+{
+    $matched = preg_match(
+        '/<div\b[^>]*x-bind:data-respecting-stack=[^>]*>/',
+        $content,
+        $matches,
+    );
+
+    expect($matched)->toBe(1);
+
+    $classMatched = preg_match(
+        '/\sclass="([^"]*)"/',
+        $matches[0],
+        $classMatches,
+    );
+
+    if ($classMatched !== 1) {
+        return '';
+    }
+
+    return $classMatches[1];
+}
+
 it('fetches athkar from the remote api on mobile', function () {
     config([
         'nativephp-internal.running' => true,
@@ -174,7 +197,7 @@ it('uses local athkar payload on mobile when app url has a non-http scheme', fun
     Http::assertNothingSent();
 });
 
-it('applies an inset-aware top margin class for ios and keeps default spacing for android', function () {
+it('applies ios top margins to stack and main and keeps defaults for android', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'ios',
@@ -184,11 +207,15 @@ it('applies an inset-aware top margin class for ios and keeps default spacing fo
 
     $iosResponse->assertSuccessful();
 
-    $iosMainClasses = homeMainClasses($iosResponse->getContent());
+    $iosContent = $iosResponse->getContent();
+    $iosMainClasses = homeMainClasses($iosContent);
+    $iosStackClasses = buttonsStackClasses($iosContent);
 
     expect($iosMainClasses)
-        ->toContain('mt-[calc(4rem+max(0px,calc(var(--inset-top,0px)-20px)))]')
+        ->toContain('mt-22')
         ->not->toContain('mt-16');
+
+    expect($iosStackClasses)->toContain('mt-8');
 
     config([
         'nativephp-internal.platform' => 'android',
@@ -198,11 +225,15 @@ it('applies an inset-aware top margin class for ios and keeps default spacing fo
 
     $androidResponse->assertSuccessful();
 
-    $androidMainClasses = homeMainClasses($androidResponse->getContent());
+    $androidContent = $androidResponse->getContent();
+    $androidMainClasses = homeMainClasses($androidContent);
+    $androidStackClasses = buttonsStackClasses($androidContent);
 
     expect($androidMainClasses)
         ->toContain('mt-16')
-        ->not->toContain('mt-[calc(4rem+max(0px,calc(var(--inset-top,0px)-20px)))]');
+        ->not->toContain('mt-22');
+
+    expect($androidStackClasses)->not->toContain('mt-8');
 });
 
 it('fetches athkar from the configured absolute endpoint on mobile even with a php app url', function () {
