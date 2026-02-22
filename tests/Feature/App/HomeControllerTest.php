@@ -219,5 +219,5 @@ it('anchors stack action button icons to prevent mobile webkit misalignment', fu
 
     expect($content)
         ->toContain('relative grid h-10 w-10 rotate-45 place-items-center overflow-hidden')
-        ->toContain('[&amp;_svg]:h-8 [&amp;_svg]:w-8 [&amp;_svg]:shrink-0');
+        ->toContain('absolute top-1/2 left-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 -rotate-45 shrink-0');
 });
