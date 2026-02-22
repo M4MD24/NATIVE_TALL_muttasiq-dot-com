@@ -257,7 +257,7 @@ Copyright (C) 2026 Muttasiq Contributors.
 
 - [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
 - [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
-- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي) 
+- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah).
 
 ### Assets
 
