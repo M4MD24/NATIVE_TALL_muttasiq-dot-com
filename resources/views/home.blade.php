@@ -100,7 +100,10 @@
         }"
         x-on:switch-view.window="applyViewState($event.detail?.to)"
     >
-        <x-buttons-stack x-bind:data-respecting-stack="$store.bp.current === 'base'">
+        <x-buttons-stack
+            x-bind:data-respecting-stack="$store.bp.current === 'base'"
+            @class(['mt-6' => is_platform('ios')])
+        >
             <livewire:athkar-manager />
             @if (!is_platform('mobile'))
                 <x-return-button
@@ -118,7 +121,7 @@
         <main @class([
             'fixed inset-0 grid place-items-center sm:mt-0 dark:text-white',
             'mt-22' => is_platform('ios'),
-            'mt-16' => ! is_platform('ios'),
+            'mt-16' => !is_platform('ios'),
         ])>
             @include('partials.main-menu')
             @include('partials.athkar-app.index')
