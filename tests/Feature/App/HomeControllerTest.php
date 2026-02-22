@@ -20,6 +20,19 @@ function copyrightVersionShellClasses(string $content): string
     return $matches[1];
 }
 
+function homeMainClasses(string $content): string
+{
+    $matched = preg_match(
+        '/<main\s+class="([^"]*)">/',
+        $content,
+        $matches,
+    );
+
+    expect($matched)->toBe(1);
+
+    return $matches[1];
+}
+
 it('fetches athkar from the remote api on mobile', function () {
     config([
         'nativephp-internal.running' => true,
@@ -159,6 +172,37 @@ it('uses local athkar payload on mobile when app url has a non-http scheme', fun
     });
 
     Http::assertNothingSent();
+});
+
+it('applies an inset-aware top margin class for ios and keeps default spacing for android', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'ios',
+    ]);
+
+    $iosResponse = get('/');
+
+    $iosResponse->assertSuccessful();
+
+    $iosMainClasses = homeMainClasses($iosResponse->getContent());
+
+    expect($iosMainClasses)
+        ->toContain('mt-[calc(4rem+max(0px,calc(var(--inset-top,0px)-20px)))]')
+        ->not->toContain('mt-16');
+
+    config([
+        'nativephp-internal.platform' => 'android',
+    ]);
+
+    $androidResponse = get('/');
+
+    $androidResponse->assertSuccessful();
+
+    $androidMainClasses = homeMainClasses($androidResponse->getContent());
+
+    expect($androidMainClasses)
+        ->toContain('mt-16')
+        ->not->toContain('mt-[calc(4rem+max(0px,calc(var(--inset-top,0px)-20px)))]');
 });
 
 it('fetches athkar from the configured absolute endpoint on mobile even with a php app url', function () {
