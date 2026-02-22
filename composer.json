@@ -1,13 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "developer/template_native",
+    "name": "goodm4ven/muttasiq",
     "type": "project",
-    "description": "Some application's description and all...",
+    "description": "تطبيق يعين على الإسلام والالتزام باتساق ويسر بإذن الله",
     "keywords": [
-        "template",
         "laravel",
         "tallstack",
-        "nativephp"
+        "nativephp",
+        "islam",
+        "islamic",
+        "thikr",
+        "athkar"
     ],
     "license": "AGPL-3.0-only",
     "require": {
