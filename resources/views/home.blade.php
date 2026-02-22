@@ -102,7 +102,7 @@
     >
         <x-buttons-stack
             x-bind:data-respecting-stack="$store.bp.current === 'base'"
-            @class(['mt-6' => is_platform('ios')])
+            @class(['mt-8' => is_platform('ios')])
         >
             <livewire:athkar-manager />
             @if (!is_platform('mobile'))
