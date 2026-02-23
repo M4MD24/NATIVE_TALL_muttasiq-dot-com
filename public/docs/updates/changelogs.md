@@ -25,7 +25,7 @@
 
 - تعديل أحجام الخطوط المتاحة (التي يمكن التحكم بها من الإعدادات) لمناسبة شاشات أكثر واعتبار الصحة البصرية بإذن الله
 
-<img src="images/v-0-4-0/android/responsive-text-overflow-handling.png" alt="Responsive overflow handling for athar app reader - light mode" width="320"/>
+<img src="images/v-0-4-0/android/responsive-text-overflow-handling.png" alt="Responsive overflow handling for athar app reader - light mode" width="170"/>
 
 
 ## [v0.3.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/64)
