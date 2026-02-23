@@ -79,7 +79,7 @@ it('keeps changelog image urls renderable when running in native ios runtime', f
     $html = $method->invoke($component)->toHtml();
 
     expect($html)
-        ->toContain('src="http://127.0.0.1/docs/updates/images/')
+        ->toContain('src="/_assets/docs/updates/images/')
         ->not->toContain('src="data:image/png;base64,')
         ->not->toContain('src="php://127.0.0.1/docs/updates/images/');
 });
@@ -97,7 +97,7 @@ it('keeps changelog image urls as public paths outside native ios runtime', func
     $html = $method->invoke($component)->toHtml();
 
     expect($html)
-        ->toContain('src="http://127.0.0.1/docs/updates/images/')
+        ->toContain('src="/_assets/docs/updates/images/')
         ->not->toContain('src="/docs/updates/image-proxy/')
         ->not->toContain('src="data:image/png;base64,');
 });
@@ -115,5 +115,5 @@ it('keeps changelog image urls as relative public paths outside native runtime',
 
     expect($html)
         ->toContain('src="/docs/updates/images/')
-        ->not->toContain('src="http://127.0.0.1/docs/updates/images/');
+        ->not->toContain('src="/_assets/docs/updates/images/');
 });

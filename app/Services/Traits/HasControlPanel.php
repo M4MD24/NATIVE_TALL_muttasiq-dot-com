@@ -370,7 +370,7 @@ trait HasControlPanel
     private function changelogImageBaseUrl(): string
     {
         if (config('nativephp-internal.running')) {
-            return 'http://127.0.0.1/docs/updates/images/';
+            return '/_assets/docs/updates/images/';
         }
 
         return '/docs/updates/images/';
