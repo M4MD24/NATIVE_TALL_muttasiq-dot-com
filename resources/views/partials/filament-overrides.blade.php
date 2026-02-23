@@ -51,4 +51,8 @@
         --fi-surface-muted-bg-light: {{ $fiSurfaceMutedBackgroundLight }};
         --fi-surface-muted-bg-dark: {{ $fiSurfaceMutedBackgroundDark }};
     }
+
+    .mobile-platform .fi-modal-window {
+        margin-top: {{ is_platform('ios') ? '3rem' : '0' }};
+    }
 </style>
