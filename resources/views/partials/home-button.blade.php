@@ -1,5 +1,5 @@
 <div
-    class="fixed bottom-11 end-10 z-30 sm:bottom-7 md:bottom-12"
+    class="inset-e-10 fixed bottom-11 z-30 sm:bottom-7 md:bottom-12"
     data-stack-item
     x-transition
     x-cloak
