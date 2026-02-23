@@ -71,3 +71,23 @@
 }
 
 @variant dark (&:where(.dark, .dark *));
+
+:root.color-scheme-switching *,
+:root.color-scheme-switching *::before,
+:root.color-scheme-switching *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+:root.color-scheme-switching .athkar-gate,
+:root.color-scheme-switching .athkar-gate__label {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+:root.color-scheme-switching .athkar-gate__divider-glow,
+:root.color-scheme-switching .athkar-gate__image-img,
+:root.color-scheme-switching .athkar-gate__spill,
+:root.color-scheme-switching .main-menu-caption__shine {
+    filter: none !important;
+}

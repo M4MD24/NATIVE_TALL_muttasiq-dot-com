@@ -11,33 +11,35 @@
     x-show="(views[`main-menu`].isOpen || views[`athkar-app-gate`].isReaderVisible)"
 >
     <div
-        class="absolute inset-0 opacity-10 transition-opacity duration-1000 will-change-[opacity]"
+        class="duration-400 absolute inset-0 opacity-10 transition-opacity will-change-[opacity]"
         x-bind:class="!$store.colorScheme.isDarkModeOn && 'opacity-20!'"
     >
         <!-- LIGHT MODE -->
         <div
-            class="duration-2000 absolute inset-0 opacity-0 transition-opacity will-change-[opacity]"
+            class="absolute inset-0 opacity-0 transition-opacity duration-500 will-change-[opacity]"
+            data-testid="main-menu-bg-light-layer"
             x-bind:class="!$store.colorScheme.isDarkModeOn && 'opacity-100!'"
         >
             <x-goodmaven::blurred-image
-                class="h-full w-full scale-110 object-cover blur-md"
+                class="h-full w-full scale-110 object-cover"
                 alt="Morning background"
-                :imagePath="asset('images/background/morning.webp')"
-                :thumbnailImagePath="asset('images/background/morning-blur-thumbnail.png')"
+                :imagePath="asset('images/background/morning-blurred.webp')"
+                :thumbnailImagePath="asset('images/background/morning-blurred-blur-thumbnail.png')"
                 :isDisplayEnforced="true"
             />
         </div>
 
         <!-- DARK MODE -->
         <div
-            class="duration-2000 absolute inset-0 opacity-0 transition-opacity will-change-[opacity]"
+            class="absolute inset-0 opacity-0 transition-opacity duration-500 will-change-[opacity]"
+            data-testid="main-menu-bg-dark-layer"
             x-bind:class="$store.colorScheme.isDarkModeOn && 'opacity-100!'"
         >
             <x-goodmaven::blurred-image
-                class="h-full w-full scale-110 object-cover blur-md"
+                class="h-full w-full scale-110 object-cover"
                 alt="Night background"
-                :imagePath="asset('images/background/night.webp')"
-                :thumbnailImagePath="asset('images/background/night-blur-thumbnail.png')"
+                :imagePath="asset('images/background/night-blurred.webp')"
+                :thumbnailImagePath="asset('images/background/night-blurred-blur-thumbnail.png')"
                 :isDisplayEnforced="true"
             />
         </div>
