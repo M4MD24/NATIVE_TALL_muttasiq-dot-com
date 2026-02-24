@@ -1,3 +1,18 @@
+document.addEventListener('livewire:init', () => {
+    Livewire.hook('component.init', ({ component }) => {
+        if (component.name !== 'color-scheme-switcher') return;
+
+        const raw = localStorage.getItem('colorScheme_darkMode');
+        const isDarkModeOn = raw !== null ? Boolean(JSON.parse(raw)) : null;
+
+        queueMicrotask(() => {
+            Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-initialized', {
+                isDarkModeOn,
+            });
+        });
+    });
+});
+
 document.addEventListener('alpine:init', () => {
     window.Alpine.store('colorScheme', {
         isDark: window.Alpine.$persist(null).as('colorScheme_darkMode'),
@@ -23,14 +38,6 @@ document.addEventListener('alpine:init', () => {
         toggle() {
             this.isDark = !this.isDarkModeOn;
         },
-    });
-
-    const colorSchemeStore = window.Alpine.store('colorScheme');
-
-    document.addEventListener('livewire:init', () => {
-        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-initialized', {
-            isDarkModeOn: colorSchemeStore.isDarkModeOn,
-        });
     });
 
     window.Alpine.effect(() => {
