@@ -25,8 +25,6 @@ class ColorSchemeSwitcher extends Component
         }
 
         session()->put('is-dark-mode-on', $isDarkModeOn);
-
-        $this->js("document.documentElement.classList.remove('color-scheme-switching')");
     }
 
     public function render(): View

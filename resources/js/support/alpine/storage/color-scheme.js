@@ -34,17 +34,25 @@ document.addEventListener('alpine:init', () => {
     });
 
     window.Alpine.effect(() => {
-        document.documentElement.classList.add('color-scheme-switching');
+        (async () => {
+            document.documentElement.classList.add('color-scheme-switching');
 
-        const colorSchemeStore = window.Alpine.store('colorScheme');
-        const isDarkModeOn = colorSchemeStore.isDarkModeOn;
+            const colorSchemeStore = window.Alpine.store('colorScheme');
+            const isDarkModeOn = colorSchemeStore.isDarkModeOn;
 
-        document.documentElement.classList.toggle('dark', isDarkModeOn);
-        document.documentElement.style.colorScheme = isDarkModeOn ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = colorSchemeStore.bodyBackgroundColor;
+            document.documentElement.classList.toggle('dark', isDarkModeOn);
+            document.documentElement.style.colorScheme = isDarkModeOn ? 'dark' : 'light';
+            document.documentElement.style.backgroundColor = colorSchemeStore.bodyBackgroundColor;
 
-        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', {
-            isDarkModeOn: isDarkModeOn,
-        });
+            window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', {
+                isDarkModeOn: isDarkModeOn,
+            });
+
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+
+            await Promise.all(document.getAnimations({ subtree: true }).map((a) => a.finished));
+
+            document.documentElement.classList.remove('color-scheme-switching');
+        })();
     });
 });
