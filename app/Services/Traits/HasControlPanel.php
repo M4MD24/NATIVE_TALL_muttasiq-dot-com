@@ -144,7 +144,7 @@ trait HasControlPanel
                                     ->extraAttributes(['class' => 'block w-full text-center mt-2']),
 
                                 Image::make(
-                                    url: asset(is_dark_mode_on() ? 'icon-dark.png' : 'icon.png'),
+                                    url: fn () => asset(is_dark_mode_on() ? 'icon-dark.png' : 'icon.png'),
                                     alt: 'Muttasiq application icono',
                                 )
                                     ->imageSize('10rem')

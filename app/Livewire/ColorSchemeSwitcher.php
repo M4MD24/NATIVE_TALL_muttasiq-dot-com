@@ -6,12 +6,10 @@ namespace App\Livewire;
 
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 class ColorSchemeSwitcher extends Component
 {
-    #[Renderless]
     #[On('color-scheme-initialized')]
     #[On('color-scheme-toggled')]
     public function synchronizeColorScheme(?bool $isDarkModeOn): void
@@ -21,6 +19,8 @@ class ColorSchemeSwitcher extends Component
         }
 
         if (is_dark_mode_on() === $isDarkModeOn) {
+            $this->skipRender();
+
             return;
         }
 
