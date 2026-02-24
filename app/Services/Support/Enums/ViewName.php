@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Enums;
+namespace App\Services\Support\Enums;
 
 enum ViewName: string
 {

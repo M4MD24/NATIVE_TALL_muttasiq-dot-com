@@ -23,20 +23,20 @@
             },
             views: {
                 'main-menu': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::MainMenu)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::MainMenu)),
                     isOpen: true,
                 },
                 'athkar-app-gate': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppGate)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppGate)),
                     isOpen: false,
                     isReaderVisible: $persist(false).as('athkar-reader-visible'),
                 },
                 'athkar-app-sabah': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppSabah)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppSabah)),
                     isOpen: false,
                 },
                 'athkar-app-masaa': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppMasaa)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppMasaa)),
                     isOpen: false,
                 },
             },

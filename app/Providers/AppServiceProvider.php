@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -25,34 +28,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Model::unguard();
-        Livewire::useScriptTagAttributes(['defer' => true]);
-        $this->configureNativeIosUrlGeneration();
         $this->disableViteHotFileWhenUnavailable();
-    }
 
-    private function configureNativeIosUrlGeneration(): void
-    {
-        if (! config('nativephp-internal.running')) {
-            return;
-        }
+        Model::unguard();
 
-        $platform = strtolower((string) config('nativephp-internal.platform', ''));
-        if ($platform !== 'ios') {
-            return;
-        }
+        Livewire::useScriptTagAttributes(['defer' => true]);
 
-        URL::forceRootUrl('php://127.0.0.1');
-        URL::forceScheme('php');
+        $this->configureNativeIosUrlGeneration();
 
-        if (! app()->bound('livewire')) {
-            return;
-        }
-
-        $livewirePrefix = ltrim((string) app('livewire')->getUriPrefix(), '/');
-        config([
-            'livewire.asset_url' => '/'.$livewirePrefix.'/livewire.js',
-        ]);
+        $this->rateLimitSettings();
     }
 
     private function disableViteHotFileWhenUnavailable(): void
@@ -92,5 +76,36 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Vite::useHotFile(storage_path('framework/vite.hot.disabled'));
+    }
+
+    private function configureNativeIosUrlGeneration(): void
+    {
+        if (! config('nativephp-internal.running')) {
+            return;
+        }
+
+        $platform = strtolower((string) config('nativephp-internal.platform', ''));
+        if ($platform !== 'ios') {
+            return;
+        }
+
+        URL::forceRootUrl('php://127.0.0.1');
+        URL::forceScheme('php');
+
+        if (! app()->bound('livewire')) {
+            return;
+        }
+
+        $livewirePrefix = ltrim((string) app('livewire')->getUriPrefix(), '/');
+        config([
+            'livewire.asset_url' => '/'.$livewirePrefix.'/livewire.js',
+        ]);
+    }
+
+    private function rateLimitSettings(): void
+    {
+        RateLimiter::for('settings', function (Request $request): Limit {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

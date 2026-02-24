@@ -27,18 +27,19 @@ class AthkarAppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerAthkarRateLimiter();
-        $this->registerAthkarCacheListeners();
+        $this->rateLimitAthkar();
+
+        $this->clearAthkarCacheUponReorder();
     }
 
-    private function registerAthkarRateLimiter(): void
+    private function rateLimitAthkar(): void
     {
         RateLimiter::for('athkar', function (Request $request): Limit {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     }
 
-    private function registerAthkarCacheListeners(): void
+    private function clearAthkarCacheUponReorder(): void
     {
         Event::listen(EloquentModelSortedEvent::class, function (EloquentModelSortedEvent $event): void {
             if (! $event->isFor(Thikr::class)) {

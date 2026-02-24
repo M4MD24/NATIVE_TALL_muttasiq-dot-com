@@ -51,6 +51,7 @@
             "app/Services/Functions/generation.php",
             "app/Services/Functions/livewire.php",
             "app/Services/Functions/native.php",
+            "app/Services/Functions/security.php",
             "app/Services/Functions/session.php",
             "app/Services/Functions/theme.php"
         ],

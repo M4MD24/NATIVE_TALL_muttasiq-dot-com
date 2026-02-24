@@ -1,12 +1,15 @@
 import {
     athkarOverridesStorageKey,
+    migrateSettingsOverrides,
     normalizeAthkarDefaults,
     normalizeAthkarOverrides,
     readAthkarOverridesFromStorage,
     readAthkarSettingsFromStorage,
     resolveAthkarWithOverrides,
+    resolveEffectiveSettings,
     writeAthkarOverridesToStorage,
     writeAthkarSettingsToStorage,
+    writeUserSettingOverride,
 } from '../athkar-app-overrides';
 import { createAthkarShimmerController } from '../athkar-shimmer';
 
@@ -18,7 +21,7 @@ document.addEventListener('alpine:init', () => {
         settingsDefaults: config.athkarSettings,
         mainTextSizeLimits: config.athkarMainTextSizeLimits ?? {},
         typeLabels: config.typeLabels ?? {},
-        settings: readAthkarSettingsFromStorage(config.athkarSettings),
+        settings: resolveEffectiveSettings(config.athkarSettings),
         activeMode: window.Alpine.$persist(null).as('athkar-active-mode'),
         isCompletionVisible: false,
         isNoticeVisible: window.Alpine.$persist(false).as('athkar-notice-visible'),
@@ -136,6 +139,8 @@ document.addEventListener('alpine:init', () => {
 
             window.athkarSettingsDefaults = this.settingsDefaults;
             window.athkarMainTextSizeLimits = this.mainTextSizeLimits;
+            migrateSettingsOverrides(this.settingsDefaults);
+            this.settings = resolveEffectiveSettings(this.settingsDefaults);
             this.ensureState();
             this.refreshCompletionInputMode();
             this.applyAthkarOverrides(this.athkarOverrides, { persist: true });
@@ -305,12 +310,12 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const mergedSettings = {
-                ...this.settings,
-                ...nextSettings,
-            };
+            Object.keys(nextSettings).forEach((key) => {
+                writeUserSettingOverride(key, nextSettings[key]);
+            });
 
-            this.settings = writeAthkarSettingsToStorage(mergedSettings, this.settingsDefaults);
+            this.settings = resolveEffectiveSettings(this.settingsDefaults);
+            writeAthkarSettingsToStorage(this.settings, this.settingsDefaults);
 
             this.ensureProgress('sabah');
             this.ensureProgress('masaa');

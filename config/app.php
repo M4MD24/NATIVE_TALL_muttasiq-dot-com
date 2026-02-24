@@ -21,6 +21,7 @@ return [
         'native_end_points' => [
             'retries' => 8,
             'athkar' => env('NATIVE_ATHKAR_ENDPOINT', 'https://muttasiq.com/api/athkar'),
+            'settings' => env('NATIVE_SETTINGS_ENDPOINT', 'https://muttasiq.com/api/settings'),
         ],
 
         'colors' => [

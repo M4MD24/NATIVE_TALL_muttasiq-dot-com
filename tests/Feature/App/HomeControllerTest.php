@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use App\Models\Thikr;
 use App\Services\Enums\ThikrType;
 use Illuminate\Http\Client\Request as HttpRequest;
@@ -61,6 +62,7 @@ it('fetches athkar from the remote api on mobile', function () {
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
         'app.custom.native_end_points.athkar' => 'athkar',
+        'app.custom.native_end_points.settings' => 'settings',
         'app.custom.native_end_points.retries' => 2,
     ]);
 
@@ -80,6 +82,10 @@ it('fetches athkar from the remote api on mobile', function () {
 
     Http::fake([
         route('api.athkar.index') => Http::response(['athkar' => $payload]),
+        route('api.settings.index') => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+        ]),
     ]);
 
     $response = get('/');
@@ -138,6 +144,7 @@ it('falls back to local athkar payload on mobile when api request fails', functi
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
         'app.custom.native_end_points.athkar' => 'athkar',
+        'app.custom.native_end_points.settings' => 'settings',
         'app.custom.native_end_points.retries' => 2,
     ]);
 
@@ -148,6 +155,10 @@ it('falls back to local athkar payload on mobile when api request fails', functi
 
     Http::fake([
         route('api.athkar.index') => Http::failedConnection(),
+        route('api.settings.index') => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+        ]),
     ]);
 
     $response = get('/');
@@ -172,6 +183,7 @@ it('uses local athkar payload on mobile when app url has a non-http scheme', fun
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'ios',
         'app.custom.native_end_points.athkar' => 'athkar',
+        'app.custom.native_end_points.settings' => 'settings',
         'app.url' => 'php://127.0.0.1',
     ]);
 
@@ -242,6 +254,7 @@ it('fetches athkar from the configured absolute endpoint on mobile even with a p
         'nativephp-internal.platform' => 'ios',
         'app.url' => 'php://127.0.0.1',
         'app.custom.native_end_points.athkar' => 'https://muttasiq.com/api/athkar',
+        'app.custom.native_end_points.settings' => 'https://muttasiq.com/api/settings',
         'app.custom.native_end_points.retries' => 2,
     ]);
 
@@ -261,6 +274,10 @@ it('fetches athkar from the configured absolute endpoint on mobile even with a p
 
     Http::fake([
         'https://muttasiq.com/api/athkar' => Http::response(['athkar' => $payload]),
+        'https://muttasiq.com/api/settings' => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+        ]),
     ]);
 
     $response = get('/');
