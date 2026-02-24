@@ -34,6 +34,8 @@ document.addEventListener('alpine:init', () => {
     });
 
     window.Alpine.effect(() => {
+        document.documentElement.classList.add('color-scheme-switching');
+
         const colorSchemeStore = window.Alpine.store('colorScheme');
         const isDarkModeOn = colorSchemeStore.isDarkModeOn;
 
