@@ -151,6 +151,7 @@
         .athkar-count--rolling {
             display: grid;
             place-items: center;
+            contain: layout style;
         }
 
         .athkar-count__current,
@@ -165,11 +166,13 @@
         }
 
         .athkar-count--rolling .athkar-count__prev {
-            animation: athkar-count-prev 520ms ease;
+            will-change: transform, opacity;
+            animation: athkar-count-prev 520ms ease-out both;
         }
 
         .athkar-count--rolling .athkar-count__next {
-            animation: athkar-count-next 520ms ease;
+            will-change: transform, opacity;
+            animation: athkar-count-next 520ms ease-out both;
         }
 
         .athkar-tap--pulse {
