@@ -10,7 +10,7 @@ return new class extends Migration
 {
     private const MAX_MAIN_TEXT_SIZE_KEY = 'maximum_main_text_size';
 
-    private const MAX_MAIN_TEXT_SIZE_DEFAULT = 20;
+    private const MAX_MAIN_TEXT_SIZE_DEFAULT = 22;
 
     /**
      * Run the migrations.
