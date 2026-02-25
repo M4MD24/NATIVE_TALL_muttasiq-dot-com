@@ -151,6 +151,7 @@
         .athkar-count--rolling {
             display: grid;
             place-items: center;
+            contain: layout style;
         }
 
         .athkar-count__current,
@@ -165,11 +166,13 @@
         }
 
         .athkar-count--rolling .athkar-count__prev {
-            animation: athkar-count-prev 520ms ease;
+            will-change: transform, opacity;
+            animation: athkar-count-prev 520ms ease-out both;
         }
 
         .athkar-count--rolling .athkar-count__next {
-            animation: athkar-count-next 520ms ease;
+            will-change: transform, opacity;
+            animation: athkar-count-next 520ms ease-out both;
         }
 
         .athkar-tap--pulse {
@@ -925,168 +928,53 @@
                         x-bind:class="index === activeIndex ? 'opacity-100' : 'opacity-0'"
                         x-bind:data-active="index === activeIndex ? 'true' : 'false'"
                     >
-                        <!-- Floating Mobile Counter (togglable) -->
                         <div
-                            class="delay-250 absolute right-2 top-2 z-30 overflow-visible transition-opacity sm:hidden"
-                            data-athkar-mobile-counter
-                            x-bind:class="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
-                            (countAt(index) !== requiredCount(index)) ?
-                            'opacity-100! pointer-events-auto!' :
-                            'opacity-0 pointer-events-none'"
+                            class="contents"
+                            x-show="Math.abs(index - activeIndex) <= 1"
                         >
-                            <div class="group relative">
-                                <!-- Top Right Counter -->
-                                <button
-                                    class="relative z-30 size-9 touch-manipulation transition-all"
-                                    data-hint-allow
-                                    type="button"
-                                    aria-label="العدد"
-                                    x-bind:class="isHintOpen(index) && 'size-16!'"
-                                    x-on:click.stop="toggleHint(index)"
-                                    x-on:pointerdown.stop
-                                    x-on:touchstart.stop
-                                    x-bind:aria-expanded="isHintOpen(index)"
-                                >
-                                    <!-- Ring -->
-                                    <div
-                                        class="athkar-counter-ring absolute inset-0 rounded-full"
-                                        x-bind:style="`--progress: ${countAt(index)&&requiredCount(index)?Math.min(100, (countAt(index) / requiredCount(index)) * 100):0}%`"
-                                    ></div>
-
-                                    <!-- Background -->
-                                    <div
-                                        class="bg-(--background) dark:bg-(--background-dark) absolute inset-[4px] rounded-full">
-                                    </div>
-
-                                    <!-- Counter text -->
-                                    <div
-                                        class="text-primary-800 dark:text-primary-100 absolute inset-0 flex items-center justify-center gap-0.5 whitespace-nowrap text-[0.6rem] font-semibold tabular-nums opacity-0 transition-opacity"
-                                        x-bind:class="{ 'opacity-100!': isHintOpen(index) }"
-                                        dir="ltr"
-                                    >
-                                        <span x-text="`${requiredCount(index)} /`"></span>
-
-                                        <span class="athkar-count">
-                                            <span
-                                                class="athkar-count__current"
-                                                x-show="!(countPulse.index === index && countPulse.isActive && countPulse.hasChanges)"
-                                                x-text="countAt(index)"
-                                            ></span>
-                                            <span
-                                                class="athkar-count__current inline-flex items-center gap-0"
-                                                x-cloak
-                                                x-show="countPulse.index === index && countPulse.isActive && countPulse.hasChanges"
-                                            >
-                                                <template
-                                                    x-for="segment in countPulse.segments"
-                                                    x-bind:key="segment.key"
-                                                >
-                                                    <span class="inline-flex items-center">
-                                                        <span
-                                                            x-show="!segment.changed"
-                                                            x-text="segment.next"
-                                                        ></span>
-                                                        <span
-                                                            class="athkar-count athkar-count--rolling"
-                                                            x-show="segment.changed"
-                                                        >
-                                                            <span
-                                                                class="athkar-count__prev"
-                                                                x-text="segment.prev"
-                                                            ></span>
-                                                            <span
-                                                                class="athkar-count__next"
-                                                                x-text="segment.next"
-                                                            ></span>
-                                                        </span>
-                                                    </span>
-                                                </template>
-                                            </span>
-                                        </span>
-                                    </div>
-                                </button>
-
-                                <!-- Completion button -->
-                                <button
-                                    class="bg-success-500/90 pointer-events-none absolute -bottom-2 right-0 z-30 flex h-7 w-7 scale-95 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200"
-                                    data-hint-allow
-                                    type="button"
-                                    aria-label="إتمام الذكر"
-                                    x-bind:class="{
-                                        'opacity-100! scale-100 pointer-events-auto!': isHintOpen(index),
-                                    }"
-                                    x-on:click.stop="requestSingleThikrCompletion(index)"
-                                    x-on:pointerdown.stop
-                                    x-on:touchstart.stop
-                                >
-                                    <x-icon
-                                        class="h-4 w-4"
-                                        name="heroicon-o-check"
-                                    />
-                                </button>
-                            </div>
-
-                            <!-- Label -->
+                            <!-- Floating Mobile Counter (togglable) -->
                             <div
-                                class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 opacity-0 transition-opacity dark:text-gray-300"
-                                x-bind:class="isHintOpen(index) && 'opacity-100!'"
+                                class="absolute right-2 top-2 z-30 overflow-visible sm:hidden"
+                                data-athkar-mobile-counter
+                                x-show="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
+                            (countAt(index) !== requiredCount(index))"
+                                x-transition.opacity.duration.250ms
                             >
-                                العدد
-                            </div>
-                        </div>
-
-                        <!-- Mobile thikr origin toggler -->
-                        <div
-                            class="absolute left-2 top-2 z-30 transition-opacity duration-200 sm:hidden"
-                            x-show="isOriginalThikr(index)"
-                            x-bind:class="slide.isActive ? 'pointer-events-none opacity-0' : 'opacity-100'"
-                        >
-                            <button
-                                class="athkar-origin-indicator athkar-origin-indicator--mobile"
-                                type="button"
-                                x-data="{ tip: null }"
-                                x-bind:class="isOriginVisible(index) && 'is-active'"
-                                x-bind:aria-pressed="isOriginVisible(index)"
-                                x-on:click.stop="toggleOrigin(index)"
-                                x-on:pointerdown.stop
-                                x-on:touchstart.stop
-                                x-on:mouseenter="tip = $tippy('مأثور', 'right')"
-                                x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                x-on:focus="tip = $tippy('مأثور', 'right')"
-                                x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
-                            >
-                                <x-icon
-                                    class="athkar-origin-indicator__icon"
-                                    name="bootstrap.exclamation-diamond"
-                                />
-                            </button>
-                        </div>
-
-                        <!-- Content -->
-                        <div class="flex min-h-0 flex-1 flex-col gap-3 sm:gap-5">
-                            <!-- Top Counter -->
-                            <div class="hidden items-center justify-between gap-4 sm:flex">
-                                <div class="w-16"></div>
-
-                                <div class="flex items-center justify-center gap-3">
-                                    <div class="group relative h-20 w-20 sm:h-24 sm:w-24">
-                                        <!-- The Circle -->
+                                <div class="group relative">
+                                    <!-- Top Right Counter -->
+                                    <button
+                                        class="relative z-30 size-9 touch-manipulation transition-all"
+                                        data-hint-allow
+                                        type="button"
+                                        aria-label="العدد"
+                                        x-bind:class="isHintOpen(index) && 'size-16!'"
+                                        x-on:click.stop="toggleHint(index)"
+                                        x-on:pointerdown.stop
+                                        x-on:touchstart.stop
+                                        x-bind:aria-expanded="isHintOpen(index)"
+                                    >
+                                        <!-- Ring -->
                                         <div
                                             class="athkar-counter-ring absolute inset-0 rounded-full"
-                                            x-bind:style="`--progress: ${countAt(index) && requiredCount(index) ? Math.min(100, (countAt(index) / requiredCount(index)) * 100) : 0}%`"
+                                            x-bind:style="index === activeIndex ?
+                                                `--progress: ${countAt(index)&&requiredCount(index)?Math.min(100, (countAt(index) / requiredCount(index)) * 100):0}%` :
+                                                ''"
                                         ></div>
 
                                         <!-- Background -->
                                         <div
-                                            class="bg-(--background) dark:bg-(--background-dark) absolute inset-[6px] rounded-full">
+                                            class="bg-(--background) dark:bg-(--background-dark) absolute inset-[4px] rounded-full">
                                         </div>
 
-                                        <!-- The Counter -->
+                                        <!-- Counter text -->
                                         <div
-                                            class="text-primary-800 dark:text-primary-100 absolute inset-0 flex select-none items-center justify-center gap-1 text-xs font-semibold tabular-nums sm:text-base"
+                                            class="text-primary-800 dark:text-primary-100 absolute inset-0 flex items-center justify-center gap-0.5 whitespace-nowrap text-[0.6rem] font-semibold tabular-nums"
+                                            x-show="isHintOpen(index)"
+                                            x-transition.opacity.duration.200ms
                                             dir="ltr"
                                         >
                                             <span x-text="`${requiredCount(index)} /`"></span>
+
                                             <span class="athkar-count">
                                                 <span
                                                     class="athkar-count__current"
@@ -1125,167 +1013,294 @@
                                                 </span>
                                             </span>
                                         </div>
+                                    </button>
 
-                                        <!-- Hidden completion button -->
-                                        <template x-if="requiredCount(index) > 1">
-                                            <button
-                                                class="bg-success-500/90 pointer-events-none absolute -bottom-2 right-1 flex h-8 w-8 scale-95 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
-                                                type="button"
-                                                aria-label="إتمام الذكر"
-                                                x-show="countAt(index) !== requiredCount(index)"
-                                                x-bind:class="!completionHack.canHover && $store.bp.is('sm+') ?
-                                                    'pointer-events-auto! scale-100! opacity-100!' : ''"
-                                                x-data="{ tip: null }"
-                                                x-on:click.stop="tip?._clearHideTimer?.(); tip?.hide(); requestSingleThikrCompletion(index)"
-                                                x-on:mouseenter="tip = $tippy('إتمام الذكر', 'right')"
-                                                x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                                x-on:focus="tip = $tippy('إتمام الذكر', 'right')"
-                                                x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
-                                            >
-                                                <x-icon
-                                                    class="h-4 w-4"
-                                                    name="heroicon-o-check"
-                                                />
-                                            </button>
-                                        </template>
-
-                                        <!-- Label -->
-                                        <span
-                                            class="absolute -left-10 top-1/2 -translate-y-1/2 select-none text-sm text-gray-600 sm:-left-14 sm:text-base dark:text-gray-300"
-                                        >العدد</span>
-                                    </div>
-                                </div>
-
-                                <div class="w-16">
+                                    <!-- Completion button -->
                                     <button
-                                        class="athkar-origin-indicator athkar-origin-indicator--desktop opacity-0 transition-opacity duration-300"
+                                        class="bg-success-500/90 absolute -bottom-2 right-0 z-30 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-lg"
+                                        data-hint-allow
                                         type="button"
-                                        x-data="{
-                                            tip: null,
-                                        }"
-                                        x-show="isOriginalThikr(index)"
-                                        x-bind:class="{
-                                            'opacity-100!': !slide.isActive,
-                                            'pointer-events-none opacity-0': slide.isActive,
-                                            'is-active': isOriginVisible(index),
-                                        }"
-                                        x-bind:aria-pressed="isOriginVisible(index)"
-                                        x-on:click.stop="toggleOrigin(index)"
-                                        x-on:mouseenter="tip = $tippy('مأثور', 'right')"
-                                        x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                        x-on:focus="tip = $tippy('مأثور', 'right')"
-                                        x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                        aria-label="إتمام الذكر"
+                                        x-show="isHintOpen(index)"
+                                        x-transition.opacity.duration.200ms
+                                        x-on:click.stop="requestSingleThikrCompletion(index)"
+                                        x-on:pointerdown.stop
+                                        x-on:touchstart.stop
                                     >
                                         <x-icon
-                                            class="athkar-origin-indicator__icon"
-                                            name="bootstrap.exclamation-diamond"
+                                            class="h-4 w-4"
+                                            name="heroicon-o-check"
                                         />
                                     </button>
                                 </div>
+
+                                <!-- Label -->
+                                <div
+                                    class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
+                                    x-show="isHintOpen(index)"
+                                    x-transition.opacity.duration.200ms
+                                >
+                                    العدد
+                                </div>
                             </div>
 
-                            <!-- Althikr -->
-                            <button
-                                class="athkar-tap group relative mt-[2.1rem] flex min-h-0 w-full flex-1 touch-manipulation flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-transparent px-2 py-1.5 text-center transition sm:mt-0 sm:px-4 sm:py-6"
-                                data-athkar-tap
-                                type="button"
-                                x-on:click="handleTap()"
-                                x-bind:class="{
-                                    'opacity-30!': isHintOpen(index),
-                                    'athkar-tap--pulse': tapPulse.index === index && tapPulse.isActive,
-                                    'is-origin-active': isOriginVisible(index),
-                                }"
+                            <!-- Mobile thikr origin toggler -->
+                            <div
+                                class="absolute left-2 top-2 z-30 sm:hidden"
+                                x-show="isOriginalThikr(index) && !slide.isActive"
+                                x-transition.opacity.duration.200ms
                             >
-                                <div
-                                    class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-4 md:px-10 transition-opacity') }}"
-                                    data-athkar-text-box
-                                    data-fitty-box
-                                    dir="rtl"
-                                    x-on:pointerdown="
-                                        beginTextScroll($event);
-                                    "
-                                    x-on:pointermove="
-                                        moveTextScroll($event);
-                                    "
-                                    x-on:pointerup="endTextScroll()"
-                                    x-on:pointercancel="endTextScroll()"
-                                    x-on:touchstart="
-                                        beginTextScroll($event);
-                                    "
-                                    x-on:touchmove="
-                                        moveTextScroll($event);
-                                    "
-                                    x-on:touchend="endTextScroll()"
-                                    x-on:touchcancel="endTextScroll()"
+                                <button
+                                    class="athkar-origin-indicator athkar-origin-indicator--mobile"
+                                    type="button"
+                                    x-data="{ tip: null }"
+                                    x-bind:class="isOriginVisible(index) && 'is-active'"
+                                    x-bind:aria-pressed="isOriginVisible(index)"
+                                    x-on:click.stop="toggleOrigin(index)"
+                                    x-on:pointerdown.stop
+                                    x-on:touchstart.stop
+                                    x-on:mouseenter="tip = $tippy('مأثور', 'right')"
+                                    x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
+                                    x-on:focus="tip = $tippy('مأثور', 'right')"
+                                    x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
                                 >
-                                    <div
-                                        class="athkar-main-text"
-                                        x-bind:class="isOriginVisible(index) && 'is-main-hidden'"
-                                    >
-                                        <p
-                                            class="athkar-text athkar-shimmer font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
-                                            data-athkar-text
-                                            data-fitty-target
-                                            data-fitty-enabled="false"
-                                            data-fitty-overflow-active="false"
-                                            data-fitty-step="0.5"
-                                            data-fitty-safe-padding-x="2"
-                                            data-fitty-safe-padding-y="2"
-                                            data-fitty-manage-overflow="true"
-                                            data-fitty-enable-touch-scroll="true"
-                                            data-fitty-overflow-padding-class="py-1"
-                                            data-fitty-overflow-target="text"
-                                            data-athkar-shimmer
-                                            data-shimmer-duration="3000"
-                                            data-shimmer-delay="1000"
-                                            data-shimmer-pause="4000"
-                                            dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
-                                            x-bind:data-fitty-overflow-active="(activeIndex === index && !isOriginVisible(index)).toString()"
-                                            x-text="item.text"
-                                        ></p>
+                                    <x-icon
+                                        class="athkar-origin-indicator__icon"
+                                        name="bootstrap.exclamation-diamond"
+                                    />
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="flex min-h-0 flex-1 flex-col gap-3 sm:gap-5">
+                                <!-- Top Counter -->
+                                <div class="hidden items-center justify-between gap-4 sm:flex">
+                                    <div class="w-16"></div>
+
+                                    <div class="flex items-center justify-center gap-3">
+                                        <div class="group relative h-20 w-20 sm:h-24 sm:w-24">
+                                            <!-- The Circle -->
+                                            <div
+                                                class="athkar-counter-ring absolute inset-0 rounded-full"
+                                                x-bind:style="index === activeIndex ?
+                                                    `--progress: ${countAt(index) && requiredCount(index) ? Math.min(100, (countAt(index) / requiredCount(index)) * 100) : 0}%` :
+                                                    ''"
+                                            ></div>
+
+                                            <!-- Background -->
+                                            <div
+                                                class="bg-(--background) dark:bg-(--background-dark) absolute inset-[6px] rounded-full">
+                                            </div>
+
+                                            <!-- The Counter -->
+                                            <div
+                                                class="text-primary-800 dark:text-primary-100 absolute inset-0 flex select-none items-center justify-center gap-1 text-xs font-semibold tabular-nums sm:text-base"
+                                                dir="ltr"
+                                            >
+                                                <span x-text="`${requiredCount(index)} /`"></span>
+                                                <span class="athkar-count">
+                                                    <span
+                                                        class="athkar-count__current"
+                                                        x-show="!(countPulse.index === index && countPulse.isActive && countPulse.hasChanges)"
+                                                        x-text="countAt(index)"
+                                                    ></span>
+                                                    <span
+                                                        class="athkar-count__current inline-flex items-center gap-0"
+                                                        x-cloak
+                                                        x-show="countPulse.index === index && countPulse.isActive && countPulse.hasChanges"
+                                                    >
+                                                        <template
+                                                            x-for="segment in countPulse.segments"
+                                                            x-bind:key="segment.key"
+                                                        >
+                                                            <span class="inline-flex items-center">
+                                                                <span
+                                                                    x-show="!segment.changed"
+                                                                    x-text="segment.next"
+                                                                ></span>
+                                                                <span
+                                                                    class="athkar-count athkar-count--rolling"
+                                                                    x-show="segment.changed"
+                                                                >
+                                                                    <span
+                                                                        class="athkar-count__prev"
+                                                                        x-text="segment.prev"
+                                                                    ></span>
+                                                                    <span
+                                                                        class="athkar-count__next"
+                                                                        x-text="segment.next"
+                                                                    ></span>
+                                                                </span>
+                                                            </span>
+                                                        </template>
+                                                    </span>
+                                                </span>
+                                            </div>
+
+                                            <!-- Hidden completion button -->
+                                            <template x-if="requiredCount(index) > 1">
+                                                <button
+                                                    class="bg-success-500/90 pointer-events-none absolute -bottom-2 right-1 flex h-8 w-8 scale-95 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
+                                                    type="button"
+                                                    aria-label="إتمام الذكر"
+                                                    x-show="countAt(index) !== requiredCount(index)"
+                                                    x-bind:class="!completionHack.canHover && $store.bp.is('sm+') ?
+                                                        'pointer-events-auto! scale-100! opacity-100!' : ''"
+                                                    x-data="{ tip: null }"
+                                                    x-on:click.stop="tip?._clearHideTimer?.(); tip?.hide(); requestSingleThikrCompletion(index)"
+                                                    x-on:mouseenter="tip = $tippy('إتمام الذكر', 'right')"
+                                                    x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
+                                                    x-on:focus="tip = $tippy('إتمام الذكر', 'right')"
+                                                    x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                                >
+                                                    <x-icon
+                                                        class="h-4 w-4"
+                                                        name="heroicon-o-check"
+                                                    />
+                                                </button>
+                                            </template>
+
+                                            <!-- Label -->
+                                            <span
+                                                class="absolute -left-10 top-1/2 -translate-y-1/2 select-none text-sm text-gray-600 sm:-left-14 sm:text-base dark:text-gray-300"
+                                            >العدد</span>
+                                        </div>
                                     </div>
-                                    <div
-                                        class="athkar-origin-text"
-                                        x-bind:class="isOriginVisible(index) && 'is-origin-visible'"
-                                    >
-                                        <p
-                                            class="athkar-text athkar-shimmer athkar-origin-text__content font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
-                                            data-athkar-origin-text
-                                            data-athkar-shimmer
-                                            data-shimmer-duration="3000"
-                                            data-shimmer-delay="1000"
-                                            data-shimmer-pause="4000"
-                                            data-fitty-target
-                                            data-fitty-enabled="false"
-                                            data-fitty-overflow-active="false"
-                                            data-fitty-step="0.5"
-                                            data-fitty-safe-padding-x="2"
-                                            data-fitty-safe-padding-y="2"
-                                            data-fitty-manage-overflow="true"
-                                            data-fitty-enable-touch-scroll="true"
-                                            data-fitty-overflow-padding-class="py-1"
-                                            data-fitty-overflow-target="origin"
-                                            dir="rtl"
-                                            x-bind:data-fitty-enabled="(activeIndex === index).toString()"
-                                            x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
-                                            x-text="originTextAt(index)"
-                                        ></p>
+
+                                    <div class="w-16">
+                                        <button
+                                            class="athkar-origin-indicator athkar-origin-indicator--desktop"
+                                            type="button"
+                                            x-data="{
+                                                tip: null,
+                                            }"
+                                            x-show="isOriginalThikr(index) && !slide.isActive"
+                                            x-transition.opacity.duration.300ms
+                                            x-bind:class="{
+                                                'is-active': isOriginVisible(index),
+                                            }"
+                                            x-bind:aria-pressed="isOriginVisible(index)"
+                                            x-on:click.stop="toggleOrigin(index)"
+                                            x-on:mouseenter="tip = $tippy('مأثور', 'right')"
+                                            x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
+                                            x-on:focus="tip = $tippy('مأثور', 'right')"
+                                            x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                        >
+                                            <x-icon
+                                                class="athkar-origin-indicator__icon"
+                                                name="bootstrap.exclamation-diamond"
+                                            />
+                                        </button>
                                     </div>
                                 </div>
-                            </button>
 
-                            <!-- Completion Indicator -->
-                            <div
-                                class="flex items-center justify-between gap-3 text-sm text-gray-600 sm:text-base dark:text-gray-300">
-                                <span
-                                    class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums opacity-0 transition-opacity duration-300"
-                                    x-data="{
-                                        isVisible: false,
-                                        timer: null,
+                                <!-- Althikr -->
+                                <button
+                                    class="athkar-tap group relative mt-[2.1rem] flex min-h-0 w-full flex-1 touch-manipulation flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-transparent px-2 py-1.5 text-center transition sm:mt-0 sm:px-4 sm:py-6"
+                                    data-athkar-tap
+                                    type="button"
+                                    x-on:click="handleTap()"
+                                    x-bind:class="{
+                                        'opacity-30!': isHintOpen(index),
+                                        'athkar-tap--pulse': tapPulse.index === index && tapPulse.isActive,
+                                        'is-origin-active': isOriginVisible(index),
                                     }"
-                                    x-bind:class="isVisible && 'opacity-100!'"
-                                    x-effect="
+                                >
+                                    <div
+                                        class="{{ twMerge('relative Xmt-8 flex w-full min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden px-[0.3rem] Xsm:mt-0 sm:justify-center sm:gap-4 sm:px-4 md:px-10 transition-opacity') }}"
+                                        data-athkar-text-box
+                                        data-fitty-box
+                                        dir="rtl"
+                                        x-on:pointerdown="
+                                        beginTextScroll($event);
+                                    "
+                                        x-on:pointermove="
+                                        moveTextScroll($event);
+                                    "
+                                        x-on:pointerup="endTextScroll()"
+                                        x-on:pointercancel="endTextScroll()"
+                                        x-on:touchstart="
+                                        beginTextScroll($event);
+                                    "
+                                        x-on:touchmove="
+                                        moveTextScroll($event);
+                                    "
+                                        x-on:touchend="endTextScroll()"
+                                        x-on:touchcancel="endTextScroll()"
+                                    >
+                                        <div
+                                            class="athkar-main-text"
+                                            x-bind:class="isOriginVisible(index) && 'is-main-hidden'"
+                                        >
+                                            <p
+                                                class="athkar-text athkar-shimmer font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
+                                                data-athkar-text
+                                                data-fitty-target
+                                                data-fitty-enabled="false"
+                                                data-fitty-overflow-active="false"
+                                                data-fitty-step="0.5"
+                                                data-fitty-safe-padding-x="2"
+                                                data-fitty-safe-padding-y="2"
+                                                data-fitty-manage-overflow="true"
+                                                data-fitty-enable-touch-scroll="true"
+                                                data-fitty-overflow-padding-class="py-1"
+                                                data-fitty-overflow-target="text"
+                                                data-athkar-shimmer
+                                                data-shimmer-duration="3000"
+                                                data-shimmer-delay="1000"
+                                                data-shimmer-pause="4000"
+                                                dir="rtl"
+                                                x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                                x-bind:data-fitty-overflow-active="(activeIndex === index && !isOriginVisible(index)).toString()"
+                                                x-text="item.text"
+                                            ></p>
+                                        </div>
+                                        <div
+                                            class="athkar-origin-text"
+                                            x-bind:class="isOriginVisible(index) && 'is-origin-visible'"
+                                        >
+                                            <p
+                                                class="athkar-text athkar-shimmer athkar-origin-text__content font-arabic-serif text-primary-950 dark:text-primary-50 whitespace-break-spaces!"
+                                                data-athkar-origin-text
+                                                data-athkar-shimmer
+                                                data-shimmer-duration="3000"
+                                                data-shimmer-delay="1000"
+                                                data-shimmer-pause="4000"
+                                                data-fitty-target
+                                                data-fitty-enabled="false"
+                                                data-fitty-overflow-active="false"
+                                                data-fitty-step="0.5"
+                                                data-fitty-safe-padding-x="2"
+                                                data-fitty-safe-padding-y="2"
+                                                data-fitty-manage-overflow="true"
+                                                data-fitty-enable-touch-scroll="true"
+                                                data-fitty-overflow-padding-class="py-1"
+                                                data-fitty-overflow-target="origin"
+                                                dir="rtl"
+                                                x-bind:data-fitty-enabled="(activeIndex === index).toString()"
+                                                x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
+                                                x-text="originTextAt(index)"
+                                            ></p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <!-- Completion Indicator -->
+                                <div
+                                    class="relative flex items-center justify-between gap-3 text-sm text-gray-600 sm:text-base dark:text-gray-300">
+                                    <span
+                                        class="pointer-events-none invisible px-2.5 py-1 text-[0.65rem] sm:px-3 sm:text-sm"
+                                        aria-hidden="true"
+                                    >&nbsp;</span>
+                                    <span
+                                        class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums"
+                                        x-data="{
+                                            isVisible: false,
+                                            timer: null,
+                                        }"
+                                        x-show="isVisible"
+                                        x-transition.opacity.duration.300ms
+                                        x-effect="
                                                 if (slide.isActive) {
                                                     clearTimeout(timer);
                                                     isVisible = false;
@@ -1293,54 +1308,54 @@
                                                     timer = setTimeout(() => (isVisible = true), 300);
                                                 }
                                             "
-                                >
-                                    <span class="athkar-count">
-                                        <span
-                                            class="athkar-count__current"
-                                            x-show="!(pagePulse.isActive && pagePulse.hasChanges)"
-                                            x-text="activeIndex + 1"
-                                        ></span>
-                                        <span
-                                            class="athkar-count__current inline-flex items-center gap-0"
-                                            x-cloak
-                                            x-show="pagePulse.isActive && pagePulse.hasChanges"
-                                        >
-                                            <template
-                                                x-for="segment in pagePulse.segments"
-                                                x-bind:key="segment.key"
+                                    >
+                                        <span class="athkar-count">
+                                            <span
+                                                class="athkar-count__current"
+                                                x-show="!(pagePulse.isActive && pagePulse.hasChanges)"
+                                                x-text="activeIndex + 1"
+                                            ></span>
+                                            <span
+                                                class="athkar-count__current inline-flex items-center gap-0"
+                                                x-cloak
+                                                x-show="pagePulse.isActive && pagePulse.hasChanges"
                                             >
-                                                <span class="inline-flex items-center">
-                                                    <span
-                                                        x-show="!segment.changed"
-                                                        x-text="segment.next"
-                                                    ></span>
-                                                    <span
-                                                        class="athkar-count athkar-count--rolling"
-                                                        x-show="segment.changed"
-                                                    >
+                                                <template
+                                                    x-for="segment in pagePulse.segments"
+                                                    x-bind:key="segment.key"
+                                                >
+                                                    <span class="inline-flex items-center">
                                                         <span
-                                                            class="athkar-count__prev"
-                                                            x-text="segment.prev"
-                                                        ></span>
-                                                        <span
-                                                            class="athkar-count__next"
+                                                            x-show="!segment.changed"
                                                             x-text="segment.next"
                                                         ></span>
+                                                        <span
+                                                            class="athkar-count athkar-count--rolling"
+                                                            x-show="segment.changed"
+                                                        >
+                                                            <span
+                                                                class="athkar-count__prev"
+                                                                x-text="segment.prev"
+                                                            ></span>
+                                                            <span
+                                                                class="athkar-count__next"
+                                                                x-text="segment.next"
+                                                            ></span>
+                                                        </span>
                                                     </span>
-                                                </span>
-                                            </template>
+                                                </template>
+                                            </span>
                                         </span>
+                                        <span x-text="`/ ${activeList.length}`"></span>
                                     </span>
-                                    <span x-text="`/ ${activeList.length}`"></span>
-                                </span>
 
-                                <div
-                                    class="flex items-center gap-1.5"
-                                    x-data="{
-                                        isVisible: false,
-                                        timer: null,
-                                    }"
-                                    x-effect="
+                                    <div
+                                        class="flex items-center gap-1.5"
+                                        x-data="{
+                                            isVisible: false,
+                                            timer: null,
+                                        }"
+                                        x-effect="
                                         if (slide.isActive) {
                                             clearTimeout(timer);
                                             isVisible = false;
@@ -1348,16 +1363,19 @@
                                             timer = setTimeout(() => (isVisible = true), 300);
                                         }
                                     "
-                                >
-                                    <span
-                                        class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm"
-                                        x-bind:class="isVisible && isItemComplete(index) ? 'opacity-100!' : 'opacity-0'"
-                                    >تم بحمد الله</span>
-                                    <span
-                                        class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                                        x-bind:class="isVisible ? 'opacity-100!' : 'opacity-0'"
-                                        x-text="activeTypeLabel(index)"
-                                    ></span>
+                                    >
+                                        <span
+                                            class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold sm:px-3 sm:text-sm"
+                                            x-show="isVisible && isItemComplete(index)"
+                                            x-transition.opacity.duration.300ms
+                                        >تم بحمد الله</span>
+                                        <span
+                                            class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                            x-show="isVisible"
+                                            x-transition.opacity.duration.300ms
+                                            x-text="activeTypeLabel(index)"
+                                        ></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

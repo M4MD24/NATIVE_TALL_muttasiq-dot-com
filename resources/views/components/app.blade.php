@@ -28,7 +28,7 @@
         }
     </style>
     @include('partials.fast-testing-hacks')
-    @include('partials.filament-color-overrides')
+    @include('partials.filament-overrides')
     @filamentStyles
     @lazyCss(['resources/css/core/filament/components.css', 'resources/css/app-lazy.css'])
     @vite('resources/css/app.css')

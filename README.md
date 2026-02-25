@@ -5,11 +5,7 @@
 
 تطبيق يهدف للاتساق مع الإسلام لله ربّ العالمين، خطوة بخطوة، وبيُسر وسهولة بإذن الله. تطبيق بترميز واحد لكل المنصات، مصنوع بتقنيات حديثة، ومصمم بواجهة جذابة؛ ولا حول ولا قوة إلا بالله...
 
-أفكار المشروع مستعرَضة عن طريق فيديو في [منشور التليجرام](https://t.me/tiqaniy/29) هذا:<br> 
-
-<a href="https://t.me/tiqaniy/29" target="_blank">
-    <img width="100%" alt="telegram post screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
-</a>
+<img width="100%" alt="screenshot of muttasiq app home and main menu buttons" src="public/docs/updates/images/v-0-1-0/web/home-main-menu.png" />
 
 ### المتصفح
 
@@ -40,7 +36,8 @@ https://muttasiq.com
 - ~~حافظة محليّة لإنجازات وإعدادات المستخدم~~
 - ~~اختبارات برمجية لتطبيق الويب (المتصفح)~~
 - اختبارات برمجية لتطبيقات المنصات (المحليّة)
-- قسم لاستعراض المهام والمتغيّرات بين النسخ
+- ~~قسم لاستعراض المهام والمتغيّرات بين النسخ~~
+-~قسم لاستعراض وشرح الخواص الحالية في التطبيق
 - محرك للغة العربية، بحثًا وتحليلًا
 - إخفاء الحركات
 - القراءة بالعربية صوتيًّا
@@ -48,11 +45,11 @@ https://muttasiq.com
 
 ### الانطلاق
 - ~~أذكار الصباح والمساء~~
+- ~~إمكانية تعديل الأذكار وترتيبها~~
 
 ### التحديث الأوّل
 - تذكير بأذكار الصباح والمساء
 - أذكار يوم الجمعة
-- إمكانية تعديل الأذكار وترتيبها
 
 ### التحديث الثاني
 - الصلوات وتذكيراتها
@@ -168,32 +165,38 @@ https://muttasiq.com
 
 **The native apps**, are built using [NativePHP](https://nativephp.com). And with their new mobile builder, all platforms are covered. It relies on a wide ecosystem of technologies — without requiring YOU to directly interact with them.
 - Check out their [desktop](https://nativephp.com/docs/desktop) AND [mobile](https://nativephp.com/docs/mobile) documentation please.
-- If you have experience with [Kotlin](https://kotlinlang.org/) or [Swift](https://www.swift.org/), [electronJS](https://www.electronjs.org/) is communicating with them under the hood in NativePHP. You can implement those changes as PHP [plugins](https://nativephp.com/plugins) of course, and even make them paid to support yourself!
+- If you have experience with Kotlin or Swift, ElectronJS is communicating with them under the hood in NativePHP. You can implement those changes as PHP [plugins](https://nativephp.com/plugins) of course, and even make them paid to support yourself!
 
 </div>
 
 > [!TIP]
-> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project with the [Codex CLI](https://developers.openai.com/codex/cli/), but it can work with pretty much anything.
+> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project with the [Anthropic Claude](https://code.claude.com/docs), but it can work with pretty much anything.
 
 <div align="left">
+
 
 ## Coding
 
 ### Rules
 
 0. Focus on the main [missions](#المهام) detailed in [discussions](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/discussions) and assigned in the [project](https://github.com/users/GoodM4ven/projects/5/views/1) view. So unless it's a bug fix, **do not work on any new feature without having an [issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues) and being assigned to**.
-1. Use and maintain the 3 root-directory ([`native-dev`](./native-dev.sh), [`native-run`](./native-run.sh), and [`native-watch`](./native-watch.sh)) bash scripts to run and watch the web app, run the native app, and run and watch the native app respectively.
+1. Use and maintain the root-directory bash scripts to run and watch all available platform applications.
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
-   - The process includes running [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only, not in `--parallel`, because the current [Playwright](https://playwright.dev) and PestPHP integration is buggy, including direct mobile emulation support. **This means tests may take a longer time in this mode** but at least they work! This doesn't apply to CI, because it's ephemeral in there.
-   - If you have any idea how to fix [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), please PR. Otherwise, **rebooting your system** if it gets wild is the way to go!
-4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
+   - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI since it’s ephemeral). If you have a fix for [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), feel free to open a PR; otherwise, **rebooting your system** if things get unstable is the recommended workaround.
+4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/mobile/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
+
+### Setup
+
+1. We recommend [Ubuntu](https://ubuntu.com) (LTS) for stable and upgradable development environment.
+2. Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI [Bash](https://www.gnu.org/software/bash) scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
+3. We strongly advocate for using [VSCodium](https://vscodium.com), especially for those who are new to the development world.
+4. Check out all of our VSC configurations set in this [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_NATIVE_tall-standards) wikipedia, which also contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
+5. And whatever we advised to do for quick learning about this stack, please make sure you read the [development section](#development) up top.
 
 ### Tools and Guides
 
-- Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
 - For reproducing the [favicon](./resources/views/partials/favicon.blade.php) variences, use this [favycon](https://github.com/ruisaraiva19/favycon) tool.
-- [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_WEB_tall-standards) wikipedia contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
 
 
 ## Design
@@ -251,7 +254,7 @@ Copyright (C) 2026 Muttasiq Contributors.
 
 - [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
 - [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
-- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي) 
+- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد).
 
 ### Assets
 
@@ -263,7 +266,8 @@ Copyright (C) 2026 Muttasiq Contributors.
 - [Night athkar background](https://www.freepik.com/free-ai-image/digital-art-isolated-house_93658018.htm#fromView=search&page=1&position=36&uuid=7fbc119d-abf3-4f15-b3b3-7073afb85ff8&query=Anime+nature+wallpaper+day) (modified via ChatGPT)
 
 ### Technologies
-- [ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)
+- [Anthropic Claude](https://code.claude.com/)
+- ~~[ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)~~ (previously)
 - [Laravel](https://laravel.com) entire ecosystem
 - [TALL-Stack](https://tallstack.dev)
 - [FilamentPHP](https://filamentphp.com)

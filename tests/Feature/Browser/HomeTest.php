@@ -69,6 +69,37 @@ it('uses the dark app icon in settings after toggling dark mode', function () {
 JS, true);
 });
 
+it('uses optimized background layers and clears the guard class after toggling color scheme', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+
+    waitForScript($page, <<<'JS'
+(() => {
+  const lightLayer = document.querySelector('[data-testid="main-menu-bg-light-layer"]');
+  const darkLayer = document.querySelector('[data-testid="main-menu-bg-dark-layer"]');
+
+  if (!lightLayer || !darkLayer) {
+    return false;
+  }
+
+  const hasRuntimeBlurUtility =
+    lightLayer.innerHTML.includes('blur-md') ||
+    darkLayer.innerHTML.includes('blur-md');
+
+  const usesPreBlurredAssets =
+    lightLayer.innerHTML.includes('morning-blurred.webp') &&
+    darkLayer.innerHTML.includes('night-blurred.webp');
+
+  return usesPreBlurredAssets && !hasRuntimeBlurUtility;
+})()
+JS, true);
+
+    hashAction($page, '#toggle-color-scheme', false);
+
+    waitForScriptWithTimeout($page, "document.documentElement.classList.contains('color-scheme-switching')", false, 2500);
+});
+
 it('cycles the copyright panel and keeps it visible while hovering on desktop', function () {
     $page = visit('/');
 

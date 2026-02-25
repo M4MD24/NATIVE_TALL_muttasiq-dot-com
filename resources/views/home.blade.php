@@ -23,20 +23,20 @@
             },
             views: {
                 'main-menu': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::MainMenu)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::MainMenu)),
                     isOpen: true,
                 },
                 'athkar-app-gate': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppGate)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppGate)),
                     isOpen: false,
                     isReaderVisible: $persist(false).as('athkar-reader-visible'),
                 },
                 'athkar-app-sabah': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppSabah)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppSabah)),
                     isOpen: false,
                 },
                 'athkar-app-masaa': {
-                    title: @js(view_title(\App\Services\Enums\ViewName::AthkarAppMasaa)),
+                    title: @js(view_title(\App\Services\Support\Enums\ViewName::AthkarAppMasaa)),
                     isOpen: false,
                 },
             },
@@ -100,7 +100,10 @@
         }"
         x-on:switch-view.window="applyViewState($event.detail?.to)"
     >
-        <x-buttons-stack x-bind:data-respecting-stack="$store.bp.current === 'base'">
+        <x-buttons-stack
+            x-bind:data-respecting-stack="$store.bp.current === 'base'"
+            @class(['mt-8' => is_platform('ios')])
+        >
             <livewire:athkar-manager />
             @if (!is_platform('mobile'))
                 <x-return-button
@@ -115,7 +118,11 @@
 
         @include('partials.colorful-background')
 
-        <main class="fixed inset-0 mt-16 grid place-items-center sm:mt-0 dark:text-white">
+        <main @class([
+            'fixed inset-0 grid place-items-center sm:mt-0 dark:text-white',
+            'mt-22' => is_platform('ios'),
+            'mt-16' => !is_platform('ios'),
+        ])>
             @include('partials.main-menu')
             @include('partials.athkar-app.index')
         </main>

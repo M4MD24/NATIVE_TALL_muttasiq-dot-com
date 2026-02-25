@@ -1,3 +1,18 @@
+document.addEventListener('livewire:init', () => {
+    Livewire.hook('component.init', ({ component }) => {
+        if (component.name !== 'color-scheme-switcher') return;
+
+        const raw = localStorage.getItem('colorScheme_darkMode');
+        const isDarkModeOn = raw !== null ? Boolean(JSON.parse(raw)) : null;
+
+        queueMicrotask(() => {
+            Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-initialized', {
+                isDarkModeOn,
+            });
+        });
+    });
+});
+
 document.addEventListener('alpine:init', () => {
     window.Alpine.store('colorScheme', {
         isDark: window.Alpine.$persist(null).as('colorScheme_darkMode'),
@@ -25,24 +40,26 @@ document.addEventListener('alpine:init', () => {
         },
     });
 
-    const colorSchemeStore = window.Alpine.store('colorScheme');
-
-    document.addEventListener('livewire:init', () => {
-        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-initialized', {
-            isDarkModeOn: colorSchemeStore.isDarkModeOn,
-        });
-    });
-
     window.Alpine.effect(() => {
-        const colorSchemeStore = window.Alpine.store('colorScheme');
-        const isDarkModeOn = colorSchemeStore.isDarkModeOn;
+        (async () => {
+            document.documentElement.classList.add('color-scheme-switching');
 
-        document.documentElement.classList.toggle('dark', isDarkModeOn);
-        document.documentElement.style.colorScheme = isDarkModeOn ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = colorSchemeStore.bodyBackgroundColor;
+            const colorSchemeStore = window.Alpine.store('colorScheme');
+            const isDarkModeOn = colorSchemeStore.isDarkModeOn;
 
-        window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', {
-            isDarkModeOn: isDarkModeOn,
-        });
+            document.documentElement.classList.toggle('dark', isDarkModeOn);
+            document.documentElement.style.colorScheme = isDarkModeOn ? 'dark' : 'light';
+            document.documentElement.style.backgroundColor = colorSchemeStore.bodyBackgroundColor;
+
+            window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', {
+                isDarkModeOn: isDarkModeOn,
+            });
+
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+
+            await Promise.all(document.getAnimations({ subtree: true }).map((a) => a.finished));
+
+            document.documentElement.classList.remove('color-scheme-switching');
+        })();
     });
 });

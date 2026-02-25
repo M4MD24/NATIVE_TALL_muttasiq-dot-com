@@ -365,28 +365,26 @@ document.addEventListener('alpine:init', () => {
         });
     };
 
-    const runNativeBack = (targetHash) => {
-        window.__hashActionBypassLock = true;
-        applyHash(targetHash, { rememberInHistory: false, rememberInState: true });
-        schedule(() => {
-            window.__hashActionBypassLock = false;
-        }, 0);
-    };
-
     window.__nativeBackAction = () => {
         const currentHash = normalizeHash(window.location.hash || '#');
+        const viewIndex = getViewIndex();
 
-        if (currentHash === '#athkar-app-gate') {
-            runNativeBack('#main-menu');
-            return true;
+        if (!viewIndex) {
+            return false;
         }
 
-        if (currentHash === '#athkar-app-sabah' || currentHash === '#athkar-app-masaa') {
-            runNativeBack('#athkar-app-gate');
-            return true;
+        const currentView = normalizeViewName(currentHash);
+
+        if (
+            !currentView ||
+            currentView === viewIndex.rootView ||
+            !viewIndex.viewSet.has(currentView)
+        ) {
+            return false;
         }
 
-        return false;
+        window.history.back();
+        return true;
     };
 
     window.Alpine.magic('hashAction', () => {

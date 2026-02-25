@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Services\Enums\ViewName;
+use App\Services\Support\Enums\ViewName;
 
 if (! function_exists('view_title')) {
     function view_title(ViewName $viewName): string

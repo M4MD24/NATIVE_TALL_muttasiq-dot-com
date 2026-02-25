@@ -85,7 +85,7 @@ trait HasControlPanel
 
                                         Components\Checkbox::make('does_skip_notice_panels')
                                             ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
-                                            ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-2 sm:mt-3 md:mt-0'])
+                                            ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-1 sm:mt-3 md:mt-0'])
                                             ->label($generalDefinitions['does_skip_notice_panels']['label']),
                                     ]),
 
@@ -144,7 +144,7 @@ trait HasControlPanel
                                     ->extraAttributes(['class' => 'block w-full text-center mt-2']),
 
                                 Image::make(
-                                    url: asset(is_dark_mode_on() ? 'icon-dark.png' : 'icon.png'),
+                                    url: fn () => asset(is_dark_mode_on() ? 'icon-dark.png' : 'icon.png'),
                                     alt: 'Muttasiq application icono',
                                 )
                                     ->imageSize('10rem')
@@ -299,9 +299,7 @@ trait HasControlPanel
 
         $markdown = preg_replace('/^\s*<div align="right">\s*/', '', $markdown) ?? $markdown;
         $markdown = preg_replace('/\s*<\/div>\s*$/', '', $markdown) ?? $markdown;
-        $markdown = str_replace('src="images/', 'src="/docs/updates/images/', $markdown);
-        $markdown = str_replace("src='images/", "src='/docs/updates/images/", $markdown);
-        $markdown = str_replace('](images/', '](/docs/updates/images/', $markdown);
+        $markdown = $this->rewriteChangelogMarkdownImageSources($markdown);
 
         $html = str($markdown)
             ->markdown()
@@ -340,5 +338,41 @@ trait HasControlPanel
                 {$html}
             </article>
             HTML);
+    }
+
+    private function rewriteChangelogMarkdownImageSources(string $markdown): string
+    {
+        $baseUrl = $this->changelogImageBaseUrl();
+
+        $markdown = preg_replace_callback(
+            '/!\[([^\]]*)\]\(images\/([^)\\s]+)\)/',
+            function (array $matches) use ($baseUrl): string {
+                $imageSource = $baseUrl.$matches[2];
+
+                return '!['.$matches[1].']('.$imageSource.')';
+            },
+            $markdown,
+        ) ?? $markdown;
+
+        $markdown = preg_replace_callback(
+            '/\bsrc=(["\'])images\/([^"\']+)\1/i',
+            function (array $matches) use ($baseUrl): string {
+                $imageSource = $baseUrl.$matches[2];
+
+                return 'src='.$matches[1].$imageSource.$matches[1];
+            },
+            $markdown,
+        ) ?? $markdown;
+
+        return str_replace('](images/', ']('.$baseUrl, $markdown);
+    }
+
+    private function changelogImageBaseUrl(): string
+    {
+        if (config('nativephp-internal.running')) {
+            return '/_assets/docs/updates/images/';
+        }
+
+        return '/docs/updates/images/';
     }
 }

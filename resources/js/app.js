@@ -5,11 +5,11 @@ import './support/animate-scroll';
 import './packages/alpine/hash-actions';
 import './packages/alpine/hooks.js';
 import './packages/alpine/tippy';
-import './packages/nativephp/browser.js';
 import './packages/color';
 import './packages/day';
 import './packages/fitty';
 import './packages/anime';
+import './packages/nativephp/browser';
 
 import './support/alpine/data/layout-manager';
 import './support/alpine/data/main-menu';
