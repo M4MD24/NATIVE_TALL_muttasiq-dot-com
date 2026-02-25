@@ -1,5 +1,5 @@
 <div
-    class="fixed start-10 top-7 z-30 sm:top-5 md:top-8"
+    class="inset-s-10 fixed top-7 z-30 sm:top-5 md:top-8"
     data-stack-item
     wire:ignore
     x-transition
@@ -13,13 +13,13 @@
     >
         <x-slot:icons-slot>
             <x-icon
-                class="text-primary-600 dark:text-primary-100 absolute inset-1 -rotate-45 transition will-change-[color]"
+                class="text-primary-600 dark:text-primary-100 absolute left-1/2 top-1/2 h-8 w-8 shrink-0 -translate-x-1/2 -translate-y-1/2 -rotate-45 transition will-change-[color]"
                 name="heroicon-s-moon"
                 x-bind:class="{ 'text-primary-100! dark:text-primary-600!': hovered }"
                 x-show="!$store.colorScheme.isDarkModeOn"
             />
             <x-icon
-                class="text-primary-600 dark:text-primary-100 absolute inset-1 -rotate-45 transition will-change-[color]"
+                class="text-primary-600 dark:text-primary-100 absolute left-1/2 top-1/2 h-8 w-8 shrink-0 -translate-x-1/2 -translate-y-1/2 -rotate-45 transition will-change-[color]"
                 name="heroicon-s-sun"
                 x-bind:class="{ 'text-primary-600!': hovered }"
                 x-cloak

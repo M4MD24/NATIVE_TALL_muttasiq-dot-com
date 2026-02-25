@@ -1,4 +1,5 @@
 const athkarSettingsStorageKey = 'athkar-settings-v1';
+const athkarSettingsUserOverridesStorageKey = 'athkar-settings-user-overrides-v1';
 const athkarOverridesStorageKey = 'athkar-overrides-v1';
 const minimumMainTextSizeKey = 'minimum_main_text_size';
 const maximumMainTextSizeKey = 'maximum_main_text_size';
@@ -207,6 +208,113 @@ const writeAthkarSettingsToStorage = (settings, defaults = resolveAthkarSettings
     }
 
     return normalized;
+};
+
+const readUserSettingsOverrides = () => {
+    if (typeof localStorage === 'undefined') {
+        return {};
+    }
+
+    try {
+        const raw = localStorage.getItem(athkarSettingsUserOverridesStorageKey);
+
+        if (!raw) {
+            return {};
+        }
+
+        const parsed = JSON.parse(raw);
+
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return {};
+        }
+
+        return parsed;
+    } catch (_) {
+        return {};
+    }
+};
+
+const writeUserSettingsOverrides = (overrides) => {
+    if (typeof localStorage === 'undefined') {
+        return;
+    }
+
+    try {
+        const safe =
+            overrides && typeof overrides === 'object' && !Array.isArray(overrides)
+                ? overrides
+                : {};
+        localStorage.setItem(athkarSettingsUserOverridesStorageKey, JSON.stringify(safe));
+    } catch (_) {
+        // Silently fail
+    }
+};
+
+const writeUserSettingOverride = (key, value) => {
+    const overrides = readUserSettingsOverrides();
+    overrides[key] = value;
+    writeUserSettingsOverrides(overrides);
+};
+
+const resolveEffectiveSettings = (serverDefaults) => {
+    const defaults = serverDefaults && typeof serverDefaults === 'object' ? serverDefaults : {};
+    const userOverrides = readUserSettingsOverrides();
+    const merged = { ...defaults };
+
+    Object.keys(userOverrides).forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+            merged[key] = userOverrides[key];
+        }
+    });
+
+    return normalizeAthkarSettings(merged, defaults);
+};
+
+const migrateSettingsOverrides = (serverDefaults) => {
+    if (typeof localStorage === 'undefined') {
+        return;
+    }
+
+    const existing = localStorage.getItem(athkarSettingsUserOverridesStorageKey);
+
+    if (existing !== null) {
+        return;
+    }
+
+    const defaults = serverDefaults && typeof serverDefaults === 'object' ? serverDefaults : {};
+    const currentSettings = readAthkarSettingsFromStorage(defaults);
+    const overrides = {};
+
+    Object.keys(defaults).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(currentSettings, key)) {
+            return;
+        }
+
+        const currentValue = currentSettings[key];
+        const defaultValue = defaults[key];
+
+        if (typeof defaultValue === 'boolean') {
+            if (Boolean(currentValue) !== Boolean(defaultValue)) {
+                overrides[key] = Boolean(currentValue);
+            }
+
+            return;
+        }
+
+        if (Number.isFinite(Number(defaultValue))) {
+            if (Number(currentValue) !== Number(defaultValue)) {
+                overrides[key] = Number(currentValue);
+            }
+
+            return;
+        }
+
+        if (currentValue !== defaultValue) {
+            overrides[key] = currentValue;
+        }
+    });
+
+    writeUserSettingsOverrides(overrides);
 };
 
 const normalizeAthkarTime = (value, fallback = 'shared') => {
@@ -460,16 +568,23 @@ if (typeof window !== 'undefined') {
     window.writeAthkarOverridesToStorage = writeAthkarOverridesToStorage;
     window.resolveAthkarWithOverrides = resolveAthkarWithOverrides;
     window.normalizeAthkarOverrides = normalizeAthkarOverrides;
+    window.getUserSettingsOverrides = readUserSettingsOverrides;
 }
 
 export {
     athkarSettingsStorageKey,
+    athkarSettingsUserOverridesStorageKey,
     athkarOverridesStorageKey,
+    migrateSettingsOverrides,
     normalizeAthkarDefaults,
     normalizeAthkarOverrides,
     readAthkarSettingsFromStorage,
     readAthkarOverridesFromStorage,
+    readUserSettingsOverrides,
     resolveAthkarWithOverrides,
+    resolveEffectiveSettings,
     writeAthkarSettingsToStorage,
     writeAthkarOverridesToStorage,
+    writeUserSettingOverride,
+    writeUserSettingsOverrides,
 };

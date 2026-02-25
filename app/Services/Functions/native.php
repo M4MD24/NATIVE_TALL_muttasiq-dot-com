@@ -42,7 +42,7 @@ if (! function_exists('open_link_native_aware')) {
     function open_link_native_aware(string $url): string
     {
         if (is_platform('mobile')) {
-            return "await window.browser.open(`{$url}`)";
+            return "(window.browser?.open ? await window.browser.open(`{$url}`) : window.open(`{$url}`, `_blank`, `noopener`))";
         }
 
         return "window.open(`{$url}`, `_blank`, `noopener`)";

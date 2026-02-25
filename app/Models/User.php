@@ -60,6 +60,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if (config('nativephp-internal.running')) {
+            return false;
+        }
+
         return $this->email === config('app.custom.user.email');
     }
 }

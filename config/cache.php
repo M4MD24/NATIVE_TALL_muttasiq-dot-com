@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Support\Str;
 
+$isRunningInNativeRuntime = filter_var(env('NATIVEPHP_RUNNING', false), FILTER_VALIDATE_BOOL);
+
 return [
 
     /*
@@ -17,7 +19,9 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => $isRunningInNativeRuntime
+        ? 'file'
+        : env('CACHE_STORE', 'database'),
 
     /*
     |--------------------------------------------------------------------------

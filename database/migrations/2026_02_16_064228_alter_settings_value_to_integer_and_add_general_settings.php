@@ -11,7 +11,7 @@ return new class extends Migration
 {
     private const MIN_MAIN_TEXT_SIZE_KEY = 'minimum_main_text_size';
 
-    private const MIN_MAIN_TEXT_SIZE_DEFAULT = 16;
+    private const MIN_MAIN_TEXT_SIZE_DEFAULT = 21;
 
     /**
      * Run the migrations.

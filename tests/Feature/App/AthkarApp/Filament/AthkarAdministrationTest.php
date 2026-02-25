@@ -45,6 +45,19 @@ it('forbids non-admin users from athkar resource pages', function () {
     get(route('filament.admin.resources.athkar.edit', ['record' => $thikr]))->assertForbidden();
 });
 
+it('disables filament admin routes entirely in native runtime', function () {
+    config([
+        'app.custom.user.email' => 'admin@example.test',
+        'nativephp-internal.running' => true,
+    ]);
+
+    $admin = User::factory()->create(['email' => 'admin@example.test']);
+    actingAs($admin);
+
+    get(route('filament.admin.auth.login'))->assertNotFound();
+    get(route('filament.admin.resources.athkar.index'))->assertNotFound();
+});
+
 it('reorders athkar inline when updating table order column', function () {
     Thikr::query()->delete();
 

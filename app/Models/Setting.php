@@ -20,13 +20,13 @@ class Setting extends Model
 
     public const MIN_MAIN_TEXT_SIZE_MAX = 24;
 
-    public const MIN_MAIN_TEXT_SIZE_DEFAULT = 16;
+    public const MIN_MAIN_TEXT_SIZE_DEFAULT = 21;
 
     public const MAX_MAIN_TEXT_SIZE_MIN = 14;
 
     public const MAX_MAIN_TEXT_SIZE_MAX = 24;
 
-    public const MAX_MAIN_TEXT_SIZE_DEFAULT = 21;
+    public const MAX_MAIN_TEXT_SIZE_DEFAULT = 22;
 
     /**
      * @return array<string, array{default: bool|int, label: string, group: string, type: 'boolean'|'integer', help?: string, min?: int, max?: int}>

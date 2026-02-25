@@ -1,12 +1,15 @@
 import {
     athkarOverridesStorageKey,
+    migrateSettingsOverrides,
     normalizeAthkarDefaults,
     normalizeAthkarOverrides,
     readAthkarOverridesFromStorage,
     readAthkarSettingsFromStorage,
     resolveAthkarWithOverrides,
+    resolveEffectiveSettings,
     writeAthkarOverridesToStorage,
     writeAthkarSettingsToStorage,
+    writeUserSettingOverride,
 } from '../athkar-app-overrides';
 import { createAthkarShimmerController } from '../athkar-shimmer';
 
@@ -18,7 +21,7 @@ document.addEventListener('alpine:init', () => {
         settingsDefaults: config.athkarSettings,
         mainTextSizeLimits: config.athkarMainTextSizeLimits ?? {},
         typeLabels: config.typeLabels ?? {},
-        settings: readAthkarSettingsFromStorage(config.athkarSettings),
+        settings: resolveEffectiveSettings(config.athkarSettings),
         activeMode: window.Alpine.$persist(null).as('athkar-active-mode'),
         isCompletionVisible: false,
         isNoticeVisible: window.Alpine.$persist(false).as('athkar-notice-visible'),
@@ -109,6 +112,11 @@ document.addEventListener('alpine:init', () => {
         originResyncDelayMs: 180,
         completionVisibleMs: 3000,
         textFitSettleMs: 96,
+        _letterCountCache: new Map(),
+        _totalRequiredLettersKey: null,
+        _totalRequiredLettersValue: 0,
+        _athkarVersion: 0,
+        _persistTimer: null,
         lastSeenDay: window.Alpine.$persist(null).as('athkar-last-day'),
         progress: window.Alpine.$persist({
             sabah: { index: 0, counts: [], ids: [], activeId: null },
@@ -131,6 +139,8 @@ document.addEventListener('alpine:init', () => {
 
             window.athkarSettingsDefaults = this.settingsDefaults;
             window.athkarMainTextSizeLimits = this.mainTextSizeLimits;
+            migrateSettingsOverrides(this.settingsDefaults);
+            this.settings = resolveEffectiveSettings(this.settingsDefaults);
             this.ensureState();
             this.refreshCompletionInputMode();
             this.applyAthkarOverrides(this.athkarOverrides, { persist: true });
@@ -224,6 +234,12 @@ document.addEventListener('alpine:init', () => {
                     this.syncDay();
                 }
             });
+            window.addEventListener('beforeunload', () => {
+                if (this._persistTimer !== null) {
+                    clearTimeout(this._persistTimer);
+                    this._flushProgress();
+                }
+            });
 
             this.setupTextFit();
             this.textShimmerController = createAthkarShimmerController({
@@ -266,6 +282,8 @@ document.addEventListener('alpine:init', () => {
         },
         syncAthkarWithOverrides() {
             this.athkar = resolveAthkarWithOverrides(this.defaultAthkar, this.athkarOverrides);
+            this._athkarVersion++;
+            this._totalRequiredLettersKey = null;
 
             if (!this.progress || typeof this.progress !== 'object') {
                 return;
@@ -292,12 +310,12 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const mergedSettings = {
-                ...this.settings,
-                ...nextSettings,
-            };
+            Object.keys(nextSettings).forEach((key) => {
+                writeUserSettingOverride(key, nextSettings[key]);
+            });
 
-            this.settings = writeAthkarSettingsToStorage(mergedSettings, this.settingsDefaults);
+            this.settings = resolveEffectiveSettings(this.settingsDefaults);
+            writeAthkarSettingsToStorage(this.settings, this.settingsDefaults);
 
             this.ensureProgress('sabah');
             this.ensureProgress('masaa');
@@ -436,6 +454,16 @@ document.addEventListener('alpine:init', () => {
             }
         },
         persistProgress() {
+            if (this._persistTimer !== null) {
+                clearTimeout(this._persistTimer);
+            }
+
+            this._persistTimer = setTimeout(() => {
+                this._persistTimer = null;
+                this._flushProgress();
+            }, 150);
+        },
+        _flushProgress() {
             if (typeof localStorage === 'undefined') {
                 return;
             }
@@ -1065,6 +1093,22 @@ document.addEventListener('alpine:init', () => {
                 return stripped ? Array.from(stripped).length : 0;
             }
         },
+        _cachedLetterCount(text) {
+            const normalized = String(text ?? '');
+
+            if (!normalized) {
+                return 0;
+            }
+
+            if (this._letterCountCache.has(normalized)) {
+                return this._letterCountCache.get(normalized);
+            }
+
+            const count = this.textLetterCount(normalized);
+            this._letterCountCache.set(normalized, count);
+
+            return count;
+        },
         get totalRequiredLetters() {
             const activeList = Array.isArray(this.activeList) ? this.activeList : [];
 
@@ -1072,34 +1116,15 @@ document.addEventListener('alpine:init', () => {
                 return 0;
             }
 
-            const countLetters = (text) => {
-                if (typeof this.textLetterCount === 'function') {
-                    return this.textLetterCount(text);
-                }
+            const cacheKey = `${this.activeMode}-${this._athkarVersion}`;
 
-                const normalized = String(text ?? '');
+            if (this._totalRequiredLettersKey === cacheKey) {
+                return this._totalRequiredLettersValue;
+            }
 
-                if (!normalized) {
-                    return 0;
-                }
-
-                try {
-                    const letters = normalized.match(/\p{L}/gu);
-
-                    return letters ? letters.length : 0;
-                } catch (_) {
-                    const stripped = normalized.replace(/\s+/gu, '');
-
-                    return stripped ? Array.from(stripped).length : 0;
-                }
-            };
-
-            return activeList.reduce((total, item, index) => {
-                const letters = countLetters(item?.text);
-                const requiredCount =
-                    typeof this.requiredCount === 'function'
-                        ? Number(this.requiredCount(index))
-                        : Number(item?.count ?? 1);
+            const value = activeList.reduce((total, item, index) => {
+                const letters = this._cachedLetterCount(item?.text);
+                const requiredCount = Number(this.requiredCount(index));
 
                 if (!Number.isFinite(requiredCount) || requiredCount < 0) {
                     return total;
@@ -1107,6 +1132,11 @@ document.addEventListener('alpine:init', () => {
 
                 return total + letters * requiredCount;
             }, 0);
+
+            this._totalRequiredLettersKey = cacheKey;
+            this._totalRequiredLettersValue = value;
+
+            return value;
         },
         get totalCompletedLetters() {
             const activeList = Array.isArray(this.activeList) ? this.activeList : [];
@@ -1115,42 +1145,10 @@ document.addEventListener('alpine:init', () => {
                 return 0;
             }
 
-            const mode = this.activeMode;
-            const counts = Array.isArray(this.progress?.[mode]?.counts)
-                ? this.progress[mode].counts
-                : [];
-            const countLetters = (text) => {
-                if (typeof this.textLetterCount === 'function') {
-                    return this.textLetterCount(text);
-                }
-
-                const normalized = String(text ?? '');
-
-                if (!normalized) {
-                    return 0;
-                }
-
-                try {
-                    const letters = normalized.match(/\p{L}/gu);
-
-                    return letters ? letters.length : 0;
-                } catch (_) {
-                    const stripped = normalized.replace(/\s+/gu, '');
-
-                    return stripped ? Array.from(stripped).length : 0;
-                }
-            };
-
             return activeList.reduce((total, item, index) => {
-                const letters = countLetters(item?.text);
-                const requiredCount =
-                    typeof this.requiredCount === 'function'
-                        ? Number(this.requiredCount(index))
-                        : Number(item?.count ?? 1);
-                const completedCount =
-                    typeof this.countAt === 'function'
-                        ? Number(this.countAt(index))
-                        : Number(counts[index] ?? 0);
+                const letters = this._cachedLetterCount(item?.text);
+                const requiredCount = Number(this.requiredCount(index));
+                const completedCount = Number(this.countAt(index));
 
                 if (
                     !Number.isFinite(requiredCount) ||
@@ -1629,9 +1627,8 @@ document.addEventListener('alpine:init', () => {
                 const previousTotal = this.totalCompletedCount;
                 const nextCount = current + 1;
                 this.setCount(index, nextCount, { allowOvercount });
-                const nextTotal = this.totalCompletedCount;
                 this.triggerCountPulse(index, previousCount, nextCount);
-                this.triggerTotalPulse(previousTotal, nextTotal);
+                this.triggerTotalPulse(previousTotal, previousTotal + 1);
 
                 if (required > 1) {
                     this.triggerTapPulse(index);
@@ -1669,9 +1666,8 @@ document.addEventListener('alpine:init', () => {
             const previousTotal = this.totalCompletedCount;
             this.progress[this.activeMode].counts[index] = required;
             this.persistProgress();
-            const nextTotal = this.totalCompletedCount;
             this.triggerCountPulse(index, current, required);
-            this.triggerTotalPulse(previousTotal, nextTotal);
+            this.triggerTotalPulse(previousTotal, previousTotal + (required - current));
 
             if (required > 1) {
                 this.triggerTapPulse(index);
@@ -1703,9 +1699,8 @@ document.addEventListener('alpine:init', () => {
                 const previousTotal = this.totalCompletedCount;
                 const nextCount = current + 1;
                 this.setCount(index, nextCount, { allowOvercount });
-                const nextTotal = this.totalCompletedCount;
                 this.triggerCountPulse(index, current, nextCount);
-                this.triggerTotalPulse(previousTotal, nextTotal);
+                this.triggerTotalPulse(previousTotal, previousTotal + 1);
 
                 if (required > 1) {
                     this.triggerTapPulse(index);
@@ -2227,7 +2222,6 @@ document.addEventListener('alpine:init', () => {
             const morph = this.buildDigitMorphSegments(previousValue, nextValue);
 
             this.countPulse.index = index;
-            this.countPulse.isActive = false;
             this.countPulse.segments = morph.segments;
             this.countPulse.hasChanges = morph.hasChanges;
 
@@ -2235,9 +2229,11 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            requestAnimationFrame(() => {
-                this.countPulse.isActive = true;
-            });
+            if (!this.countPulse.isActive) {
+                requestAnimationFrame(() => {
+                    this.countPulse.isActive = true;
+                });
+            }
 
             this.countPulse.timer = setTimeout(() => {
                 this.countPulse.isActive = false;
@@ -2274,7 +2270,6 @@ document.addEventListener('alpine:init', () => {
 
             const morph = this.buildDigitMorphSegments(previousValue, nextValue);
 
-            this.totalPulse.isActive = false;
             this.totalPulse.segments = morph.segments;
             this.totalPulse.hasChanges = morph.hasChanges;
 
@@ -2282,9 +2277,11 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            requestAnimationFrame(() => {
-                this.totalPulse.isActive = true;
-            });
+            if (!this.totalPulse.isActive) {
+                requestAnimationFrame(() => {
+                    this.totalPulse.isActive = true;
+                });
+            }
 
             this.totalPulse.timer = setTimeout(() => {
                 this.totalPulse.isActive = false;
@@ -2296,11 +2293,12 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.tapPulse.index = index;
-            this.tapPulse.isActive = false;
 
-            requestAnimationFrame(() => {
-                this.tapPulse.isActive = true;
-            });
+            if (!this.tapPulse.isActive) {
+                requestAnimationFrame(() => {
+                    this.tapPulse.isActive = true;
+                });
+            }
 
             this.tapPulse.timer = setTimeout(() => {
                 this.tapPulse.isActive = false;

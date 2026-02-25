@@ -20,7 +20,8 @@ return [
 
         'native_end_points' => [
             'retries' => 8,
-            'athkar' => 'athkar',
+            'athkar' => env('NATIVE_ATHKAR_ENDPOINT', 'https://muttasiq.com/api/athkar'),
+            'settings' => env('NATIVE_SETTINGS_ENDPOINT', 'https://muttasiq.com/api/settings'),
         ],
 
         'colors' => [
@@ -137,6 +138,8 @@ return [
     */
 
     'url' => env('APP_URL', 'http://127.0.0.1:8000'),
+
+    'asset_url' => env('ASSET_URL'),
 
     /*
     |--------------------------------------------------------------------------

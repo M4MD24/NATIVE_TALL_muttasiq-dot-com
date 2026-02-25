@@ -118,7 +118,7 @@
                 class="inline rounded-sm font-semibold text-gray-800 underline decoration-gray-400/80 underline-offset-4 transition-colors hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/60 dark:text-gray-100 dark:decoration-gray-400/60 dark:hover:text-white dark:focus-visible:ring-gray-200/40"
                 data-testid="copyright-version-button"
                 type="button"
-                x-bind:class="isVisible && 'pointer-events-auto!'"
+                x-bind:class="isVisible && (views['main-menu'].isOpen || views['athkar-app-gate'].isOpen) && 'pointer-events-auto!'"
                 x-on:click="$dispatch('open-control-panel-modal', { tab: 'updates' })"
             >
                 v{{ config('app.custom.app_version') }}

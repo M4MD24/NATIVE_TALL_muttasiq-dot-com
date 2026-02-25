@@ -9,7 +9,6 @@
         "dev": "vite"
     },
     "devDependencies": {
-        "@openai/codex": "^0.104.0",
         "@tailwindcss/vite": "^4.1.18",
         "blade-formatter": "^1.44.2",
         "concurrently": "^9.0.1",
@@ -29,7 +28,7 @@
         "dayjs": "^1.11.19",
         "dayjs-hijri": "^1.0.1",
         "fitty": "^2.4.2",
-        "tailwindcss": "^4.1.18",
+        "tailwindcss": "^4.2.0",
         "tippy.js": "^6.3.7"
     }
 }
