@@ -928,14 +928,17 @@
                         x-bind:class="index === activeIndex ? 'opacity-100' : 'opacity-0'"
                         x-bind:data-active="index === activeIndex ? 'true' : 'false'"
                     >
+                        <div
+                            x-show="Math.abs(index - activeIndex) <= 1"
+                            class="contents"
+                        >
                         <!-- Floating Mobile Counter (togglable) -->
                         <div
-                            class="delay-250 absolute right-2 top-2 z-30 overflow-visible transition-opacity sm:hidden"
+                            class="absolute right-2 top-2 z-30 overflow-visible sm:hidden"
                             data-athkar-mobile-counter
-                            x-bind:class="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
-                            (countAt(index) !== requiredCount(index)) ?
-                            'opacity-100! pointer-events-auto!' :
-                            'opacity-0 pointer-events-none'"
+                            x-show="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
+                            (countAt(index) !== requiredCount(index))"
+                            x-transition.opacity.duration.250ms
                         >
                             <div class="group relative">
                                 <!-- Top Right Counter -->
@@ -965,8 +968,9 @@
 
                                     <!-- Counter text -->
                                     <div
-                                        class="text-primary-800 dark:text-primary-100 absolute inset-0 flex items-center justify-center gap-0.5 whitespace-nowrap text-[0.6rem] font-semibold tabular-nums opacity-0 transition-opacity"
-                                        x-bind:class="{ 'opacity-100!': isHintOpen(index) }"
+                                        class="text-primary-800 dark:text-primary-100 absolute inset-0 flex items-center justify-center gap-0.5 whitespace-nowrap text-[0.6rem] font-semibold tabular-nums"
+                                        x-show="isHintOpen(index)"
+                                        x-transition.opacity.duration.200ms
                                         dir="ltr"
                                     >
                                         <span x-text="`${requiredCount(index)} /`"></span>
@@ -1013,13 +1017,12 @@
 
                                 <!-- Completion button -->
                                 <button
-                                    class="bg-success-500/90 pointer-events-none absolute -bottom-2 right-0 z-30 flex h-7 w-7 scale-95 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200"
+                                    class="bg-success-500/90 absolute -bottom-2 right-0 z-30 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-lg"
                                     data-hint-allow
                                     type="button"
                                     aria-label="إتمام الذكر"
-                                    x-bind:class="{
-                                        'opacity-100! scale-100 pointer-events-auto!': isHintOpen(index),
-                                    }"
+                                    x-show="isHintOpen(index)"
+                                    x-transition.opacity.duration.200ms
                                     x-on:click.stop="requestSingleThikrCompletion(index)"
                                     x-on:pointerdown.stop
                                     x-on:touchstart.stop
@@ -1033,8 +1036,9 @@
 
                             <!-- Label -->
                             <div
-                                class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 opacity-0 transition-opacity dark:text-gray-300"
-                                x-bind:class="isHintOpen(index) && 'opacity-100!'"
+                                class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
+                                x-show="isHintOpen(index)"
+                                x-transition.opacity.duration.200ms
                             >
                                 العدد
                             </div>
@@ -1042,9 +1046,9 @@
 
                         <!-- Mobile thikr origin toggler -->
                         <div
-                            class="absolute left-2 top-2 z-30 transition-opacity duration-200 sm:hidden"
-                            x-show="isOriginalThikr(index)"
-                            x-bind:class="slide.isActive ? 'pointer-events-none opacity-0' : 'opacity-100'"
+                            class="absolute left-2 top-2 z-30 sm:hidden"
+                            x-show="isOriginalThikr(index) && !slide.isActive"
+                            x-transition.opacity.duration.200ms
                         >
                             <button
                                 class="athkar-origin-indicator athkar-origin-indicator--mobile"
@@ -1165,15 +1169,14 @@
 
                                 <div class="w-16">
                                     <button
-                                        class="athkar-origin-indicator athkar-origin-indicator--desktop opacity-0 transition-opacity duration-300"
+                                        class="athkar-origin-indicator athkar-origin-indicator--desktop"
                                         type="button"
                                         x-data="{
                                             tip: null,
                                         }"
-                                        x-show="isOriginalThikr(index)"
+                                        x-show="isOriginalThikr(index) && !slide.isActive"
+                                        x-transition.opacity.duration.300ms
                                         x-bind:class="{
-                                            'opacity-100!': !slide.isActive,
-                                            'pointer-events-none opacity-0': slide.isActive,
                                             'is-active': isOriginVisible(index),
                                         }"
                                         x-bind:aria-pressed="isOriginVisible(index)"
@@ -1284,14 +1287,16 @@
 
                             <!-- Completion Indicator -->
                             <div
-                                class="flex items-center justify-between gap-3 text-sm text-gray-600 sm:text-base dark:text-gray-300">
+                                class="relative flex items-center justify-between gap-3 text-sm text-gray-600 sm:text-base dark:text-gray-300">
+                                <span class="invisible pointer-events-none px-2.5 py-1 text-[0.65rem] sm:px-3 sm:text-sm" aria-hidden="true">&nbsp;</span>
                                 <span
-                                    class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums opacity-0 transition-opacity duration-300"
+                                    class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums"
                                     x-data="{
                                         isVisible: false,
                                         timer: null,
                                     }"
-                                    x-bind:class="isVisible && 'opacity-100!'"
+                                    x-show="isVisible"
+                                    x-transition.opacity.duration.300ms
                                     x-effect="
                                                 if (slide.isActive) {
                                                     clearTimeout(timer);
@@ -1357,16 +1362,19 @@
                                     "
                                 >
                                     <span
-                                        class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm"
-                                        x-bind:class="isVisible && isItemComplete(index) ? 'opacity-100!' : 'opacity-0'"
+                                        class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold sm:px-3 sm:text-sm"
+                                        x-show="isVisible && isItemComplete(index)"
+                                        x-transition.opacity.duration.300ms
                                     >تم بحمد الله</span>
                                     <span
-                                        class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                                        x-bind:class="isVisible ? 'opacity-100!' : 'opacity-0'"
+                                        class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                        x-show="isVisible"
+                                        x-transition.opacity.duration.300ms
                                         x-text="activeTypeLabel(index)"
                                     ></span>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </article>
                 </template>
