@@ -170,7 +170,7 @@ https://muttasiq.com
 </div>
 
 > [!TIP]
-> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project with the [Anthropic Claude](https://code.claude.com/docs), but it can work with pretty much anything.
+> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project for [Anthropic Claude](https://code.claude.com/docs) and [Codex CLI](https://developers.openai.com/codex/cli/), but it can work with pretty much anything else.
 
 <div align="left">
 
@@ -266,8 +266,8 @@ Copyright (C) 2026 Muttasiq Contributors.
 - [Night athkar background](https://www.freepik.com/free-ai-image/digital-art-isolated-house_93658018.htm#fromView=search&page=1&position=36&uuid=7fbc119d-abf3-4f15-b3b3-7073afb85ff8&query=Anime+nature+wallpaper+day) (modified via ChatGPT)
 
 ### Technologies
+- [ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)
 - [Anthropic Claude](https://code.claude.com/)
-- ~~[ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)~~ (previously)
 - [Laravel](https://laravel.com) entire ecosystem
 - [TALL-Stack](https://tallstack.dev)
 - [FilamentPHP](https://filamentphp.com)
