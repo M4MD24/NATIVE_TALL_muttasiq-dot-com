@@ -2,8 +2,8 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-project_root="${script_dir}"
-output_file="${script_dir}/native-log-ios.txt"
+project_root="$(cd "${script_dir}/.." && pwd)"
+output_file="${project_root}/native-log-ios.txt"
 
 read_env_var() {
     local key="$1"
