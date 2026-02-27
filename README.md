@@ -18,7 +18,13 @@ https://muttasiq.com
 
 ### الأندرويد
 
-قريبًا، بإذن الله... (الشرح في فيديو التليجرام [في الأعلى](#مُتَّسِق))
+للتحميل من متجر جوجل الرسمي:
+
+<a href="https://play.google.com/store/apps/details?id=dev.goodm4ven.muttasiq&hl=ar" target="_blank">
+  <img src=".assets/images/stores/google-play.png" alt="google play store download button" height="60"/>
+</a>
+
+<br>
 
 <img src=".assets/images/screenshots/android/athkar-app-reader-dark.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
 <span>&nbsp;&nbsp;</span>
