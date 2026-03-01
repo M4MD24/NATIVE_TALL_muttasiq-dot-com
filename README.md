@@ -18,11 +18,7 @@ https://muttasiq.com
 
 ### الأندرويد
 
-للتحميل من متجر جوجل الرسمي:
-
-<a href="https://play.google.com/store/apps/details?id=dev.goodm4ven.muttasiq&hl=ar" target="_blank">
-  <img src=".assets/images/stores/google-play.png" alt="google play store download button" height="60"/>
-</a>
+يتم الاختبار الآن من قبل متطوعين...
 
 <br>
 
