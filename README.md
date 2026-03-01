@@ -18,7 +18,13 @@ https://muttasiq.com
 
 ### الأندرويد
 
-قريبًا، بإذن الله... (الشرح في فيديو التليجرام [في الأعلى](#مُتَّسِق))
+للتحميل من متجر جوجل الرسمي:
+
+<a href="https://play.google.com/store/apps/details?id=dev.goodm4ven.muttasiq&hl=ar" target="_blank">
+  <img src=".assets/images/stores/google-play.png" alt="google play store download button" height="60"/>
+</a>
+
+<br>
 
 <img src=".assets/images/screenshots/android/athkar-app-reader-dark.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
 <span>&nbsp;&nbsp;</span>
@@ -170,7 +176,7 @@ https://muttasiq.com
 </div>
 
 > [!TIP]
-> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project with the [Anthropic Claude](https://code.claude.com/docs), but it can work with pretty much anything.
+> You can also start learning about ALL of these technologies by using [Laravel Boost](https://laravel.com/docs/boost), which does almost everything for you if you give the AI agent well-engineered commands — including writing feature tests. I set it up in this project for [Anthropic Claude](https://code.claude.com/docs) and [Codex CLI](https://developers.openai.com/codex/cli/), but it can work with pretty much anything else.
 
 <div align="left">
 
@@ -183,7 +189,7 @@ https://muttasiq.com
 1. Use and maintain the root-directory bash scripts to run and watch all available platform applications.
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
-   - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI since it’s ephemeral). If you have a fix for [this issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues/66), feel free to open a PR; otherwise, **rebooting your system** if things get unstable is the recommended workaround.
+   - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI, I think, since it’s ephemeral).
 4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/mobile/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
 
 ### Setup
@@ -266,12 +272,13 @@ Copyright (C) 2026 Muttasiq Contributors.
 - [Night athkar background](https://www.freepik.com/free-ai-image/digital-art-isolated-house_93658018.htm#fromView=search&page=1&position=36&uuid=7fbc119d-abf3-4f15-b3b3-7073afb85ff8&query=Anime+nature+wallpaper+day) (modified via ChatGPT)
 
 ### Technologies
+- [ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)
 - [Anthropic Claude](https://code.claude.com/)
-- ~~[ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)~~ (previously)
 - [Laravel](https://laravel.com) entire ecosystem
 - [TALL-Stack](https://tallstack.dev)
 - [FilamentPHP](https://filamentphp.com)
 - [NativePHP](https://nativephp.com)
+- [Bifrost](bifrost.nativephp.com)
 - [VSCodium](https://vscodium.com) (the project was removed and then recovered, file by file, using tons of versions for each file from **the no-telemetry cache**)
 
 
