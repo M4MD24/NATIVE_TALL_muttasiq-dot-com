@@ -75,13 +75,14 @@
             "npm install",
             "npm run build"
         ],
-        "dev": [
-            "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
-        ],
         "optimize": [
             "@php artisan optimize:clear --ansi",
-            "Composer\\Config::disableProcessTimeout"
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan migrate"
+        ],
+        "dev": [
+            "@optimize",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
         ],
         "format": [
             "npm run format:blade",
@@ -107,6 +108,7 @@
         ],
         "testbrowser": [
             "@optimize",
+            "npx playwright install",
             ".scripts/testing/browser.sh"
         ],
         "testall": [
