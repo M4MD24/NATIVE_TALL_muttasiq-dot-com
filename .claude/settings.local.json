@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(vendor/bin/pint:*)",
+      "Bash(tail:*)",
+      "mcp__laravel-boost__get-config",
+      "mcp__laravel-boost__tinker",
+      "Bash(php artisan test*)",
+      "mcp__laravel-boost__search-docs",
+      "mcp__laravel-boost__browser-logs",
+      "Bash(npx acorn:*)",
+      "Bash(node:*)",
+      "Bash(php artisan:*)",
+      "mcp__laravel-boost__database-schema",
+      "mcp__laravel-boost__application-info",
+      "Bash(npm run:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ],
+  "prefersReducedMotion": true
+}
