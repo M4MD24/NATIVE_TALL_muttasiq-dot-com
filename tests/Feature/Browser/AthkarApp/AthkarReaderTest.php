@@ -2010,6 +2010,58 @@ it('exposes all athkar for the active mode and navigates when switching is allow
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), $lastIndex);
 });
 
+it('keeps only a small render window of slide content mounted', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    setAthkarSettings($page, [
+        'does_prevent_switching_athkar_until_completion' => false,
+    ]);
+    waitForAthkarSettings($page, [
+        'does_prevent_switching_athkar_until_completion' => false,
+    ]);
+
+    waitForScript($page, athkarReaderDataScript('data.activeList.length >= 5'), true);
+
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 3',
+        true,
+    );
+    $mountedAtStart = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    $middleIndex = (int) $page->script(athkarReaderDataScript('Math.floor(data.activeList.length / 2)'));
+    $page->script(athkarReaderCommandScript("data.setActiveIndex({$middleIndex});"));
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $middleIndex);
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 3',
+        true,
+    );
+    $mountedAtMiddle = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    $lastIndex = (int) $page->script(athkarReaderDataScript('data.activeList.length - 1'));
+    $page->script(athkarReaderCommandScript('data.setActiveIndex(data.activeList.length - 1);'));
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $lastIndex);
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 2',
+        true,
+    );
+    $mountedAtEnd = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    expect($mountedAtStart)->toBeLessThanOrEqual(2)
+        ->and($mountedAtMiddle)->toBeLessThanOrEqual(3)
+        ->and($mountedAtEnd)->toBeLessThanOrEqual(2);
+});
+
 it('shows the congrats panel briefly then returns to the gate when setting 4 is disabled', function () {
     $page = visit('/');
 

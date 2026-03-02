@@ -114,6 +114,7 @@ document.addEventListener('alpine:init', () => {
         originResyncDelayMs: 180,
         completionVisibleMs: 3000,
         textFitSettleMs: 96,
+        renderWindowRadius: 1,
         _letterCountCache: new Map(),
         _totalRequiredLettersKey: null,
         _totalRequiredLettersValue: 0,
@@ -928,9 +929,6 @@ document.addEventListener('alpine:init', () => {
 
             return normalizedOrigin.length > 0 || Boolean(item?.is_original);
         },
-        originTextAt(index) {
-            return String(this.activeList?.[index]?.origin ?? '').trim();
-        },
         isOriginVisible(index) {
             return this.originToggle.mode === this.activeMode && this.originToggle.index === index;
         },
@@ -1010,6 +1008,11 @@ document.addEventListener('alpine:init', () => {
         },
         isOriginalThikr(index) {
             return this.hasOrigin(index);
+        },
+        isSlideInRenderWindow(index) {
+            const distance = Math.abs(Number(index) - this.activeIndex);
+
+            return Number.isFinite(distance) && distance <= this.renderWindowRadius;
         },
         get activeList() {
             const mode = this.activeMode;
@@ -1815,6 +1818,26 @@ document.addEventListener('alpine:init', () => {
                 document.fonts.ready.then(() => this.queueTextFit());
             }
         },
+        resolveActiveFittyTargets() {
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+
+            if (!activeSlide) {
+                return [];
+            }
+
+            return Array.from(activeSlide.querySelectorAll('[data-fitty-target]')).filter(
+                (target) => target instanceof Element,
+            );
+        },
+        dispatchFittyRefit(targets = null) {
+            const activeTargets = Array.isArray(targets) ? targets : this.resolveActiveFittyTargets();
+
+            window.dispatchEvent(
+                new CustomEvent('athkar-fitty-refit', {
+                    detail: activeTargets.length ? { targets: activeTargets } : undefined,
+                }),
+            );
+        },
         queueTextFit() {
             if (this.textFit.raf) {
                 cancelAnimationFrame(this.textFit.raf);
@@ -1828,14 +1851,14 @@ document.addEventListener('alpine:init', () => {
             this.textFit.raf = requestAnimationFrame(() => {
                 this.textFit.raf = requestAnimationFrame(() => {
                     this.textFit.raf = null;
-                    window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                    this.dispatchFittyRefit();
                     this.$nextTick(() => this.setupTextShimmer());
                 });
             });
 
             this.textFit.settleTimer = setTimeout(() => {
                 this.textFit.settleTimer = null;
-                window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                this.dispatchFittyRefit();
                 this.$nextTick(() => this.setupTextShimmer());
             }, this.textFitSettleMs);
         },

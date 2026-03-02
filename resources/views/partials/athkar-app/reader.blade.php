@@ -928,10 +928,8 @@
                         x-bind:class="index === activeIndex ? 'opacity-100' : 'opacity-0'"
                         x-bind:data-active="index === activeIndex ? 'true' : 'false'"
                     >
-                        <div
-                            class="contents"
-                            x-show="Math.abs(index - activeIndex) <= 1"
-                        >
+                        <template x-if="isSlideInRenderWindow(index)">
+                            <div class="contents">
                             <!-- Floating Mobile Counter (togglable) -->
                             <div
                                 class="absolute right-2 top-2 z-30 overflow-visible sm:hidden"
@@ -1279,7 +1277,7 @@
                                                 dir="rtl"
                                                 x-bind:data-fitty-enabled="(activeIndex === index).toString()"
                                                 x-bind:data-fitty-overflow-active="(activeIndex === index && isOriginVisible(index)).toString()"
-                                                x-text="originTextAt(index)"
+                                                x-text="item.origin"
                                             ></p>
                                         </div>
                                     </div>
@@ -1378,7 +1376,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </template>
                     </article>
                 </template>
             </div>
