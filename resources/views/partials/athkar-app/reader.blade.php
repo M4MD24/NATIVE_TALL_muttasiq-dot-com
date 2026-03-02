@@ -1287,17 +1287,12 @@
                                 <div
                                     class="relative flex items-center justify-between gap-3 text-sm text-gray-600 sm:text-base dark:text-gray-300">
                                     <span
-                                        class="pointer-events-none invisible px-2.5 py-1 text-[0.65rem] sm:px-3 sm:text-sm"
-                                        aria-hidden="true"
-                                    >&nbsp;</span>
-                                    <span
-                                        class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums"
+                                        class="text-primary-700 dark:text-primary-200 inline-flex min-w-[4.4rem] items-center justify-center gap-1 text-center tabular-nums opacity-0 transition-opacity duration-300"
                                         x-data="{
                                             isVisible: false,
                                             timer: null,
                                         }"
-                                        x-show="isVisible"
-                                        x-transition.opacity.duration.300ms
+                                        x-bind:class="isVisible && 'opacity-100!'"
                                         x-effect="
                                                 if (slide.isActive) {
                                                     clearTimeout(timer);
@@ -1363,14 +1358,12 @@
                                     "
                                     >
                                         <span
-                                            class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold sm:px-3 sm:text-sm"
-                                            x-show="isVisible && isItemComplete(index)"
-                                            x-transition.opacity.duration.300ms
+                                            class="athkar-complete-badge px-2.5 py-1 text-[0.65rem] font-semibold sm:px-3 sm:text-sm opacity-0 transition-opacity duration-300"
+                                            x-bind:class="isVisible && isItemComplete(index) && 'opacity-100!'"
                                         >تم بحمد الله</span>
                                         <span
-                                            class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                                            x-show="isVisible"
-                                            x-transition.opacity.duration.300ms
+                                            class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 opacity-0 transition-opacity duration-300"
+                                            x-bind:class="isVisible && 'opacity-100!'"
                                             x-text="activeTypeLabel(index)"
                                         ></span>
                                     </div>
