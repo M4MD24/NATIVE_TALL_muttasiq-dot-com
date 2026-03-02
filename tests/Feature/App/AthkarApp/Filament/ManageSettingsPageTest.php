@@ -30,6 +30,10 @@ it('loads current settings into the form', function () {
         ['name' => 'does_skip_notice_panels'],
         ['value' => 1],
     );
+    Setting::query()->updateOrCreate(
+        ['name' => Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING],
+        ['value' => 0],
+    );
 
     actingAs($admin);
     Filament::setCurrentPanel('admin');
@@ -37,6 +41,7 @@ it('loads current settings into the form', function () {
     livewire(ManageSettings::class)
         ->assertFormSet([
             'does_skip_notice_panels' => true,
+            Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
         ]);
 });
 
@@ -51,6 +56,7 @@ it('saves settings to the database', function () {
     livewire(ManageSettings::class)
         ->fillForm([
             'does_skip_notice_panels' => true,
+            Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
             'does_automatically_switch_completed_athkar' => false,
             'minimum_main_text_size' => 18,
             'maximum_main_text_size' => 22,
@@ -63,6 +69,9 @@ it('saves settings to the database', function () {
         ->toBe(1);
 
     expect(Setting::query()->where('name', 'does_automatically_switch_completed_athkar')->value('value'))
+        ->toBe(0);
+
+    expect(Setting::query()->where('name', Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING)->value('value'))
         ->toBe(0);
 
     expect((int) Setting::query()->where('name', 'minimum_main_text_size')->value('value'))

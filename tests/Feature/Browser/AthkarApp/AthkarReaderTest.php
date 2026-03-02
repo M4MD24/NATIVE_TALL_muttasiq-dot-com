@@ -1770,6 +1770,56 @@ JS, ['expectsShimmer' => $expectsShimmer]),
     );
 });
 
+it('disables shimmer animation when the shimmer setting is turned off', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    setAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    waitForAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+const text = slide?.querySelector('[data-athkar-text]');
+
+if (!text) {
+  return;
+}
+
+text.dataset.shimmerDelay = '20';
+text.dataset.shimmerDuration = '1000';
+text.dataset.shimmerPause = '1000';
+data.stopTextShimmer();
+data.setupTextShimmer();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  window.__shimmerOffProbeStartedAt ??= Date.now();
+  const elapsed = Date.now() - window.__shimmerOffProbeStartedAt;
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+
+  if (!text || elapsed < 160) {
+    return false;
+  }
+
+  return !text.classList.contains('is-shimmering');
+})()
+JS,
+        true,
+    );
+});
+
 it('keeps text scrollable after toggling origin on and back off', function () {
     $page = visit('/');
 

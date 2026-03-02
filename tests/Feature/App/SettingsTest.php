@@ -19,6 +19,7 @@ it('does not persist settings changes globally', function () {
         'does_clicking_switch_athkar_too' => false,
         'does_prevent_switching_athkar_until_completion' => false,
         'does_skip_notice_panels' => true,
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
         'minimum_main_text_size' => 18,
         'maximum_main_text_size' => 20,
     ];

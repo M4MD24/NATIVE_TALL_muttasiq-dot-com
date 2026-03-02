@@ -13,6 +13,8 @@ import {
 } from '../athkar-app-overrides';
 import { createAthkarShimmerController } from '../athkar-shimmer';
 
+const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
+
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppReader', (config) => ({
         defaultAthkar: normalizeAthkarDefaults(config.athkar),
@@ -352,6 +354,10 @@ document.addEventListener('alpine:init', () => {
                     this.activeMode = null;
                     this.$viewNav('athkar-app-gate');
                 }
+            }
+
+            if (!this.shouldEnableMainTextShimmering()) {
+                this.stopTextShimmer();
             }
 
             this.queueTextFit();
@@ -1269,6 +1275,9 @@ document.addEventListener('alpine:init', () => {
         shouldSkipNoticePanels() {
             return this.settingValue('does_skip_notice_panels', false);
         },
+        shouldEnableMainTextShimmering() {
+            return this.settingValue(doesEnableMainTextShimmeringKey, true);
+        },
         shouldExitReaderAfterForwardSwipe() {
             if (this.shouldPreventSwitching()) {
                 return false;
@@ -1950,6 +1959,12 @@ document.addEventListener('alpine:init', () => {
             this.textScroll.element = null;
         },
         setupTextShimmer(text = null, options = {}) {
+            if (!this.shouldEnableMainTextShimmering()) {
+                this.textShimmerController?.stop();
+
+                return;
+            }
+
             this.textShimmerController?.setup(text, options);
         },
         stopTextShimmer() {

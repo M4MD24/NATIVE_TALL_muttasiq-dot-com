@@ -12,6 +12,8 @@ class Setting extends Model
 
     public const GROUP_ATHKAR = 'athkar';
 
+    public const DOES_ENABLE_MAIN_TEXT_SHIMMERING = 'does_enable_main_text_shimmering';
+
     public const MINIMUM_MAIN_TEXT_SIZE = 'minimum_main_text_size';
 
     public const MAXIMUM_MAIN_TEXT_SIZE = 'maximum_main_text_size';
@@ -70,9 +72,15 @@ class Setting extends Model
                 'min' => self::MAX_MAIN_TEXT_SIZE_MIN,
                 'max' => self::MAX_MAIN_TEXT_SIZE_MAX,
             ],
+            self::DOES_ENABLE_MAIN_TEXT_SHIMMERING => [
+                'default' => true,
+                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحويرة.',
+                'group' => self::GROUP_GENERAL,
+                'type' => 'boolean',
+            ],
             'does_skip_notice_panels' => [
                 'default' => false,
-                'label' => '2. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'label' => '3. تجاوز رسائل التعريف أو التهنئة وما شابه.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],

@@ -12,6 +12,8 @@
 لتجربة التطبيق الآن من أي متصفح:<br>
 https://muttasiq.com
 
+<br>
+
 <img src="public/docs/updates/images/v-0-1-0/web/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
 <br><br>
 <img src="public/docs/updates/images/v-0-1-0/web/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
@@ -256,7 +258,7 @@ Copyright (C) 2026 Muttasiq Contributors.
 
 - [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
 - [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
-- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد).
+- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد), [@AbdelfettahSi](https://t.me/AbdelfettahSi) (أبو خديجة عبد الفتاح), [@almuhanad1](https://t.me/almuhanad1) (المهند النهمي).
 
 ### Assets
 

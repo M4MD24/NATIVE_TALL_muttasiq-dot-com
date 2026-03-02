@@ -12,9 +12,11 @@ test('athkar setting defaults are available for the home payload', function () {
     expect(array_key_exists('does_skip_notice_panels', $defaults))->toBeTrue();
     expect(array_key_exists('minimum_main_text_size', $defaults))->toBeTrue();
     expect(array_key_exists('maximum_main_text_size', $defaults))->toBeTrue();
+    expect(array_key_exists(Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING, $defaults))->toBeTrue();
     expect($defaults['does_skip_notice_panels'])->toBeFalse();
     expect($defaults['minimum_main_text_size'])->toBe(Setting::MIN_MAIN_TEXT_SIZE_DEFAULT);
     expect($defaults['maximum_main_text_size'])->toBe(Setting::MAX_MAIN_TEXT_SIZE_DEFAULT);
+    expect($defaults[Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING])->toBeTrue();
 });
 
 test('it exposes main text size limits for frontend consumers', function () {
