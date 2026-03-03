@@ -60,7 +60,7 @@ class VerifyReleaseVersion extends Command
         }
 
         $confirmed = confirm(
-            'Have you bumped NATIVEPHP_APP_VERSION and NATIVEPHP_APP_VERSION_CODE for this release?',
+            'Have you bumped app versions in .env and .env.example files for this release?',
             default: false,
         );
 
