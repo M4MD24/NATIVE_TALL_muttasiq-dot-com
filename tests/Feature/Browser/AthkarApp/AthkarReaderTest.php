@@ -152,30 +152,10 @@ it('treats up and down swipes as forward navigation', function () {
     $page->script(athkarReaderCommandScript('data.setActiveIndex(0);'));
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 0);
 
-    $page->script(
-        athkarReaderCommandScript(<<<'JS'
-const panel = document.querySelector('.athkar-panel[role="region"][aria-roledescription="carousel"]');
-const rect = panel?.getBoundingClientRect() ?? { left: 0, top: 0, width: 200, height: 400 };
-const x = rect.left + (rect.width / 2);
-const startY = rect.top + (rect.height * 0.7);
-const endY = rect.top + (rect.height * 0.2);
-data.swipeStart({ type: 'pointerdown', pointerType: 'touch', clientX: x, clientY: startY, button: 0, target: panel });
-data.swipeEnd({ type: 'pointerup', pointerType: 'touch', clientX: x, clientY: endY, button: 0, target: panel });
-JS),
-    );
+    swipeReader($page, 'up', 'touch');
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 1);
 
-    $page->script(
-        athkarReaderCommandScript(<<<'JS'
-const panel = document.querySelector('.athkar-panel[role="region"][aria-roledescription="carousel"]');
-const rect = panel?.getBoundingClientRect() ?? { left: 0, top: 0, width: 200, height: 400 };
-const x = rect.left + (rect.width / 2);
-const startY = rect.top + (rect.height * 0.3);
-const endY = rect.top + (rect.height * 0.8);
-data.swipeStart({ type: 'pointerdown', pointerType: 'touch', clientX: x, clientY: startY, button: 0, target: panel });
-data.swipeEnd({ type: 'pointerup', pointerType: 'touch', clientX: x, clientY: endY, button: 0, target: panel });
-JS),
-    );
+    swipeReader($page, 'down', 'touch');
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 2);
 });
 
