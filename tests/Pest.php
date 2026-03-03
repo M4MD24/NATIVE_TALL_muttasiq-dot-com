@@ -263,6 +263,7 @@ function resetBrowserState($page, bool $isMobile = false): void
         }
 
         try {
+            $page->script('window.__disableJsErrorReporting = true;');
             $page->script('localStorage.clear(); sessionStorage.clear(); window.history.replaceState({}, document.title, window.location.pathname + window.location.search);');
         } catch (Throwable) {
             //

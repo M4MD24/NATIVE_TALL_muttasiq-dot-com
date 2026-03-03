@@ -128,5 +128,7 @@
         </main>
 
         @include('partials.copyright-and-version')
+
+        <livewire:js-error-reporter />
     </div>
 </x-app>

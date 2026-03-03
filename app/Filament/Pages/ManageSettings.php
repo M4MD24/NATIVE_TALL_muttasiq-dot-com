@@ -23,6 +23,8 @@ class ManageSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    protected static ?int $navigationSort = 99;
+
     protected static ?string $title = 'إعدادات التطبيق الافتراضية';
 
     protected static ?string $slug = 'iedadat-iftiradiyya';
@@ -46,6 +48,7 @@ class ManageSettings extends Page
         $currentSettings = Setting::normalizeSettings(
             array_replace(Setting::defaults(), $storedSettings),
         );
+        $currentSettings[Setting::APP_VERSION] = Setting::appVersion();
 
         $this->form->fill($currentSettings);
     }
@@ -58,6 +61,14 @@ class ManageSettings extends Page
         return $schema
             ->components([
                 Form::make([
+                    Section::make('التطبيق')
+                        ->schema([
+                            Components\TextInput::make(Setting::APP_VERSION)
+                                ->label('نسخة التطبيق المعروضة')
+                                ->maxLength(32)
+                                ->placeholder((string) config('app.custom.app_version')),
+                        ]),
+
                     Section::make('العامة')
                         ->schema(
                             $this->buildFieldsFromDefinitions($generalDefinitions),
@@ -84,6 +95,10 @@ class ManageSettings extends Page
     {
         $data = $this->form->getState();
         $normalized = Setting::normalizeSettings($data);
+
+        if (array_key_exists(Setting::APP_VERSION, $data)) {
+            Setting::setAppVersion($data[Setting::APP_VERSION]);
+        }
 
         foreach ($normalized as $name => $value) {
             Setting::query()->updateOrCreate(

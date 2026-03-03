@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Setting extends Model
 {
+    public const APP_VERSION = 'app_version';
+
     public const GROUP_GENERAL = 'general';
 
     public const GROUP_ATHKAR = 'athkar';
+
+    public const DOES_ENABLE_MAIN_TEXT_SHIMMERING = 'does_enable_main_text_shimmering';
 
     public const MINIMUM_MAIN_TEXT_SIZE = 'minimum_main_text_size';
 
@@ -70,9 +75,15 @@ class Setting extends Model
                 'min' => self::MAX_MAIN_TEXT_SIZE_MIN,
                 'max' => self::MAX_MAIN_TEXT_SIZE_MAX,
             ],
+            self::DOES_ENABLE_MAIN_TEXT_SHIMMERING => [
+                'default' => true,
+                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحويرة.',
+                'group' => self::GROUP_GENERAL,
+                'type' => 'boolean',
+            ],
             'does_skip_notice_panels' => [
                 'default' => false,
-                'label' => '2. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'label' => '3. تجاوز رسائل التعريف أو التهنئة وما شابه.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],
@@ -199,5 +210,39 @@ class Setting extends Model
         $normalized[self::MAXIMUM_MAIN_TEXT_SIZE] = max($maximumMainTextSize, $minimumMainTextSize);
 
         return $normalized;
+    }
+
+    public static function appVersion(): string
+    {
+        $stored = self::query()
+            ->where('name', self::APP_VERSION)
+            ->value('value_text');
+
+        if (is_string($stored) && trim($stored) !== '') {
+            return trim($stored);
+        }
+
+        $fallback = (string) config('app.custom.app_version', '');
+
+        if (trim($fallback) !== '') {
+            return trim($fallback);
+        }
+
+        return trim((string) config('nativephp.version', ''));
+    }
+
+    public static function setAppVersion(?string $version): void
+    {
+        $normalized = is_string($version) ? trim($version) : '';
+        $normalized = $normalized !== '' ? Str::of($normalized)->limit(32, '')->toString() : '';
+        $valueText = $normalized === '' ? null : $normalized;
+
+        self::query()->updateOrCreate(
+            ['name' => self::APP_VERSION],
+            [
+                'value' => 0,
+                'value_text' => $valueText,
+            ],
+        );
     }
 }

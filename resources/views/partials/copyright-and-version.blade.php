@@ -121,7 +121,7 @@
                 x-bind:class="isVisible && (views['main-menu'].isOpen || views['athkar-app-gate'].isOpen) && 'pointer-events-auto!'"
                 x-on:click="$dispatch('open-control-panel-modal', { tab: 'updates' })"
             >
-                v{{ config('app.custom.app_version') }}
+                v{{ \App\Models\Setting::appVersion() }}
             </button>
         </p>
     </div>

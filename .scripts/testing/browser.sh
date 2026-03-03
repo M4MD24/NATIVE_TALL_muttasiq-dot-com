@@ -64,10 +64,35 @@ print_runtime_indicator() {
         return
     fi
 
+    if [[ -n "${cpu_cores}" && -n "${parallel_processes}" ]]; then
+        echo "[testing:${script_name}] mode=local cpu=${cpu_cores} processes=${parallel_processes}" >&2
+
+        return
+    fi
+
     echo "[testing:${script_name}] mode=local" >&2
 }
 
-run_browser_command() {
+run_compact_command() {
+    if command -v timeout >/dev/null 2>&1; then
+        "${run_clean_script}" timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
+
+        return
+    fi
+
+    if [[ -x /usr/bin/timeout ]]; then
+        "${run_clean_script}" /usr/bin/timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
+
+        return
+    fi
+
+    "${run_clean_script}" php artisan test --compact "${browser_tests_path}" "$@"
+}
+
+run_parallel_command() {
+    local parallel_processes="$1"
+    shift
+
     if command -v timeout >/dev/null 2>&1; then
         "${run_clean_script}" timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
 
@@ -108,8 +133,53 @@ ensure_local_browser_plugin_cache() {
 run_local() (
     cd "${root_dir}"
     ensure_local_browser_plugin_cache
-    print_runtime_indicator "local"
-    run_browser_command "$@"
+
+    local use_parallel="${BROWSER_TEST_PARALLEL:-1}"
+
+    if [[ "${use_parallel}" == "0" ]]; then
+        print_runtime_indicator "local"
+        run_compact_command "$@"
+        return
+    fi
+
+    local cpu_cores
+    local parallel_processes
+
+    if command -v nproc >/dev/null 2>&1; then
+        cpu_cores="$(nproc 2>/dev/null || true)"
+    elif command -v getconf >/dev/null 2>&1; then
+        cpu_cores="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
+    else
+        cpu_cores=""
+    fi
+
+    if [[ -z "${cpu_cores}" ]] || ! printf "%s" "${cpu_cores}" | grep -Eq "^[0-9]+$" || [[ "${cpu_cores}" -lt 1 ]]; then
+        cpu_cores=1
+    fi
+
+    local reserved_cores="${TEST_RESERVED_CORES:-1}"
+    local max_processes="${TEST_BROWSER_MAX_PROCESSES:-${TEST_MAX_PROCESSES:-8}}"
+
+    if ! printf "%s" "${reserved_cores}" | grep -Eq "^[0-9]+$"; then
+        reserved_cores=1
+    fi
+
+    if ! printf "%s" "${max_processes}" | grep -Eq "^[0-9]+$" || [[ "${max_processes}" -lt 1 ]]; then
+        max_processes=8
+    fi
+
+    parallel_processes=$(( cpu_cores - reserved_cores ))
+
+    if [[ "${parallel_processes}" -lt 1 ]]; then
+        parallel_processes=1
+    fi
+
+    if [[ "${parallel_processes}" -gt "${max_processes}" ]]; then
+        parallel_processes="${max_processes}"
+    fi
+
+    print_runtime_indicator "local" "" "${cpu_cores}" "${parallel_processes}"
+    run_parallel_command "${parallel_processes}" "$@"
 )
 
 run_in_container() {
@@ -205,16 +275,16 @@ run_in_container() {
             echo "[testing:${TESTING_SCRIPT_NAME}] mode=docker container=${TESTING_CONTAINER_NAME} cpu=${cpu_cores} processes=${parallel_processes}" >&2
 
             if command -v timeout >/dev/null 2>&1; then
-                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
             if [ -x /usr/bin/timeout ]; then
-                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
-            .scripts/testing/support/run-clean.sh php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+            .scripts/testing/support/run-clean.sh php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
         ' sh "$@"
 }
 

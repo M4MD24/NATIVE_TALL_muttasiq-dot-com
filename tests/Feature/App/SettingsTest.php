@@ -19,6 +19,7 @@ it('does not persist settings changes globally', function () {
         'does_clicking_switch_athkar_too' => false,
         'does_prevent_switching_athkar_until_completion' => false,
         'does_skip_notice_panels' => true,
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
         'minimum_main_text_size' => 18,
         'maximum_main_text_size' => 20,
     ];
@@ -31,6 +32,19 @@ it('does not persist settings changes globally', function () {
     $updatedSettings = Setting::query()->pluck('value', 'name')->all();
 
     expect($updatedSettings)->toBe($initialSettings);
+});
+
+it('resolves the app version from stored settings when available', function () {
+    Setting::setAppVersion('2.0.0');
+
+    expect(Setting::appVersion())->toBe('2.0.0');
+});
+
+it('falls back to config when no app version setting is stored', function () {
+    Setting::query()->where('name', Setting::APP_VERSION)->delete();
+    config(['app.custom.app_version' => '9.9.9']);
+
+    expect(Setting::appVersion())->toBe('9.9.9');
 });
 
 it('normalizes the main text size range in the settings modal', function () {

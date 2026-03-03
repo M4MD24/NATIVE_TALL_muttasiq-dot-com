@@ -20,6 +20,8 @@
             transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
             touch-action: pan-y;
         }
 
@@ -213,6 +215,8 @@
         .athkar-manager-card * {
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
         }
 
         .athkar-manager-cards-grid {
@@ -295,6 +299,8 @@
                 wire:key="athkar-manager-card-{{ $card['id'] }}"
                 wire:sort:item="{{ $card['id'] }}"
                 wire:click.preserve-scroll="openEditAthkar({{ $card['id'] }})"
+                x-on:contextmenu.prevent
+                x-on:dragstart.prevent
                 x-bind="$store.bp.shouldUseSortHandles() ? {} : { 'wire:sort:handle': '' }"
                 x-bind:data-athkar-touch-drag="$store.bp.shouldUseSortHandles() ? 'true' : 'false'"
             >

@@ -152,30 +152,10 @@ it('treats up and down swipes as forward navigation', function () {
     $page->script(athkarReaderCommandScript('data.setActiveIndex(0);'));
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 0);
 
-    $page->script(
-        athkarReaderCommandScript(<<<'JS'
-const panel = document.querySelector('.athkar-panel[role="region"][aria-roledescription="carousel"]');
-const rect = panel?.getBoundingClientRect() ?? { left: 0, top: 0, width: 200, height: 400 };
-const x = rect.left + (rect.width / 2);
-const startY = rect.top + (rect.height * 0.7);
-const endY = rect.top + (rect.height * 0.2);
-data.swipeStart({ type: 'pointerdown', pointerType: 'touch', clientX: x, clientY: startY, button: 0, target: panel });
-data.swipeEnd({ type: 'pointerup', pointerType: 'touch', clientX: x, clientY: endY, button: 0, target: panel });
-JS),
-    );
+    swipeReader($page, 'up', 'touch');
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 1);
 
-    $page->script(
-        athkarReaderCommandScript(<<<'JS'
-const panel = document.querySelector('.athkar-panel[role="region"][aria-roledescription="carousel"]');
-const rect = panel?.getBoundingClientRect() ?? { left: 0, top: 0, width: 200, height: 400 };
-const x = rect.left + (rect.width / 2);
-const startY = rect.top + (rect.height * 0.3);
-const endY = rect.top + (rect.height * 0.8);
-data.swipeStart({ type: 'pointerdown', pointerType: 'touch', clientX: x, clientY: startY, button: 0, target: panel });
-data.swipeEnd({ type: 'pointerup', pointerType: 'touch', clientX: x, clientY: endY, button: 0, target: panel });
-JS),
-    );
+    swipeReader($page, 'down', 'touch');
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), 2);
 });
 
@@ -1770,6 +1750,56 @@ JS, ['expectsShimmer' => $expectsShimmer]),
     );
 });
 
+it('disables shimmer animation when the shimmer setting is turned off', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    setAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    waitForAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    $page->script(athkarReaderCommandScript(<<<'JS'
+const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+const text = slide?.querySelector('[data-athkar-text]');
+
+if (!text) {
+  return;
+}
+
+text.dataset.shimmerDelay = '20';
+text.dataset.shimmerDuration = '1000';
+text.dataset.shimmerPause = '1000';
+data.stopTextShimmer();
+data.setupTextShimmer();
+JS));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  window.__shimmerOffProbeStartedAt ??= Date.now();
+  const elapsed = Date.now() - window.__shimmerOffProbeStartedAt;
+  const text = document.querySelector('[data-athkar-slide][data-active="true"] [data-athkar-text]');
+
+  if (!text || elapsed < 160) {
+    return false;
+  }
+
+  return !text.classList.contains('is-shimmering');
+})()
+JS,
+        true,
+    );
+});
+
 it('keeps text scrollable after toggling origin on and back off', function () {
     $page = visit('/');
 
@@ -1958,6 +1988,58 @@ it('exposes all athkar for the active mode and navigates when switching is allow
     $lastIndex = $page->script(athkarReaderDataScript('data.activeList.length - 1'));
 
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), $lastIndex);
+});
+
+it('keeps only a small render window of slide content mounted', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    setAthkarSettings($page, [
+        'does_prevent_switching_athkar_until_completion' => false,
+    ]);
+    waitForAthkarSettings($page, [
+        'does_prevent_switching_athkar_until_completion' => false,
+    ]);
+
+    waitForScript($page, athkarReaderDataScript('data.activeList.length >= 5'), true);
+
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 3',
+        true,
+    );
+    $mountedAtStart = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    $middleIndex = (int) $page->script(athkarReaderDataScript('Math.floor(data.activeList.length / 2)'));
+    $page->script(athkarReaderCommandScript("data.setActiveIndex({$middleIndex});"));
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $middleIndex);
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 3',
+        true,
+    );
+    $mountedAtMiddle = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    $lastIndex = (int) $page->script(athkarReaderDataScript('data.activeList.length - 1'));
+    $page->script(athkarReaderCommandScript('data.setActiveIndex(data.activeList.length - 1);'));
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $lastIndex);
+    waitForScript(
+        $page,
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length <= 2',
+        true,
+    );
+    $mountedAtEnd = $page->script(
+        'document.querySelectorAll("[data-athkar-slide] [data-athkar-text-box]").length',
+    );
+
+    expect($mountedAtStart)->toBeLessThanOrEqual(2)
+        ->and($mountedAtMiddle)->toBeLessThanOrEqual(3)
+        ->and($mountedAtEnd)->toBeLessThanOrEqual(2);
 });
 
 it('shows the congrats panel briefly then returns to the gate when setting 4 is disabled', function () {

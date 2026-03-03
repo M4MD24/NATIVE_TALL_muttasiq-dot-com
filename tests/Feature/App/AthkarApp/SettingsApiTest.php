@@ -26,6 +26,7 @@ it('returns current settings and main text size limits', function () {
     expect($settings)
         ->toBeArray()
         ->toHaveKey('does_skip_notice_panels', true)
+        ->toHaveKey(Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING, true)
         ->toHaveKey('minimum_main_text_size')
         ->toHaveKey('maximum_main_text_size');
 
@@ -59,6 +60,21 @@ it('returns normalized settings from the database', function () {
 
     expect($response->json('settings.minimum_main_text_size'))->toBe(18);
     expect($response->json('settings.maximum_main_text_size'))->toBe(20);
+});
+
+it('returns persisted shimmer setting from the database', function () {
+    RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
+
+    Setting::query()->updateOrCreate(
+        ['name' => Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING],
+        ['value' => 0],
+    );
+
+    $response = getJson(route('api.settings.index'));
+
+    $response->assertSuccessful();
+
+    expect($response->json('settings.'.Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING))->toBeFalse();
 });
 
 it('rate limits the settings endpoint', function () {

@@ -12,6 +12,8 @@
 لتجربة التطبيق الآن من أي متصفح:<br>
 https://muttasiq.com
 
+<br>
+
 <img src="public/docs/updates/images/v-0-1-0/web/athkar-app-gate-light.png" alt="The athkar app gate - light mode" height="320"/>
 <br><br>
 <img src="public/docs/updates/images/v-0-1-0/web/athkar-app-reader-light.png" alt="The athkar app reader - light mode" height="320"/>
@@ -25,6 +27,14 @@ https://muttasiq.com
 <img src=".assets/images/screenshots/android/athkar-app-reader-dark.jpg" alt="A notification message showing in athkar app gate - light mode" height="400"/>
 <span>&nbsp;&nbsp;</span>
 <img src=".assets/images/screenshots/android/athkar-app-gate-light-notification.jpg" alt="Athkar app reader - dark mode" height="400"/>
+
+### الآي أو اس
+
+يتم الاختبار الآن من قبل متطوعين...
+
+<br>
+
+(الصور قريبًا إن شاء الله)
 
 
 ## المهام
@@ -256,7 +266,7 @@ Copyright (C) 2026 Muttasiq Contributors.
 
 - [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
 - [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
-- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد).
+- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد), [@AbdelfettahSi](https://t.me/AbdelfettahSi) (أبو خديجة عبد الفتاح), [@almuhanad1](https://t.me/almuhanad1) (المهند النهمي).
 
 ### Assets
 
