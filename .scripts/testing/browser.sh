@@ -94,18 +94,18 @@ run_parallel_command() {
     shift
 
     if command -v timeout >/dev/null 2>&1; then
-        "${run_clean_script}" timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${browser_tests_path}" "$@"
+        "${run_clean_script}" timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
 
         return
     fi
 
     if [[ -x /usr/bin/timeout ]]; then
-        "${run_clean_script}" /usr/bin/timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${browser_tests_path}" "$@"
+        "${run_clean_script}" /usr/bin/timeout 5m php artisan test --compact "${browser_tests_path}" "$@"
 
         return
     fi
 
-    "${run_clean_script}" php artisan test --parallel --processes="${parallel_processes}" "${browser_tests_path}" "$@"
+    "${run_clean_script}" php artisan test --compact "${browser_tests_path}" "$@"
 }
 
 ensure_local_browser_plugin_cache() {
@@ -275,16 +275,16 @@ run_in_container() {
             echo "[testing:${TESTING_SCRIPT_NAME}] mode=docker container=${TESTING_CONTAINER_NAME} cpu=${cpu_cores} processes=${parallel_processes}" >&2
 
             if command -v timeout >/dev/null 2>&1; then
-                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh timeout 5m php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
             if [ -x /usr/bin/timeout ]; then
-                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+                .scripts/testing/support/run-clean.sh /usr/bin/timeout 5m php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
                 exit 0
             fi
 
-            .scripts/testing/support/run-clean.sh php artisan test --parallel --processes="${parallel_processes}" "${BROWSER_TESTS_PATH}" "$@"
+            .scripts/testing/support/run-clean.sh php artisan test --compact "${BROWSER_TESTS_PATH}" "$@"
         ' sh "$@"
 }
 

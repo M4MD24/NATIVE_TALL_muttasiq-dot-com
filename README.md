@@ -195,6 +195,7 @@ https://muttasiq.com
 1. Use and maintain the root-directory bash scripts to run and watch all available platform applications.
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
+   - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI, I think, since it’s ephemeral).
 4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/mobile/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
 
 ### Setup
