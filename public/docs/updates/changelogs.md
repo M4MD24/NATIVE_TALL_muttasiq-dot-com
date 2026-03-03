@@ -1,5 +1,17 @@
 <div align="right">
 
+## [v1.1.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/62)
+
+### المحرك
+
+- **تحسين أداء قارئ الأذكار بشكل استثنائي، ولله الحمد**
+- **إمكانية التبليغ عن الأخطاء حين حدوثها**، مع نص مساعد اختياري، لكي تساعدنا على حلها بشكل أسرع، بإذن الله
+- إصلاح بعض الأخطاء، متضمنًا ذلك الخطأ الذي يسبب إعادة تشغيل التطبيق في بعض الحالات النادرة
+- لا زال يتم اختبار تصدير التطبيق إلى المتجر الرسميّ لمنصتيّ أندرويد وآي او اس من قبل بعض المتطوعين...
+
+<img src="images/v-1-1-0/web/js-error-reporting.png" alt="JS errors reporting modal fields" height="320"/>
+
+
 ## [v1.0.0](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/pull/62)
 
 ### المحرك

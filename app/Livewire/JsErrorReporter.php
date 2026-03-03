@@ -67,7 +67,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
     {
         return Action::make('reportJsError')
             ->modalHeading('حدث خلل غير متوقع في التطبيق')
-            ->modalDescription('من فضلك اكتب وصفًا بسيطًا لما حصل قبل المشكلة لنتمكن من تتبع السبب بشكل أسرع...')
+            ->modalDescription('من فضلك اكتب وصفًا لما حصل قبل المشكلة لنتمكن من تتبع السبب بشكل أسرع...')
             ->modalAutofocus(false)
             ->modalWidth(Width::ThreeExtraLarge)
             ->modalSubmitActionLabel('إرسال البلاغ')
@@ -90,11 +90,11 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                     ->maxLength(1500)
                     ->rows(4)
                     ->trim()
-                    ->helperText('الوصف البسيط يفيدنا أكثر من التفاصيل التقنية.'),
+                    ->helperText('الوصف يفيدنا أكثر من التفاصيل التقنية المرفقة تلقائيا'),
 
                 \Filament\Forms\Components\Textarea::make('technical_snapshot')
                     ->label('تفاصيل تقنية مرفقة')
-                    ->rows(10)
+                    ->rows(5)
                     ->disabled()
                     ->dehydrated(false)
                     ->extraInputAttributes([
