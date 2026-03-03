@@ -37,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureNativeIosUrlGeneration();
 
         $this->rateLimitSettings();
+        $this->rateLimitJsErrorReports();
     }
 
     private function disableViteHotFileWhenUnavailable(): void
@@ -106,6 +107,16 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('settings', function (Request $request): Limit {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+    }
+
+    private function rateLimitJsErrorReports(): void
+    {
+        RateLimiter::for('js-error-reports', function (Request $request): Limit {
+            $clientFingerprint = trim((string) $request->input('context.user_agent', ''));
+            $throttleKey = hash('sha256', $request->ip().'|'.$clientFingerprint);
+
+            return Limit::perMinute(12)->by($throttleKey);
         });
     }
 }

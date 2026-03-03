@@ -1,0 +1,316 @@
+<script>
+    (function() {
+        const isMobileRuntime = @js(is_platform('mobile'));
+        const storageKey = 'jsErrorLog';
+        const maxEntries = 30;
+        const openCooldownInMs = 650;
+        const maxMessageLength = 1000;
+        const maxSourceLength = 2048;
+        const maxStackLength = 12000;
+        const maxTimeLength = 50;
+        let lastOpenedAt = 0;
+        let isModalOpen = false;
+        let hasTriggeredReload = false;
+        const successfulSubmissionFlag = 'jsErrorReportSubmitted';
+        window.__jsErrorReportingInProgress = false;
+        const isReportingDisabled = () => {
+            return Boolean(window.__disableJsErrorReporting) ||
+                document.documentElement?.dataset?.disableJsErrorReporting === 'true';
+        };
+
+        const loadEntries = () => {
+            try {
+                return JSON.parse(localStorage.getItem(storageKey)) || [];
+            } catch (error) {
+                return [];
+            }
+        };
+
+        const saveEntries = (entries) => {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(entries.slice(-maxEntries)));
+            } catch (error) {}
+        };
+
+        const trimTo = (value, maxLength) => {
+            if (typeof value !== 'string') {
+                return null;
+            }
+
+            const trimmed = value.trim();
+            if (trimmed === '') {
+                return null;
+            }
+
+            return trimmed.slice(0, maxLength);
+        };
+
+        const extensionSchemePattern = /^(chrome-extension|moz-extension|safari-web-extension):\/\//i;
+        const knownNoiseMessagePatterns = [
+            /^ResizeObserver loop limit exceeded$/i,
+            /^ResizeObserver loop completed with undelivered notifications$/i,
+            /unchecked runtime\.lastError/i,
+            /The message port closed before a response was received/i,
+        ];
+        const externalOnlyNoiseMessagePatterns = [
+            /^Script error\.?$/i,
+            /^Non-Error promise rejection captured/i,
+        ];
+
+        const isLikelyExtensionTrace = (value) => {
+            const text = trimTo(value, maxStackLength);
+            if (!text) {
+                return false;
+            }
+
+            return extensionSchemePattern.test(text) || text.includes('extensions::');
+        };
+
+        const isLikelyBrowserNoise = (message) => {
+            const normalizedMessage = trimTo(message, maxMessageLength);
+            if (!normalizedMessage) {
+                return false;
+            }
+
+            return knownNoiseMessagePatterns.some((pattern) => pattern.test(normalizedMessage));
+        };
+
+        const isLikelyExternalOnlyNoise = (message) => {
+            const normalizedMessage = trimTo(message, maxMessageLength);
+            if (!normalizedMessage) {
+                return false;
+            }
+
+            return externalOnlyNoiseMessagePatterns.some((pattern) => pattern.test(normalizedMessage));
+        };
+
+        const isSameOriginSource = (source) => {
+            const normalizedSource = trimTo(source, maxSourceLength);
+            if (!normalizedSource) {
+                return false;
+            }
+
+            if (
+                normalizedSource.startsWith('/') ||
+                normalizedSource.startsWith('./') ||
+                normalizedSource.startsWith('../')
+            ) {
+                return true;
+            }
+
+            try {
+                const sourceUrl = new URL(normalizedSource, window.location.href);
+                return sourceUrl.origin === window.location.origin;
+            } catch (error) {
+                return false;
+            }
+        };
+
+        const isLikelyAppOwnedStack = (stack) => {
+            const normalizedStack = trimTo(stack, maxStackLength);
+            if (!normalizedStack) {
+                return false;
+            }
+
+            return (
+                normalizedStack.includes(window.location.origin) ||
+                normalizedStack.includes('/build/') ||
+                normalizedStack.includes('/livewire')
+            );
+        };
+
+        const shouldIgnoreEntry = (entry) => {
+            if (isMobileRuntime) {
+                return false;
+            }
+
+            const sameOriginSource = isSameOriginSource(entry.source);
+            const hasAppOwnedStack = isLikelyAppOwnedStack(entry.stack);
+            const hasAppSignal = sameOriginSource || hasAppOwnedStack;
+
+            if (isLikelyExternalOnlyNoise(entry.message) && !hasAppSignal) {
+                return true;
+            }
+
+            if (extensionSchemePattern.test(entry.source || '') || isLikelyExtensionTrace(entry.stack)) {
+                return true;
+            }
+
+            if (entry.source && !sameOriginSource) {
+                return true;
+            }
+
+            if (isLikelyBrowserNoise(entry.message) && !hasAppSignal) {
+                return true;
+            }
+
+            if (!entry.source && !hasAppOwnedStack) {
+                return true;
+            }
+
+            return false;
+        };
+
+        const normalizeEntry = (entry) => {
+            if (!entry || typeof entry !== 'object') {
+                return null;
+            }
+
+            const normalized = {
+                type: trimTo(entry.type, 20) || 'error',
+                time: trimTo(entry.time, maxTimeLength) || new Date().toISOString(),
+                message: trimTo(entry.message, maxMessageLength) || 'Unknown error',
+                source: trimTo(entry.source, maxSourceLength),
+                line: Number.isFinite(Number(entry.line)) ? Math.max(0, Number(entry.line)) : null,
+                column: Number.isFinite(Number(entry.column)) ? Math.max(0, Number(entry.column)) : null,
+                stack: trimTo(entry.stack, maxStackLength),
+            };
+
+            return normalized;
+        };
+
+        const collectContext = () => {
+            return {
+                url: trimTo(window.location?.href ?? null, 2048),
+                user_agent: trimTo(window.navigator?.userAgent ?? null, 1000),
+                language: trimTo(window.navigator?.language ?? null, 32),
+                platform: trimTo(window.navigator?.platform ?? null, 32),
+            };
+        };
+
+        const dispatchModal = () => {
+            if (isReportingDisabled()) {
+                return;
+            }
+
+            if (isModalOpen) {
+                return;
+            }
+
+            const entries = loadEntries();
+            if (entries.length === 0) {
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastOpenedAt < openCooldownInMs) {
+                return;
+            }
+
+            lastOpenedAt = now;
+
+            window.dispatchEvent(
+                new CustomEvent('open-js-error-report-modal', {
+                    detail: {
+                        errors: entries,
+                        context: collectContext(),
+                    },
+                }),
+            );
+        };
+
+        const addEntry = (entry) => {
+            if (isReportingDisabled()) {
+                return;
+            }
+
+            const normalizedEntry = normalizeEntry(entry);
+            if (!normalizedEntry) {
+                return;
+            }
+
+            if (shouldIgnoreEntry(normalizedEntry)) {
+                return;
+            }
+
+            const entries = loadEntries();
+            entries.push(normalizedEntry);
+            saveEntries(entries);
+            window.__jsErrorReportingInProgress = true;
+            queueMicrotask(dispatchModal);
+        };
+
+        const fastTransitionDurationInMs = () => {
+            return (
+                window.Alpine?.$data?.(document.body)?.fastTransitionDurationInMs ??
+                250
+            );
+        };
+
+        const reloadApplicationWithBlink = () => {
+            if (hasTriggeredReload) {
+                return;
+            }
+
+            hasTriggeredReload = true;
+            window.dispatch('livewire-session-timed-out');
+
+            setTimeout(() => {
+                window.location.reload();
+            }, fastTransitionDurationInMs());
+        };
+
+        window.addEventListener('error', (event) => {
+            addEntry({
+                type: 'error',
+                time: new Date().toISOString(),
+                message: event.message,
+                source: event.filename,
+                line: event.lineno,
+                column: event.colno,
+                stack: event.error ? event.error.stack : null,
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason;
+            addEntry({
+                type: 'promise',
+                time: new Date().toISOString(),
+                message: reason && reason.message ? reason.message : String(reason),
+                source: null,
+                line: null,
+                column: null,
+                stack: reason && reason.stack ? reason.stack : null,
+            });
+        });
+
+        window.addEventListener('js-error-report-submitted', () => {
+            saveEntries([]);
+            window.__jsErrorReportingInProgress = false;
+
+            try {
+                sessionStorage.setItem(successfulSubmissionFlag, '1');
+            } catch (error) {}
+        });
+        window.addEventListener('js-error-report-modal-opened', () => {
+            isModalOpen = true;
+            saveEntries([]);
+            window.__jsErrorReportingInProgress = true;
+        });
+        window.addEventListener('js-error-report-modal-closed', () => {
+            isModalOpen = false;
+            saveEntries([]);
+            window.__jsErrorReportingInProgress = false;
+            reloadApplicationWithBlink();
+        });
+
+        document.addEventListener('livewire:init', () => {
+            try {
+                if (sessionStorage.getItem(successfulSubmissionFlag) === '1') {
+                    sessionStorage.removeItem(successfulSubmissionFlag);
+
+                    queueMicrotask(() => {
+                        if (window.Livewire?.dispatchTo) {
+                            window.Livewire.dispatchTo('js-error-reporter', 'show-submitted-toast');
+                        }
+                    });
+                }
+            } catch (error) {}
+
+            if (!isReportingDisabled() && loadEntries().length > 0) {
+                dispatchModal();
+            }
+        });
+    })();
+</script>

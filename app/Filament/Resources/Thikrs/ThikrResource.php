@@ -22,13 +22,15 @@ class ThikrResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $slug = 'athkar';
+
     protected static ?string $navigationLabel = 'الأذكار';
 
     protected static ?string $pluralModelLabel = 'أذكار';
 
     protected static ?string $modelLabel = 'ذكر';
-
-    protected static ?string $slug = 'athkar';
 
     public static function form(Schema $schema): Schema
     {

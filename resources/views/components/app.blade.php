@@ -3,6 +3,8 @@
     x-data
     lang="ar"
     dir="rtl"
+    @if (app()->environment('testing')) data-disable-js-error-reporting="true"
+        data-disable-livewire-session-reload="true" @endif
 >
 
 <head>
@@ -36,11 +38,6 @@
 
     <!-- Head Scripts --> {{-- ! Loads only once --}}
     @vite('resources/js/app.js')
-    @if (app()->isLocal())
-        @if (is_platform('mobile'))
-            @include('partials.scripts.js-errors-mobile-overlay')
-        @endif
-    @endif
     @stack('head-scripts')
 </head>
 

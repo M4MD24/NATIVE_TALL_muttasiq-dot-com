@@ -1,8 +1,31 @@
 document.addEventListener('livewire:init', () => {
+    if (document.documentElement?.dataset?.disableLivewireSessionReload === 'true') {
+        return;
+    }
+
+    const hasPendingJsErrorReport = () => {
+        if (window.__jsErrorReportingInProgress === true) {
+            return true;
+        }
+
+        try {
+            const entries = JSON.parse(localStorage.getItem('jsErrorLog') ?? '[]');
+
+            return Array.isArray(entries) && entries.length > 0;
+        } catch (error) {
+            return false;
+        }
+    };
+
     window.Livewire.hook('request', ({ fail }) => {
         fail(({ status, preventDefault }) => {
             if (status === 419) {
                 preventDefault();
+
+                if (hasPendingJsErrorReport()) {
+                    return;
+                }
+
                 window.dispatch('livewire-session-timed-out');
                 setTimeout(
                     () => window.location.reload(),

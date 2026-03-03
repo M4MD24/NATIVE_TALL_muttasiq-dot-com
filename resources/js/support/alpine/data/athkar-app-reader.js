@@ -1830,7 +1830,9 @@ document.addEventListener('alpine:init', () => {
             );
         },
         dispatchFittyRefit(targets = null) {
-            const activeTargets = Array.isArray(targets) ? targets : this.resolveActiveFittyTargets();
+            const activeTargets = Array.isArray(targets)
+                ? targets
+                : this.resolveActiveFittyTargets();
 
             window.dispatchEvent(
                 new CustomEvent('athkar-fitty-refit', {

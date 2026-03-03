@@ -23,6 +23,8 @@ class ManageSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    protected static ?int $navigationSort = 99;
+
     protected static ?string $title = 'إعدادات التطبيق الافتراضية';
 
     protected static ?string $slug = 'iedadat-iftiradiyya';
