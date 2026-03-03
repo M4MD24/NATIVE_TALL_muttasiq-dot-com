@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Setting extends Model
 {
+    public const APP_VERSION = 'app_version';
+
     public const GROUP_GENERAL = 'general';
 
     public const GROUP_ATHKAR = 'athkar';
@@ -207,5 +210,39 @@ class Setting extends Model
         $normalized[self::MAXIMUM_MAIN_TEXT_SIZE] = max($maximumMainTextSize, $minimumMainTextSize);
 
         return $normalized;
+    }
+
+    public static function appVersion(): string
+    {
+        $stored = self::query()
+            ->where('name', self::APP_VERSION)
+            ->value('value_text');
+
+        if (is_string($stored) && trim($stored) !== '') {
+            return trim($stored);
+        }
+
+        $fallback = (string) config('app.custom.app_version', '');
+
+        if (trim($fallback) !== '') {
+            return trim($fallback);
+        }
+
+        return trim((string) config('nativephp.version', ''));
+    }
+
+    public static function setAppVersion(?string $version): void
+    {
+        $normalized = is_string($version) ? trim($version) : '';
+        $normalized = $normalized !== '' ? Str::of($normalized)->limit(32, '')->toString() : '';
+        $valueText = $normalized === '' ? null : $normalized;
+
+        self::query()->updateOrCreate(
+            ['name' => self::APP_VERSION],
+            [
+                'value' => 0,
+                'value_text' => $valueText,
+            ],
+        );
     }
 }

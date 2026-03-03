@@ -118,6 +118,7 @@
         ],
         "green": [
             "@optimize",
+            "@php artisan app:verify-release-version",
             "@lint",
             "@testall"
         ],

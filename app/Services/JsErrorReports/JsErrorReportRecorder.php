@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\JsErrorReports;
 
 use App\Models\JsErrorReport;
+use App\Models\Setting;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -62,7 +63,7 @@ class JsErrorReportRecorder
             'user_agent' => $this->sanitizeString($context['user_agent'] ?? $request->userAgent(), 1000),
             'client_language' => $this->sanitizeString($context['language'] ?? null, 32),
             'runtime_platform' => $this->sanitizeString($context['platform'] ?? null, 32),
-            'app_version' => $this->sanitizeString((string) config('app.custom.app_version', ''), 32),
+            'app_version' => $this->sanitizeString(Setting::appVersion(), 32),
             'ip_address' => $this->sanitizeString($request->ip(), 45),
             'first_occurred_at' => $firstOccurredAt,
             'last_occurred_at' => $lastOccurredAt,

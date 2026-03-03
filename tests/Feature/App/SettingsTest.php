@@ -34,6 +34,19 @@ it('does not persist settings changes globally', function () {
     expect($updatedSettings)->toBe($initialSettings);
 });
 
+it('resolves the app version from stored settings when available', function () {
+    Setting::setAppVersion('2.0.0');
+
+    expect(Setting::appVersion())->toBe('2.0.0');
+});
+
+it('falls back to config when no app version setting is stored', function () {
+    Setting::query()->where('name', Setting::APP_VERSION)->delete();
+    config(['app.custom.app_version' => '9.9.9']);
+
+    expect(Setting::appVersion())->toBe('9.9.9');
+});
+
 it('normalizes the main text size range in the settings modal', function () {
     livewire(ControlPanel::class)
         ->callAction('controlPanel', data: [
