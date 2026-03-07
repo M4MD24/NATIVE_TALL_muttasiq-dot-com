@@ -233,6 +233,11 @@ it('persists athkar counts, overcounts, and restores the reader on reload', func
     scriptClick($page, '[data-athkar-slide][data-active="true"] [data-athkar-tap]');
 
     waitForScript($page, athkarReaderDataScript('data.countAt(data.activeIndex)'), 2);
+    waitForScript(
+        $page,
+        'JSON.parse(localStorage.getItem("athkar-progress-v1"))?.sabah?.counts?.['.$singleIndex.'] ?? null',
+        2,
+    );
 
     $progress = $page->script('JSON.parse(localStorage.getItem("athkar-progress-v1"))');
 

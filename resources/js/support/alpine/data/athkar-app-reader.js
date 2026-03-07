@@ -14,6 +14,49 @@ import {
 import { createAthkarShimmerController } from '../athkar-shimmer';
 
 const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
+const progressStorageKey = 'athkar-progress-v1';
+
+const defaultProgressState = () => ({
+    sabah: { index: 0, counts: [], ids: [], activeId: null },
+    masaa: { index: 0, counts: [], ids: [], activeId: null },
+});
+
+const readProgressFromStorage = () => {
+    if (typeof localStorage === 'undefined') {
+        return defaultProgressState();
+    }
+
+    try {
+        const parsed = JSON.parse(localStorage.getItem(progressStorageKey) ?? 'null');
+
+        if (!parsed || typeof parsed !== 'object') {
+            return defaultProgressState();
+        }
+
+        return {
+            sabah:
+                parsed.sabah && typeof parsed.sabah === 'object'
+                    ? {
+                          index: Number(parsed.sabah.index ?? 0),
+                          counts: Array.isArray(parsed.sabah.counts) ? parsed.sabah.counts : [],
+                          ids: Array.isArray(parsed.sabah.ids) ? parsed.sabah.ids : [],
+                          activeId: parsed.sabah.activeId ?? null,
+                      }
+                    : { index: 0, counts: [], ids: [], activeId: null },
+            masaa:
+                parsed.masaa && typeof parsed.masaa === 'object'
+                    ? {
+                          index: Number(parsed.masaa.index ?? 0),
+                          counts: Array.isArray(parsed.masaa.counts) ? parsed.masaa.counts : [],
+                          ids: Array.isArray(parsed.masaa.ids) ? parsed.masaa.ids : [],
+                          activeId: parsed.masaa.activeId ?? null,
+                      }
+                    : { index: 0, counts: [], ids: [], activeId: null },
+        };
+    } catch (_) {
+        return defaultProgressState();
+    }
+};
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('athkarAppReader', (config) => ({
@@ -101,6 +144,23 @@ document.addEventListener('alpine:init', () => {
             raf: null,
             settleTimer: null,
         },
+        maintenance: {
+            tapInterval: 10,
+            minimumRequiredCount: 80,
+            sequentialTapCount: 0,
+            mode: null,
+            index: null,
+        },
+        rapidTap: {
+            isActive: false,
+            lastTapAt: 0,
+            burstCount: 0,
+            windowMs: 220,
+            threshold: 7,
+            holdMs: 900,
+            minimumRequiredCount: 40,
+            releaseTimer: null,
+        },
         textShimmerController: null,
         isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
         hintIndex: null,
@@ -116,15 +176,33 @@ document.addEventListener('alpine:init', () => {
         textFitSettleMs: 96,
         renderWindowRadius: 1,
         _letterCountCache: new Map(),
-        _totalRequiredLettersKey: null,
-        _totalRequiredLettersValue: 0,
+        _activeListCache: {
+            mode: null,
+            athkarVersion: -1,
+            list: [],
+        },
+        _modeListCache: {
+            sabah: { athkarVersion: -1, list: [] },
+            masaa: { athkarVersion: -1, list: [] },
+        },
+        _progressStatsCache: {
+            key: null,
+            value: null,
+        },
+        _navGradientCache: {
+            key: null,
+            value: null,
+        },
+        _progressRevision: 0,
+        _completionRevision: 0,
+        _modeMetrics: {
+            sabah: null,
+            masaa: null,
+        },
         _athkarVersion: 0,
         _persistTimer: null,
         lastSeenDay: window.Alpine.$persist(null).as('athkar-last-day'),
-        progress: window.Alpine.$persist({
-            sabah: { index: 0, counts: [], ids: [], activeId: null },
-            masaa: { index: 0, counts: [], ids: [], activeId: null },
-        }).as('athkar-progress-v1'),
+        progress: defaultProgressState(),
         completedOn: window.Alpine.$persist({
             sabah: null,
             masaa: null,
@@ -144,6 +222,7 @@ document.addEventListener('alpine:init', () => {
             window.athkarMainTextSizeLimits = this.mainTextSizeLimits;
             migrateSettingsOverrides(this.settingsDefaults);
             this.settings = resolveEffectiveSettings(this.settingsDefaults);
+            this.progress = readProgressFromStorage();
             this.ensureState();
             this.refreshCompletionInputMode();
             this.applyAthkarOverrides(this.athkarOverrides, { persist: true });
@@ -242,6 +321,8 @@ document.addEventListener('alpine:init', () => {
                     clearTimeout(this._persistTimer);
                     this._flushProgress();
                 }
+
+                this.clearRapidTapReleaseTimer();
             });
 
             this.setupTextFit();
@@ -250,10 +331,14 @@ document.addEventListener('alpine:init', () => {
                 resolveIsOriginVisible: () => this.isOriginVisible(this.activeIndex),
             });
             this.$watch('activeMode', () => {
+                this.resetMaintenanceTapTracking();
+                this.resetRapidTapMode();
                 this.hideOrigin();
                 this.queueTextFit();
             });
             this.$watch('activeIndex', () => {
+                this.resetMaintenanceTapTracking();
+                this.resetRapidTapMode();
                 this.closeHint();
                 this.hideOrigin();
                 this.queueTextFit();
@@ -286,7 +371,7 @@ document.addEventListener('alpine:init', () => {
         syncAthkarWithOverrides() {
             this.athkar = resolveAthkarWithOverrides(this.defaultAthkar, this.athkarOverrides);
             this._athkarVersion++;
-            this._totalRequiredLettersKey = null;
+            this.invalidateModeMetrics();
 
             if (!this.progress || typeof this.progress !== 'object') {
                 return;
@@ -308,17 +393,25 @@ document.addEventListener('alpine:init', () => {
             this.resumeModeIndex();
             this.$nextTick(() => this.queueReaderTextFit());
         },
-        applySettings(nextSettings) {
+        applySettings(nextSettings, options = {}) {
             if (!nextSettings || typeof nextSettings !== 'object') {
                 return;
             }
 
-            Object.keys(nextSettings).forEach((key) => {
-                writeUserSettingOverride(key, nextSettings[key]);
-            });
+            const isMaintenancePulse = Boolean(options?.maintenancePulse);
+            const previousSettings =
+                this.settings && typeof this.settings === 'object' ? { ...this.settings } : {};
+
+            if (!isMaintenancePulse) {
+                Object.keys(nextSettings).forEach((key) => {
+                    writeUserSettingOverride(key, nextSettings[key]);
+                });
+            }
 
             this.settings = resolveEffectiveSettings(this.settingsDefaults);
-            writeAthkarSettingsToStorage(this.settings, this.settingsDefaults);
+            if (!isMaintenancePulse) {
+                writeAthkarSettingsToStorage(this.settings, this.settingsDefaults);
+            }
 
             this.ensureProgress('sabah');
             this.ensureProgress('masaa');
@@ -359,6 +452,18 @@ document.addEventListener('alpine:init', () => {
 
             if (!this.shouldEnableMainTextShimmering()) {
                 this.stopTextShimmer();
+            }
+
+            const didTextFitSettingsChange =
+                Number(previousSettings.minimum_main_text_size ?? NaN) !==
+                    Number(this.settings.minimum_main_text_size ?? NaN) ||
+                Number(previousSettings.maximum_main_text_size ?? NaN) !==
+                    Number(this.settings.maximum_main_text_size ?? NaN) ||
+                Boolean(previousSettings[doesEnableMainTextShimmeringKey]) !==
+                    Boolean(this.settings[doesEnableMainTextShimmeringKey]);
+
+            if (isMaintenancePulse && !didTextFitSettingsChange) {
+                return;
             }
 
             this.queueTextFit();
@@ -410,6 +515,7 @@ document.addEventListener('alpine:init', () => {
             );
             this.progress[this.activeMode].ids = this.activeList.map((item) => item?.id ?? null);
             this.progress[this.activeMode].activeId = this.activeList[this.activeIndex]?.id ?? null;
+            this.invalidateModeMetrics(this.activeMode);
             this.persistProgress();
             const nextTotal = this.totalCompletedCount;
             this.triggerTotalPulse(previousTotal, nextTotal);
@@ -476,7 +582,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             try {
-                localStorage.setItem('athkar-progress-v1', JSON.stringify(this.progress));
+                localStorage.setItem(progressStorageKey, JSON.stringify(this.progress));
             } catch (_) {
                 //
             }
@@ -516,7 +622,7 @@ document.addEventListener('alpine:init', () => {
             return this.athkar.filter((item) => item.time === 'shared' || item.time === mode);
         },
         resetProgress(mode) {
-            const list = this.athkarFor(mode);
+            const list = this.getModeList(mode);
             const listIds = list.map((item) => item?.id ?? null);
 
             this.progress[mode] = {
@@ -525,6 +631,7 @@ document.addEventListener('alpine:init', () => {
                 ids: listIds,
                 activeId: listIds[0] ?? null,
             };
+            this.invalidateModeMetrics(mode);
             this.persistProgress();
         },
         ensureProgress(mode) {
@@ -608,6 +715,7 @@ document.addEventListener('alpine:init', () => {
                     ...this.progress[mode],
                 },
             };
+            this.invalidateModeMetrics(mode);
             this.persistProgress();
         },
         isModeLocked(mode) {
@@ -780,6 +888,8 @@ document.addEventListener('alpine:init', () => {
         },
         softCloseMode() {
             this.isNoticeVisible = false;
+            this.resetMaintenanceTapTracking();
+            this.resetRapidTapMode();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
             this.stopTextShimmer();
@@ -806,6 +916,8 @@ document.addEventListener('alpine:init', () => {
             this.isNoticeVisible = false;
             this.activeMode = null;
             this.transitionMode = lastMode;
+            this.resetMaintenanceTapTracking();
+            this.resetRapidTapMode();
             this.stopTextShimmer();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
@@ -1014,6 +1126,239 @@ document.addEventListener('alpine:init', () => {
 
             return Number.isFinite(distance) && distance <= this.renderWindowRadius;
         },
+        getModeList(mode) {
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return [];
+            }
+
+            const cache = this._modeListCache[mode];
+
+            if (cache.athkarVersion === this._athkarVersion) {
+                return cache.list;
+            }
+
+            const list = this.athkarFor(mode);
+            cache.athkarVersion = this._athkarVersion;
+            cache.list = list;
+
+            return list;
+        },
+        markProgressDirty({ completionChanged = false } = {}) {
+            this._progressRevision += 1;
+            this._progressStatsCache.key = null;
+            this._progressStatsCache.value = null;
+
+            if (completionChanged) {
+                this._completionRevision += 1;
+                this._navGradientCache.key = null;
+                this._navGradientCache.value = null;
+            }
+        },
+        invalidateModeMetrics(mode = null) {
+            if (mode === null) {
+                this._modeMetrics.sabah = null;
+                this._modeMetrics.masaa = null;
+                this.markProgressDirty({ completionChanged: true });
+
+                return;
+            }
+
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return;
+            }
+
+            this._modeMetrics[mode] = null;
+            this.markProgressDirty({ completionChanged: true });
+        },
+        ensureModeMetrics(mode) {
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return null;
+            }
+
+            if (this._modeMetrics[mode]) {
+                return this._modeMetrics[mode];
+            }
+
+            const list = this.athkarFor(mode);
+            const counts = Array.isArray(this.progress?.[mode]?.counts)
+                ? this.progress[mode].counts
+                : [];
+            let totalRequiredCount = 0;
+            let totalCompletedCount = 0;
+            let totalRequiredLetters = 0;
+            let totalCompletedLetters = 0;
+            let firstIncomplete = -1;
+
+            list.forEach((item, index) => {
+                const requiredCountSeed = Number(item?.count ?? 1);
+                const completedCountSeed = Number(counts[index] ?? 0);
+                const requiredCount =
+                    Number.isFinite(requiredCountSeed) && requiredCountSeed > 0 ? requiredCountSeed : 0;
+                const completedCount =
+                    Number.isFinite(completedCountSeed) && completedCountSeed > 0
+                        ? completedCountSeed
+                        : 0;
+
+                totalRequiredCount += requiredCount;
+                totalCompletedCount += completedCount;
+
+                const letters = this._cachedLetterCount(item?.text);
+                totalRequiredLetters += letters * requiredCount;
+                totalCompletedLetters += letters * Math.min(completedCount, requiredCount);
+
+                if (firstIncomplete === -1 && requiredCount > 0 && completedCount < requiredCount) {
+                    firstIncomplete = index;
+                }
+            });
+
+            this._modeMetrics[mode] = {
+                totalRequiredCount,
+                totalCompletedCount,
+                totalRequiredLetters,
+                totalCompletedLetters,
+                firstIncomplete,
+            };
+
+            return this._modeMetrics[mode];
+        },
+        updateModeMetricsForCountChange(mode, index, previousValue, nextValue, requiredCount) {
+            const metrics = this.ensureModeMetrics(mode);
+
+            if (!metrics) {
+                return;
+            }
+
+            const previousCount =
+                Number.isFinite(previousValue) && previousValue > 0 ? previousValue : 0;
+            const nextCount = Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 0;
+            const required =
+                Number.isFinite(requiredCount) && requiredCount > 0 ? requiredCount : 0;
+            const deltaCount = nextCount - previousCount;
+
+            if (deltaCount === 0) {
+                return;
+            }
+
+            metrics.totalCompletedCount += deltaCount;
+
+            const list = this.getModeList(mode);
+            const item = list[index];
+            const letters = this._cachedLetterCount(item?.text);
+            const previousLettersCount = Math.min(previousCount, required);
+            const nextLettersCount = Math.min(nextCount, required);
+
+            metrics.totalCompletedLetters += letters * (nextLettersCount - previousLettersCount);
+
+            const wasIncomplete = previousCount < required;
+            const isIncomplete = nextCount < required;
+
+            if (wasIncomplete && !isIncomplete && metrics.firstIncomplete === index) {
+                const counts = Array.isArray(this.progress?.[mode]?.counts)
+                    ? this.progress[mode].counts
+                    : [];
+                let nextIncomplete = -1;
+
+                for (let cursor = index + 1; cursor < list.length; cursor += 1) {
+                    const requiredSeed = Number(list[cursor]?.count ?? 1);
+                    const requiredAtCursor =
+                        Number.isFinite(requiredSeed) && requiredSeed > 0 ? requiredSeed : 0;
+                    const completedSeed = Number(counts[cursor] ?? 0);
+                    const completedAtCursor =
+                        Number.isFinite(completedSeed) && completedSeed > 0 ? completedSeed : 0;
+
+                    if (requiredAtCursor > 0 && completedAtCursor < requiredAtCursor) {
+                        nextIncomplete = cursor;
+                        break;
+                    }
+                }
+
+                metrics.firstIncomplete = nextIncomplete;
+            } else if (!wasIncomplete && isIncomplete) {
+                if (metrics.firstIncomplete === -1 || index < metrics.firstIncomplete) {
+                    metrics.firstIncomplete = index;
+                }
+            }
+        },
+        resolveProgressStats() {
+            const mode = this.activeMode;
+            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
+
+            if (mode !== 'sabah' && mode !== 'masaa') {
+                return {
+                    totalRequiredCount: 0,
+                    totalCompletedCount: 0,
+                    totalRequiredLetters: 0,
+                    totalCompletedLetters: 0,
+                    totalRemainingLetters: 0,
+                    slideProgressPercent: 0,
+                    maxNavigableIndex: 0,
+                };
+            }
+
+            const metrics = this.ensureModeMetrics(mode);
+            const shouldPreventSwitching = this.shouldPreventSwitching();
+            const cacheKey = `${mode}:${this._athkarVersion}:${this._progressRevision}:${shouldPreventSwitching ? 1 : 0}`;
+
+            if (this._progressStatsCache.key === cacheKey && this._progressStatsCache.value) {
+                return this._progressStatsCache.value;
+            }
+
+            if (!activeList.length) {
+                const emptyStats = {
+                    totalRequiredCount: 0,
+                    totalCompletedCount: 0,
+                    totalRequiredLetters: 0,
+                    totalCompletedLetters: 0,
+                    totalRemainingLetters: 0,
+                    slideProgressPercent: 0,
+                    maxNavigableIndex: 0,
+                };
+
+                this._progressStatsCache.key = cacheKey;
+                this._progressStatsCache.value = emptyStats;
+
+                return emptyStats;
+            }
+
+            const maxNavigableIndex = shouldPreventSwitching
+                ? metrics?.firstIncomplete === -1
+                    ? activeList.length - 1
+                    : (metrics?.firstIncomplete ?? 0)
+                : activeList.length - 1;
+            const totalRequiredCount = metrics?.totalRequiredCount ?? 0;
+            const totalCompletedCount = metrics?.totalCompletedCount ?? 0;
+            const totalRequiredLetters = metrics?.totalRequiredLetters ?? 0;
+            const totalCompletedLetters = metrics?.totalCompletedLetters ?? 0;
+            const totalRemainingLetters = Math.max(totalRequiredLetters - totalCompletedLetters, 0);
+            const slideProgressPercent = totalRequiredLetters
+                ? Math.min(
+                      100,
+                      Math.max(
+                          0,
+                          Math.round(
+                              (Math.min(totalCompletedLetters, totalRequiredLetters) /
+                                  totalRequiredLetters) *
+                                  100,
+                          ),
+                      ),
+                  )
+                : 0;
+
+            const stats = {
+                totalRequiredCount,
+                totalCompletedCount,
+                totalRequiredLetters,
+                totalCompletedLetters,
+                totalRemainingLetters,
+                slideProgressPercent,
+                maxNavigableIndex,
+            };
+
+            this._progressStatsCache.key = cacheKey;
+            this._progressStatsCache.value = stats;
+
+            return stats;
+        },
         get activeList() {
             const mode = this.activeMode;
 
@@ -1021,9 +1366,20 @@ document.addEventListener('alpine:init', () => {
                 return [];
             }
 
-            const athkar = Array.isArray(this.athkar) ? this.athkar : [];
+            if (
+                this._activeListCache.mode === mode &&
+                this._activeListCache.athkarVersion === this._athkarVersion
+            ) {
+                return this._activeListCache.list;
+            }
 
-            return athkar.filter((item) => item?.time === 'shared' || item?.time === mode);
+            const list = this.getModeList(mode);
+
+            this._activeListCache.mode = mode;
+            this._activeListCache.athkarVersion = this._athkarVersion;
+            this._activeListCache.list = list;
+
+            return list;
         },
         get activeIndex() {
             const mode = this.activeMode;
@@ -1041,49 +1397,10 @@ document.addEventListener('alpine:init', () => {
             return Math.trunc(index);
         },
         get totalRequiredCount() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            return activeList.reduce((total, item, index) => {
-                const requiredCount =
-                    typeof this.requiredCount === 'function'
-                        ? Number(this.requiredCount(index))
-                        : Number(item?.count ?? 1);
-
-                if (!Number.isFinite(requiredCount) || requiredCount < 0) {
-                    return total;
-                }
-
-                return total + requiredCount;
-            }, 0);
+            return this.resolveProgressStats().totalRequiredCount;
         },
         get totalCompletedCount() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            const mode = this.activeMode;
-            const counts = Array.isArray(this.progress?.[mode]?.counts)
-                ? this.progress[mode].counts
-                : [];
-
-            return activeList.reduce((total, _, index) => {
-                const completedCount =
-                    typeof this.countAt === 'function'
-                        ? Number(this.countAt(index))
-                        : Number(counts[index] ?? 0);
-
-                if (!Number.isFinite(completedCount) || completedCount < 0) {
-                    return total;
-                }
-
-                return total + completedCount;
-            }, 0);
+            return this.resolveProgressStats().totalCompletedCount;
         },
         textLetterCount(text) {
             const normalized = String(text ?? '');
@@ -1119,141 +1436,19 @@ document.addEventListener('alpine:init', () => {
             return count;
         },
         get totalRequiredLetters() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            const cacheKey = `${this.activeMode}-${this._athkarVersion}`;
-
-            if (this._totalRequiredLettersKey === cacheKey) {
-                return this._totalRequiredLettersValue;
-            }
-
-            const value = activeList.reduce((total, item, index) => {
-                const letters = this._cachedLetterCount(item?.text);
-                const requiredCount = Number(this.requiredCount(index));
-
-                if (!Number.isFinite(requiredCount) || requiredCount < 0) {
-                    return total;
-                }
-
-                return total + letters * requiredCount;
-            }, 0);
-
-            this._totalRequiredLettersKey = cacheKey;
-            this._totalRequiredLettersValue = value;
-
-            return value;
+            return this.resolveProgressStats().totalRequiredLetters;
         },
         get totalCompletedLetters() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            return activeList.reduce((total, item, index) => {
-                const letters = this._cachedLetterCount(item?.text);
-                const requiredCount = Number(this.requiredCount(index));
-                const completedCount = Number(this.countAt(index));
-
-                if (
-                    !Number.isFinite(requiredCount) ||
-                    requiredCount < 0 ||
-                    !Number.isFinite(completedCount) ||
-                    completedCount < 0
-                ) {
-                    return total;
-                }
-
-                const completed = Math.min(completedCount, requiredCount);
-
-                return total + letters * completed;
-            }, 0);
+            return this.resolveProgressStats().totalCompletedLetters;
         },
         get totalRemainingLetters() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            return Math.max(this.totalRequiredLetters - this.totalCompletedLetters, 0);
+            return this.resolveProgressStats().totalRemainingLetters;
         },
         get slideProgressPercent() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-            const totalLetters = this.totalRequiredLetters;
-
-            if (!activeList.length || !totalLetters) {
-                return 0;
-            }
-
-            const completedLetters = Math.min(this.totalCompletedLetters, totalLetters);
-            const percent = Math.round((completedLetters / totalLetters) * 100);
-
-            return Math.min(100, Math.max(0, percent));
+            return this.resolveProgressStats().slideProgressPercent;
         },
         get maxNavigableIndex() {
-            const activeList = Array.isArray(this.activeList) ? this.activeList : [];
-
-            if (!activeList.length) {
-                return 0;
-            }
-
-            const shouldPreventSwitching =
-                typeof this.shouldPreventSwitching === 'function'
-                    ? this.shouldPreventSwitching()
-                    : (() => {
-                          const value =
-                              this.settings?.does_prevent_switching_athkar_until_completion;
-
-                          if (typeof value === 'boolean') {
-                              return value;
-                          }
-
-                          if (value === 1 || value === '1') {
-                              return true;
-                          }
-
-                          if (value === 0 || value === '0') {
-                              return false;
-                          }
-
-                          return true;
-                      })();
-
-            if (shouldPreventSwitching) {
-                const mode = this.activeMode;
-                const counts = Array.isArray(this.progress?.[mode]?.counts)
-                    ? this.progress[mode].counts
-                    : [];
-                const firstIncomplete = activeList.findIndex((item, index) => {
-                    if (typeof this.isItemComplete === 'function') {
-                        return !this.isItemComplete(index);
-                    }
-
-                    const requiredCount = Number(item?.count ?? 1);
-                    const completedCount = Number(counts[index] ?? 0);
-
-                    if (!Number.isFinite(requiredCount) || requiredCount <= 0) {
-                        return false;
-                    }
-
-                    if (!Number.isFinite(completedCount) || completedCount < 0) {
-                        return true;
-                    }
-
-                    return completedCount < requiredCount;
-                });
-
-                if (firstIncomplete !== -1) {
-                    return firstIncomplete;
-                }
-            }
-
-            return activeList.length - 1;
+            return this.resolveProgressStats().maxNavigableIndex;
         },
         settingValue(name, fallback) {
             const value = this.settings?.[name];
@@ -1342,13 +1537,19 @@ document.addEventListener('alpine:init', () => {
                 return 'linear-gradient(90deg, var(--athkar-nav-pending) 0% 100%)';
             }
 
-            const direction = typeof this.navIsRtl === 'function' && this.navIsRtl() ? 270 : 90;
-            const segment = 100 / activeList.length;
             const mode = this.activeMode;
             const counts = Array.isArray(this.progress?.[mode]?.counts)
                 ? this.progress[mode].counts
                 : [];
             const maxNavigableIndex = Number(this.maxNavigableIndex ?? 0);
+            const direction = typeof this.navIsRtl === 'function' && this.navIsRtl() ? 270 : 90;
+            const cacheKey = `${mode}:${this._athkarVersion}:${this._completionRevision}:${maxNavigableIndex}:${direction}`;
+
+            if (this._navGradientCache.key === cacheKey && this._navGradientCache.value) {
+                return this._navGradientCache.value;
+            }
+
+            const segment = 100 / activeList.length;
             const stops = activeList.map((item, index) => {
                 const start = (index * segment).toFixed(4);
                 const end = ((index + 1) * segment).toFixed(4);
@@ -1368,7 +1569,12 @@ document.addEventListener('alpine:init', () => {
                 return `${color} ${start}% ${end}%`;
             });
 
-            return `linear-gradient(${direction}deg, ${stops.join(', ')})`;
+            const gradient = `linear-gradient(${direction}deg, ${stops.join(', ')})`;
+
+            this._navGradientCache.key = cacheKey;
+            this._navGradientCache.value = gradient;
+
+            return gradient;
         },
         resetNavState() {
             this.nav.isActive = false;
@@ -1501,6 +1707,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            this.resetMaintenanceTapTracking();
             const previousPage = currentIndex + 1;
             this.progress[this.activeMode].index = nextIndex;
             this.progress[this.activeMode].activeId = this.activeList[nextIndex]?.id ?? null;
@@ -1574,8 +1781,25 @@ document.addEventListener('alpine:init', () => {
             const maxCount = this.requiredCount(index);
             const sanitized = Number.isFinite(value) ? Math.max(0, value) : 0;
             const nextValue = allowOvercount ? sanitized : Math.min(sanitized, maxCount);
+            const previousValue = Number(this.progress[this.activeMode].counts[index] ?? 0);
+
+            if (nextValue === previousValue) {
+                return;
+            }
 
             this.progress[this.activeMode].counts[index] = nextValue;
+            this.updateModeMetricsForCountChange(
+                this.activeMode,
+                index,
+                previousValue,
+                nextValue,
+                maxCount,
+            );
+            this.markProgressDirty({
+                completionChanged:
+                    (previousValue < maxCount && nextValue >= maxCount) ||
+                    (previousValue >= maxCount && nextValue < maxCount),
+            });
             this.persistProgress();
         },
         isItemComplete(index) {
@@ -1607,6 +1831,93 @@ document.addEventListener('alpine:init', () => {
 
             return !autoSwitch || wasComplete;
         },
+        resetMaintenanceTapTracking() {
+            this.maintenance.sequentialTapCount = 0;
+            this.maintenance.mode = null;
+            this.maintenance.index = null;
+        },
+        clearRapidTapReleaseTimer() {
+            if (this.rapidTap.releaseTimer !== null) {
+                clearTimeout(this.rapidTap.releaseTimer);
+                this.rapidTap.releaseTimer = null;
+            }
+        },
+        resetRapidTapMode() {
+            const wasRapidTapMode = this.rapidTap.isActive;
+
+            this.clearRapidTapReleaseTimer();
+            this.rapidTap.isActive = false;
+            this.rapidTap.lastTapAt = 0;
+            this.rapidTap.burstCount = 0;
+
+            if (wasRapidTapMode) {
+                this.$nextTick(() => this.setupTextShimmer(null, { immediate: false }));
+            }
+        },
+        shouldUseRapidTapSafeMode(requiredCount) {
+            return this.rapidTap.isActive && requiredCount >= this.rapidTap.minimumRequiredCount;
+        },
+        trackRapidTapBurst(requiredCount) {
+            if (requiredCount < this.rapidTap.minimumRequiredCount) {
+                this.resetRapidTapMode();
+
+                return;
+            }
+
+            const now = performance.now();
+            const elapsed = now - this.rapidTap.lastTapAt;
+
+            if (elapsed > 0 && elapsed <= this.rapidTap.windowMs) {
+                this.rapidTap.burstCount += 1;
+            } else {
+                this.rapidTap.burstCount = 1;
+            }
+
+            this.rapidTap.lastTapAt = now;
+
+            if (!this.rapidTap.isActive && this.rapidTap.burstCount >= this.rapidTap.threshold) {
+                this.rapidTap.isActive = true;
+                this.stopTextShimmer();
+            }
+
+            if (!this.rapidTap.isActive) {
+                return;
+            }
+
+            this.clearRapidTapReleaseTimer();
+            this.rapidTap.releaseTimer = setTimeout(() => {
+                this.rapidTap.releaseTimer = null;
+                this.rapidTap.isActive = false;
+                this.rapidTap.burstCount = 0;
+                this.setupTextShimmer(null, { immediate: false });
+            }, this.rapidTap.holdMs);
+        },
+        trackMaintenanceTap(index, requiredCount) {
+            if (
+                !this.activeMode ||
+                this.rapidTap.isActive ||
+                requiredCount < this.maintenance.minimumRequiredCount
+            ) {
+                this.resetMaintenanceTapTracking();
+
+                return;
+            }
+
+            const isSameTarget =
+                this.maintenance.mode === this.activeMode && this.maintenance.index === index;
+
+            this.maintenance.sequentialTapCount = isSameTarget
+                ? this.maintenance.sequentialTapCount + 1
+                : 1;
+            this.maintenance.mode = this.activeMode;
+            this.maintenance.index = index;
+
+            if (this.maintenance.sequentialTapCount % this.maintenance.tapInterval !== 0) {
+                return;
+            }
+
+            window.dispatchEvent(new CustomEvent('athkar-reader-maintenance'));
+        },
         handleTap() {
             if (!this.activeMode) {
                 return;
@@ -1633,18 +1944,28 @@ document.addEventListener('alpine:init', () => {
                 'does_automatically_switch_completed_athkar',
                 true,
             );
+            let didIncrementCount = false;
+            const shouldAnimateTapFeedback = !this.shouldUseRapidTapSafeMode(required);
 
             if (current < required || allowOvercount) {
                 const previousCount = current;
                 const previousTotal = this.totalCompletedCount;
                 const nextCount = current + 1;
                 this.setCount(index, nextCount, { allowOvercount });
-                this.triggerCountPulse(index, previousCount, nextCount);
-                this.triggerTotalPulse(previousTotal, previousTotal + 1);
+                didIncrementCount = true;
+                if (shouldAnimateTapFeedback) {
+                    this.triggerCountPulse(index, previousCount, nextCount);
+                    this.triggerTotalPulse(previousTotal, previousTotal + 1);
+                }
 
-                if (required > 1) {
+                if (shouldAnimateTapFeedback && required > 1) {
                     this.triggerTapPulse(index);
                 }
+            }
+
+            if (didIncrementCount) {
+                this.trackRapidTapBurst(required);
+                this.trackMaintenanceTap(index, required);
             }
 
             if (!this.isItemComplete(index)) {
@@ -1677,6 +1998,10 @@ document.addEventListener('alpine:init', () => {
 
             const previousTotal = this.totalCompletedCount;
             this.progress[this.activeMode].counts[index] = required;
+            this.updateModeMetricsForCountChange(this.activeMode, index, current, required, required);
+            this.markProgressDirty({
+                completionChanged: current < required,
+            });
             this.persistProgress();
             this.triggerCountPulse(index, current, required);
             this.triggerTotalPulse(previousTotal, previousTotal + (required - current));
@@ -1818,28 +2143,6 @@ document.addEventListener('alpine:init', () => {
                 document.fonts.ready.then(() => this.queueTextFit());
             }
         },
-        resolveActiveFittyTargets() {
-            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
-
-            if (!activeSlide) {
-                return [];
-            }
-
-            return Array.from(activeSlide.querySelectorAll('[data-fitty-target]')).filter(
-                (target) => target instanceof Element,
-            );
-        },
-        dispatchFittyRefit(targets = null) {
-            const activeTargets = Array.isArray(targets)
-                ? targets
-                : this.resolveActiveFittyTargets();
-
-            window.dispatchEvent(
-                new CustomEvent('athkar-fitty-refit', {
-                    detail: activeTargets.length ? { targets: activeTargets } : undefined,
-                }),
-            );
-        },
         queueTextFit() {
             if (this.textFit.raf) {
                 cancelAnimationFrame(this.textFit.raf);
@@ -1853,14 +2156,14 @@ document.addEventListener('alpine:init', () => {
             this.textFit.raf = requestAnimationFrame(() => {
                 this.textFit.raf = requestAnimationFrame(() => {
                     this.textFit.raf = null;
-                    this.dispatchFittyRefit();
+                    window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
                     this.$nextTick(() => this.setupTextShimmer());
                 });
             });
 
             this.textFit.settleTimer = setTimeout(() => {
                 this.textFit.settleTimer = null;
-                this.dispatchFittyRefit();
+                window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
                 this.$nextTick(() => this.setupTextShimmer());
             }, this.textFitSettleMs);
         },
@@ -1984,6 +2287,12 @@ document.addEventListener('alpine:init', () => {
             this.textScroll.element = null;
         },
         setupTextShimmer(text = null, options = {}) {
+            if (this.rapidTap.isActive) {
+                this.textShimmerController?.stop();
+
+                return;
+            }
+
             if (!this.shouldEnableMainTextShimmering()) {
                 this.textShimmerController?.stop();
 

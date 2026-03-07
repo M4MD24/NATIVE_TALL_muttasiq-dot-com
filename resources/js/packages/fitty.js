@@ -29,6 +29,24 @@ const maxDeferredRetries = 2;
 const postFitRetryDelayMs = 72;
 const maxPostFitRetries = 2;
 const transitionRefitDelayMs = 32;
+const layoutAffectingTransitionProperties = new Set([
+    'width',
+    'height',
+    'inline-size',
+    'block-size',
+    'max-width',
+    'max-height',
+    'padding',
+    'padding-top',
+    'padding-bottom',
+    'padding-left',
+    'padding-right',
+    'padding-inline-start',
+    'padding-inline-end',
+    'font-size',
+    'line-height',
+    'letter-spacing',
+]);
 
 const fitQueue = new Map();
 const deferredRetryTimers = new WeakMap();
@@ -38,7 +56,6 @@ const postFitRetryCounts = new WeakMap();
 const transitionRefitTimers = new WeakMap();
 let fitQueueTimer = null;
 let latestSettingsOverride = null;
-const initializedFittyTargets = new Set();
 
 const isTruthyValue = (value, fallback = false) => {
     if (value === undefined || value === null || value === '') {
@@ -216,7 +233,6 @@ const ensureFittyInstance = (textElement, minSize, maxSize) => {
     const storedMax = Number.parseFloat(textElement.dataset.fittyMaxSize ?? '');
 
     if (textElement._fittyInstance && storedMin === minSize && storedMax === maxSize) {
-        initializedFittyTargets.add(textElement);
         return textElement._fittyInstance;
     }
 
@@ -235,7 +251,6 @@ const ensureFittyInstance = (textElement, minSize, maxSize) => {
     textElement._fittyInstance = instance;
     textElement.dataset.fittyMinSize = String(minSize);
     textElement.dataset.fittyMaxSize = String(maxSize);
-    initializedFittyTargets.add(textElement);
 
     return instance;
 };
@@ -400,14 +415,12 @@ const resolveElementConfig = (textElement) => {
     const enabled = isTruthyValue(textElement.dataset.fittyEnabled, true);
 
     if (!enabled) {
-        cleanupFittyInstance(textElement);
         return null;
     }
 
     const boxElement = resolveFittyBox(textElement);
 
     if (!boxElement) {
-        cleanupFittyInstance(textElement);
         return null;
     }
 
@@ -439,7 +452,7 @@ const resolveElementConfig = (textElement) => {
 
 const queueElement = (textElement) => {
     if (!textElement || !document.contains(textElement)) {
-        cleanupFittyInstance(textElement);
+        fitQueue.delete(textElement);
         return;
     }
 
@@ -500,52 +513,9 @@ const clearPostFitRetry = (textElement) => {
     postFitRetryCounts.delete(textElement);
 };
 
-const clearDeferredRetry = (textElement) => {
-    const timer = deferredRetryTimers.get(textElement);
-
-    if (timer) {
-        clearTimeout(timer);
-        deferredRetryTimers.delete(textElement);
-    }
-
-    deferredRetryCounts.delete(textElement);
-};
-
-const cleanupFittyInstance = (textElement) => {
-    if (!textElement) {
-        return;
-    }
-
-    fitQueue.delete(textElement);
-    clearDeferredRetry(textElement);
-    clearPostFitRetry(textElement);
-
-    if (textElement._fittyInstance?.unsubscribe) {
-        textElement._fittyInstance.unsubscribe();
-    }
-
-    if ('_fittyInstance' in textElement) {
-        delete textElement._fittyInstance;
-    }
-
-    delete textElement.dataset.fittyMinSize;
-    delete textElement.dataset.fittyMaxSize;
-    initializedFittyTargets.delete(textElement);
-};
-
-const pruneDetachedFittyInstances = () => {
-    initializedFittyTargets.forEach((textElement) => {
-        const isEnabled = isTruthyValue(textElement.dataset.fittyEnabled, true);
-
-        if (!document.contains(textElement) || !isEnabled) {
-            cleanupFittyInstance(textElement);
-        }
-    });
-};
-
 const processTextElement = (textElement) => {
     if (!textElement || !document.contains(textElement)) {
-        cleanupFittyInstance(textElement);
+        fitQueue.delete(textElement);
         return null;
     }
 
@@ -672,19 +642,16 @@ const scheduleFitQueue = () => {
 };
 
 const queueAll = () => {
-    pruneDetachedFittyInstances();
-    document
-        .querySelectorAll(
-            `${fittyTargetSelector}:not([data-fitty-enabled]), ${fittyTargetSelector}[data-fitty-enabled="true"]`,
-        )
-        .forEach((textElement) => {
-            queueElement(textElement);
-        });
+    document.querySelectorAll(fittyTargetSelector).forEach((textElement) => {
+        if (!isTruthyValue(textElement.dataset.fittyEnabled, true)) {
+            return;
+        }
+
+        queueElement(textElement);
+    });
 };
 
 const refitTargets = (targets = null) => {
-    pruneDetachedFittyInstances();
-
     if (Array.isArray(targets) && targets.length > 0) {
         targets.forEach((target) => {
             if (target instanceof Element) {
@@ -716,6 +683,32 @@ const scheduleTransitionRefit = (boxElement) => {
     transitionRefitTimers.set(boxElement, timer);
 };
 
+const shouldScheduleTransitionRefit = (event) => {
+    const propertyName = String(event?.propertyName ?? '').trim().toLowerCase();
+
+    if (!propertyName) {
+        return true;
+    }
+
+    return layoutAffectingTransitionProperties.has(propertyName);
+};
+
+const isFittyTransitionSource = (source, boxElement) => {
+    if (!source || !boxElement) {
+        return false;
+    }
+
+    if (source === boxElement) {
+        return true;
+    }
+
+    if (source.matches?.(fittyTargetSelector)) {
+        return true;
+    }
+
+    return Boolean(source.closest?.(fittyTargetSelector));
+};
+
 window.addEventListener('athkar-fitty-refit', (event) => {
     const targets = Array.isArray(event?.detail?.targets) ? event.detail.targets : null;
     refitTargets(targets);
@@ -741,6 +734,10 @@ window.addEventListener(
 window.addEventListener(
     'transitionend',
     (event) => {
+        if (!shouldScheduleTransitionRefit(event)) {
+            return;
+        }
+
         const source = event.target;
 
         if (!(source instanceof Element)) {
@@ -752,6 +749,10 @@ window.addEventListener(
             : source.closest(fittyBoxSelector);
 
         if (!boxElement) {
+            return;
+        }
+
+        if (!isFittyTransitionSource(source, boxElement)) {
             return;
         }
 
