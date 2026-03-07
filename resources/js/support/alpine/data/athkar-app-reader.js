@@ -116,9 +116,15 @@ document.addEventListener('alpine:init', () => {
         textFitSettleMs: 96,
         renderWindowRadius: 1,
         _letterCountCache: new Map(),
+        _totalRequiredCountKey: null,
+        _totalRequiredCountValue: 0,
         _totalRequiredLettersKey: null,
         _totalRequiredLettersValue: 0,
         _athkarVersion: 0,
+        _settingsVersion: 0,
+        _completionVersion: 0,
+        _navGradientKey: null,
+        _navGradientValue: 'linear-gradient(90deg, var(--athkar-nav-pending) 0% 100%)',
         _persistTimer: null,
         lastSeenDay: window.Alpine.$persist(null).as('athkar-last-day'),
         progress: window.Alpine.$persist({
@@ -251,12 +257,12 @@ document.addEventListener('alpine:init', () => {
             });
             this.$watch('activeMode', () => {
                 this.hideOrigin();
-                this.queueTextFit();
+                this.queueTextFit({ hideBeforeFit: true });
             });
             this.$watch('activeIndex', () => {
                 this.closeHint();
                 this.hideOrigin();
-                this.queueTextFit();
+                this.queueTextFit({ hideBeforeFit: true });
             });
             this.$watch(
                 () => this.views?.['athkar-app-gate']?.isReaderVisible,
@@ -286,7 +292,9 @@ document.addEventListener('alpine:init', () => {
         syncAthkarWithOverrides() {
             this.athkar = resolveAthkarWithOverrides(this.defaultAthkar, this.athkarOverrides);
             this._athkarVersion++;
+            this._totalRequiredCountKey = null;
             this._totalRequiredLettersKey = null;
+            this.bumpCompletionVersion();
 
             if (!this.progress || typeof this.progress !== 'object') {
                 return;
@@ -318,6 +326,7 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.settings = resolveEffectiveSettings(this.settingsDefaults);
+            this.bumpSettingsVersion();
             writeAthkarSettingsToStorage(this.settings, this.settingsDefaults);
 
             this.ensureProgress('sabah');
@@ -410,6 +419,7 @@ document.addEventListener('alpine:init', () => {
             );
             this.progress[this.activeMode].ids = this.activeList.map((item) => item?.id ?? null);
             this.progress[this.activeMode].activeId = this.activeList[this.activeIndex]?.id ?? null;
+            this.bumpCompletionVersion();
             this.persistProgress();
             const nextTotal = this.totalCompletedCount;
             this.triggerTotalPulse(previousTotal, nextTotal);
@@ -459,6 +469,14 @@ document.addEventListener('alpine:init', () => {
             if (!('masaa' in this.completedOn)) {
                 this.completedOn.masaa = null;
             }
+        },
+        bumpCompletionVersion() {
+            this._completionVersion++;
+            this._navGradientKey = null;
+        },
+        bumpSettingsVersion() {
+            this._settingsVersion++;
+            this._navGradientKey = null;
         },
         persistProgress() {
             if (this._persistTimer !== null) {
@@ -525,6 +543,7 @@ document.addEventListener('alpine:init', () => {
                 ids: listIds,
                 activeId: listIds[0] ?? null,
             };
+            this.bumpCompletionVersion();
             this.persistProgress();
         },
         ensureProgress(mode) {
@@ -608,6 +627,7 @@ document.addEventListener('alpine:init', () => {
                     ...this.progress[mode],
                 },
             };
+            this.bumpCompletionVersion();
             this.persistProgress();
         },
         isModeLocked(mode) {
@@ -1047,7 +1067,13 @@ document.addEventListener('alpine:init', () => {
                 return 0;
             }
 
-            return activeList.reduce((total, item, index) => {
+            const cacheKey = `${this.activeMode}-${this._athkarVersion}`;
+
+            if (this._totalRequiredCountKey === cacheKey) {
+                return this._totalRequiredCountValue;
+            }
+
+            const value = activeList.reduce((total, item, index) => {
                 const requiredCount =
                     typeof this.requiredCount === 'function'
                         ? Number(this.requiredCount(index))
@@ -1059,6 +1085,11 @@ document.addEventListener('alpine:init', () => {
 
                 return total + requiredCount;
             }, 0);
+
+            this._totalRequiredCountKey = cacheKey;
+            this._totalRequiredCountValue = value;
+
+            return value;
         },
         get totalCompletedCount() {
             const activeList = Array.isArray(this.activeList) ? this.activeList : [];
@@ -1343,6 +1374,19 @@ document.addEventListener('alpine:init', () => {
             }
 
             const direction = typeof this.navIsRtl === 'function' && this.navIsRtl() ? 270 : 90;
+            const cacheKey = [
+                this.activeMode ?? 'none',
+                this._athkarVersion,
+                this._completionVersion,
+                this._settingsVersion,
+                direction,
+                activeList.length,
+            ].join(':');
+
+            if (this._navGradientKey === cacheKey) {
+                return this._navGradientValue;
+            }
+
             const segment = 100 / activeList.length;
             const mode = this.activeMode;
             const counts = Array.isArray(this.progress?.[mode]?.counts)
@@ -1368,7 +1412,10 @@ document.addEventListener('alpine:init', () => {
                 return `${color} ${start}% ${end}%`;
             });
 
-            return `linear-gradient(${direction}deg, ${stops.join(', ')})`;
+            this._navGradientKey = cacheKey;
+            this._navGradientValue = `linear-gradient(${direction}deg, ${stops.join(', ')})`;
+
+            return this._navGradientValue;
         },
         resetNavState() {
             this.nav.isActive = false;
@@ -1501,6 +1548,8 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            this.clearInactiveSlidesFitState(nextIndex);
+            this.markSlideTextAsPending(nextIndex);
             const previousPage = currentIndex + 1;
             this.progress[this.activeMode].index = nextIndex;
             this.progress[this.activeMode].activeId = this.activeList[nextIndex]?.id ?? null;
@@ -1574,8 +1623,20 @@ document.addEventListener('alpine:init', () => {
             const maxCount = this.requiredCount(index);
             const sanitized = Number.isFinite(value) ? Math.max(0, value) : 0;
             const nextValue = allowOvercount ? sanitized : Math.min(sanitized, maxCount);
+            const previousValue = Number(this.progress[this.activeMode]?.counts?.[index] ?? 0);
+            const wasComplete = previousValue >= maxCount;
+
+            if (nextValue === previousValue) {
+                return;
+            }
 
             this.progress[this.activeMode].counts[index] = nextValue;
+            const isComplete = nextValue >= maxCount;
+
+            if (wasComplete !== isComplete) {
+                this.bumpCompletionVersion();
+            }
+
             this.persistProgress();
         },
         isItemComplete(index) {
@@ -1676,8 +1737,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             const previousTotal = this.totalCompletedCount;
-            this.progress[this.activeMode].counts[index] = required;
-            this.persistProgress();
+            this.setCount(index, required);
             this.triggerCountPulse(index, current, required);
             this.triggerTotalPulse(previousTotal, previousTotal + (required - current));
 
@@ -1808,14 +1868,14 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            this.queueTextFit();
-            this.$nextTick(() => this.queueTextFit());
+            this.queueTextFit({ hideBeforeFit: true });
+            this.$nextTick(() => this.queueTextFit({ hideBeforeFit: true }));
         },
         setupTextFit() {
-            this.$nextTick(() => this.queueTextFit());
+            this.$nextTick(() => this.queueTextFit({ hideBeforeFit: true }));
 
             if (document.fonts?.ready) {
-                document.fonts.ready.then(() => this.queueTextFit());
+                document.fonts.ready.then(() => this.queueTextFit({ hideBeforeFit: true }));
             }
         },
         resolveActiveFittyTargets() {
@@ -1840,7 +1900,53 @@ document.addEventListener('alpine:init', () => {
                 }),
             );
         },
-        queueTextFit() {
+        markActiveTextAsPendingForFit(targets = null) {
+            const activeTargets = Array.isArray(targets) ? targets : this.resolveActiveFittyTargets();
+
+            activeTargets.forEach((target) => {
+                if (!(target instanceof Element)) {
+                    return;
+                }
+
+                target.classList.remove('is-fit');
+                target.style.removeProperty('font-size');
+                target.style.removeProperty('max-width');
+            });
+
+            return activeTargets;
+        },
+        markSlideTextAsPending(index) {
+            const slides = Array.from(this.$el?.querySelectorAll('[data-athkar-slide]') ?? []);
+            const targetSlide = slides[index];
+
+            if (!targetSlide) {
+                return;
+            }
+
+            const targets = Array.from(targetSlide.querySelectorAll('[data-fitty-target]')).filter(
+                (target) => target instanceof Element,
+            );
+
+            this.markActiveTextAsPendingForFit(targets);
+        },
+        clearInactiveSlidesFitState(activeIndex = this.activeIndex) {
+            const slides = Array.from(this.$el?.querySelectorAll('[data-athkar-slide]') ?? []);
+
+            slides.forEach((slide, index) => {
+                if (index === activeIndex) {
+                    return;
+                }
+
+                const targets = Array.from(slide.querySelectorAll('[data-fitty-target]')).filter(
+                    (target) => target instanceof Element,
+                );
+
+                this.markActiveTextAsPendingForFit(targets);
+            });
+        },
+        queueTextFit({ hideBeforeFit = false } = {}) {
+            const activeTargets = hideBeforeFit ? this.markActiveTextAsPendingForFit() : null;
+
             if (this.textFit.raf) {
                 cancelAnimationFrame(this.textFit.raf);
             }
@@ -1850,17 +1956,19 @@ document.addEventListener('alpine:init', () => {
                 this.textFit.settleTimer = null;
             }
 
-            this.textFit.raf = requestAnimationFrame(() => {
+            if (!hideBeforeFit) {
                 this.textFit.raf = requestAnimationFrame(() => {
-                    this.textFit.raf = null;
-                    this.dispatchFittyRefit();
-                    this.$nextTick(() => this.setupTextShimmer());
+                    this.textFit.raf = requestAnimationFrame(() => {
+                        this.textFit.raf = null;
+                        this.dispatchFittyRefit(activeTargets);
+                        this.$nextTick(() => this.setupTextShimmer());
+                    });
                 });
-            });
+            }
 
             this.textFit.settleTimer = setTimeout(() => {
                 this.textFit.settleTimer = null;
-                this.dispatchFittyRefit();
+                this.dispatchFittyRefit(activeTargets);
                 this.$nextTick(() => this.setupTextShimmer());
             }, this.textFitSettleMs);
         },

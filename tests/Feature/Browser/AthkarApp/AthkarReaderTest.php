@@ -844,6 +844,36 @@ JS,
     );
 });
 
+it('can reset active fit text to a hidden pending state before refitting', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    waitForReaderVisible($page);
+
+    waitForScript(
+        $page,
+        'Boolean(document.querySelector(\'[data-athkar-slide][data-active="true"] [data-athkar-text].is-fit\'))',
+        true,
+    );
+
+    $pendingFitStates = $page->script(athkarReaderCommandScript(<<<'JS'
+const targets = data.markActiveTextAsPendingForFit();
+return Array.isArray(targets)
+  ? targets.map((target) => target?.classList?.contains('is-fit') ?? null)
+  : null;
+JS));
+
+    expect($pendingFitStates)->toBeArray()->each->toBeFalse();
+
+    $page->script(athkarReaderCommandScript('data.queueTextFit();'));
+    waitForScript(
+        $page,
+        'Boolean(document.querySelector(\'[data-athkar-slide][data-active="true"] [data-athkar-text].is-fit\'))',
+        true,
+    );
+});
+
 it('re-fits active thikr and origin text immediately when max main text size changes with a fixed min size', function () {
     $page = visit('/');
 
