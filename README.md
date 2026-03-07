@@ -49,7 +49,7 @@ https://muttasiq.com
 - ~~اختبارات برمجية لتطبيق الويب (المتصفح)~~
 - اختبارات برمجية لتطبيقات المنصات (المحليّة)
 - ~~قسم لاستعراض المهام والمتغيّرات بين النسخ~~
--~قسم لاستعراض وشرح الخواص الحالية في التطبيق
+- قسم لاستعراض وشرح الخواص الحالية في التطبيق
 - محرك للغة العربية، بحثًا وتحليلًا
 - إخفاء الحركات
 - القراءة بالعربية صوتيًّا
@@ -202,6 +202,8 @@ https://muttasiq.com
 
 1. We recommend [Ubuntu](https://ubuntu.com) (LTS) for stable and upgradable development environment.
 2. Setting up your **development environment** could be easier using this [lara-stacker](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker) CLI [Bash](https://www.gnu.org/software/bash) scripts, which utilizes [Docker](https://docker.com) to setup the main services, and leaving you to only care about few tools that are essential for [PHP](https://php.net) development.
+   - We recommend using `git clone` into lara-stacker's apps-root directory and then using lara-stacker's "rewire" command on this project. 
+   - Running `composer setup` command at the beginning, as for any Laravel of course.
 3. We strongly advocate for using [VSCodium](https://vscodium.com), especially for those who are new to the development world.
 4. Check out all of our VSC configurations set in this [TALL-STANDARDS](https://github.com/GoodM4ven/WIKI_NATIVE_tall-standards) wikipedia, which also contains a decent bit of tips for dealing with the tall-stack and some other related tools and technologies. (The project isn't complete)
 5. And whatever we advised to do for quick learning about this stack, please make sure you read the [development section](#development) up top.

@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('api.')->group(function () {
-    Route::get('/'.config('app.custom.native_end_points.athkar'), AthkarController::class)
+    Route::get('/athkar', AthkarController::class)
         ->middleware('throttle:athkar')
         ->name('athkar.index');
 

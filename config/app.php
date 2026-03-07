@@ -96,7 +96,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Template Native'),
+    'name' => env('APP_NAME', 'Muttasiq'),
 
     /*
     |--------------------------------------------------------------------------
