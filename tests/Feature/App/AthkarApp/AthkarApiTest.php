@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\RateLimiter;
 
 use function Pest\Laravel\getJson;
 
+it('uses a local api route uri for athkar', function () {
+    expect(route('api.athkar.index', [], false))->toBe('/api/athkar');
+});
+
 it('returns cached athkar in order', function () {
     RateLimiter::for('athkar', fn (Request $request): Limit => Limit::none());
 
