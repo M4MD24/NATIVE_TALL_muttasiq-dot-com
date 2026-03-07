@@ -29,21 +29,6 @@ const maxDeferredRetries = 2;
 const postFitRetryDelayMs = 72;
 const maxPostFitRetries = 2;
 const transitionRefitDelayMs = 32;
-const layoutAffectingTransitionProperties = new Set([
-    'width',
-    'height',
-    'max-width',
-    'max-height',
-    'padding',
-    'padding-top',
-    'padding-bottom',
-    'padding-left',
-    'padding-right',
-    'padding-inline-start',
-    'padding-inline-end',
-    'font-size',
-    'line-height',
-]);
 
 const fitQueue = new Map();
 const deferredRetryTimers = new WeakMap();
@@ -543,9 +528,6 @@ const cleanupFittyInstance = (textElement) => {
         delete textElement._fittyInstance;
     }
 
-    textElement.classList.remove('is-fit');
-    textElement.style.removeProperty('font-size');
-    textElement.style.removeProperty('max-width');
     delete textElement.dataset.fittyMinSize;
     delete textElement.dataset.fittyMaxSize;
     initializedFittyTargets.delete(textElement);
@@ -734,16 +716,6 @@ const scheduleTransitionRefit = (boxElement) => {
     transitionRefitTimers.set(boxElement, timer);
 };
 
-const shouldScheduleTransitionRefit = (event) => {
-    const propertyName = String(event?.propertyName ?? '').trim().toLowerCase();
-
-    if (!propertyName) {
-        return true;
-    }
-
-    return layoutAffectingTransitionProperties.has(propertyName);
-};
-
 window.addEventListener('athkar-fitty-refit', (event) => {
     const targets = Array.isArray(event?.detail?.targets) ? event.detail.targets : null;
     refitTargets(targets);
@@ -769,10 +741,6 @@ window.addEventListener(
 window.addEventListener(
     'transitionend',
     (event) => {
-        if (!shouldScheduleTransitionRefit(event)) {
-            return;
-        }
-
         const source = event.target;
 
         if (!(source instanceof Element)) {
