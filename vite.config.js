@@ -7,14 +7,6 @@ import {
 } from './vendor/nativephp/mobile/resources/js/vite-plugin.js';
 
 export default defineConfig({
-    resolve: {
-        alias: {
-            '#nativephp': new URL(
-                './vendor/nativephp/mobile/resources/dist/native.js',
-                import.meta.url
-            ).pathname,
-        },
-    },
     server: {
         host: true,
         strictPort: true,
@@ -24,6 +16,9 @@ export default defineConfig({
             protocol: 'wss',
             clientPort: 443,
         },
+    },
+    build: {
+        emptyOutDir: false,
     },
     plugins: [
         tailwindcss(),
@@ -40,4 +35,12 @@ export default defineConfig({
         }),
         nativephpMobile(),
     ],
+    resolve: {
+        alias: {
+            '#nativephp': new URL(
+                './vendor/nativephp/mobile/resources/dist/native.js',
+                import.meta.url
+            ).pathname,
+        },
+    },
 });
