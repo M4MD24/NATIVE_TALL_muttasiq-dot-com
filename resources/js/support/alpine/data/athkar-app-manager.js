@@ -231,6 +231,20 @@ document.addEventListener('alpine:init', () => {
             if (typeof this.$watch === 'function') {
                 this.$watch(() => this.$store?.bp?.current, () => schedule());
             }
+
+            window.addEventListener(
+                'athkar-manager-overrides-persisted',
+                (event) => {
+                    const detail = event?.detail ?? {};
+
+                    if (detail.componentId && String(detail.componentId) !== this.componentId) {
+                        return;
+                    }
+
+                    schedule();
+                },
+                { signal },
+            );
         },
         scheduleCardOrderSync() {
             if (this.pendingCardOrderFrame !== null) {
@@ -295,6 +309,20 @@ document.addEventListener('alpine:init', () => {
             this.isApplyingCardOrder = false;
         },
         detectGridColumns(cards) {
+            const bp = this.$store?.bp;
+
+            if (bp?.is?.('xl+')) {
+                return 3;
+            }
+
+            if (bp?.is?.('sm+')) {
+                return 2;
+            }
+
+            if (bp?.is?.('base')) {
+                return 1;
+            }
+
             const threshold = 8;
             const sorted = cards
                 .map((card) => ({ card, top: card.getBoundingClientRect().top }))
