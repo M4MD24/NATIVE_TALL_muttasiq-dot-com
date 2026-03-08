@@ -77,6 +77,7 @@ it('renders explicit sortable config and dedicated drag handle markup for manage
     ])->render();
 
     expect($rendered)->toContain('wire:sort:config="managerSortConfig()"')
+        ->and($rendered)->toContain('athkar-manager-cards-grid flex flex-wrap content-start gap-4')
         ->and($rendered)->toContain('data-athkar-sort-handle')
         ->and($rendered)->not->toContain('wire:sort:handle')
         ->and($rendered)->not->toContain('x-bind:data-athkar-touch-drag')

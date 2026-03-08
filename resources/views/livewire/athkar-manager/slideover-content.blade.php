@@ -261,6 +261,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        .athkar-manager-card__drag-handle.athkar-manager-card__delete-button {
+            cursor: pointer;
+        }
+
         .dark .athkar-manager-card__drag-handle {
             border-color: color-mix(in srgb, var(--gray-600) 60%, transparent);
             background: color-mix(in srgb, var(--gray-700) 24%, transparent);
@@ -343,7 +347,7 @@
     </div>
 
     <div
-        class="athkar-manager-cards-grid grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        class="athkar-manager-cards-grid flex flex-wrap content-start gap-4"
         wire:key="athkar-manager-cards-grid"
         wire:sort="reorderAthkar"
         wire:sort:config="managerSortConfig()"
@@ -353,7 +357,7 @@
     >
         @foreach ($cards as $card)
             <article
-                class="athkar-manager-card athkar-manager-card__click"
+                class="athkar-manager-card athkar-manager-card__click basis-full flex-none sm:basis-[calc((100%-1rem)/2)] sm:max-w-[calc((100%-1rem)/2)] xl:basis-[calc((100%-2rem)/3)] xl:max-w-[calc((100%-2rem)/3)]"
                 data-athkar-manager-card
                 data-athkar-card-id="{{ $card['id'] }}"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"
@@ -373,7 +377,7 @@
 
                     <div class="flex items-center gap-2">
                         <button
-                            class="athkar-manager-card__drag-handle"
+                            class="athkar-manager-card__drag-handle athkar-manager-card__delete-button"
                             type="button"
                             title="حذف الذكر"
                             wire:sort:ignore
