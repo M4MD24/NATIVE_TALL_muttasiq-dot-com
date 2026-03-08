@@ -49,12 +49,10 @@
             border-radius: 9999px;
             opacity: 0;
             background:
-                radial-gradient(
-                    circle,
+                radial-gradient(circle,
                     color-mix(in srgb, var(--primary-500) 28%, transparent) 0%,
                     color-mix(in srgb, var(--primary-500) 16%, transparent) 48%,
-                    transparent 72%
-                );
+                    transparent 72%);
             transform: translate(-50%, -50%) scale(0.1);
             will-change: transform, opacity;
         }
@@ -113,12 +111,10 @@
 
         .dark .athkar-manager-card::after {
             background:
-                radial-gradient(
-                    circle,
+                radial-gradient(circle,
                     color-mix(in srgb, var(--primary-300) 30%, transparent) 0%,
                     color-mix(in srgb, var(--primary-300) 18%, transparent) 48%,
-                    transparent 72%
-                );
+                    transparent 72%);
         }
 
         .athkar-manager-card__click {
@@ -358,12 +354,12 @@
     >
         @foreach ($cards as $card)
             <article
-                class="athkar-manager-card athkar-manager-card__click basis-full flex-none sm:basis-[calc((100%-1rem)/2)] sm:max-w-[calc((100%-1rem)/2)] xl:basis-[calc((100%-2rem)/3)] xl:max-w-[calc((100%-2rem)/3)]"
+                class="athkar-manager-card athkar-manager-card__click flex-none basis-full sm:max-w-[calc((100%-1rem)/2)] sm:basis-[calc((100%-1rem)/2)] xl:max-w-[calc((100%-2rem)/3)] xl:basis-[calc((100%-2rem)/3)]"
                 data-athkar-manager-card
                 data-athkar-order-index="{{ $loop->index }}"
                 data-athkar-card-id="{{ $card['id'] }}"
-                dir="rtl"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"
+                dir="rtl"
                 wire:key="athkar-manager-card-{{ $card['id'] }}"
                 wire:loading.class="pointer-events-none"
                 wire:target="openEditAthkar({{ $card['id'] }})"
@@ -434,14 +430,16 @@
                 </div>
 
                 <div
-                    class="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-white/55 opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out pointer-events-none dark:bg-gray-900/45"
+                    class="backdrop-blur-xs pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-2xl bg-white/55 opacity-0 transition-opacity duration-150 ease-out dark:bg-gray-900/45"
+                    role="status"
+                    aria-live="polite"
                     wire:loading.delay.class="opacity-100 pointer-events-auto"
                     wire:loading.delay.class.remove="opacity-0 pointer-events-none"
                     wire:target="openEditAthkar({{ $card['id'] }})"
-                    role="status"
-                    aria-live="polite"
                 >
-                    <div class="h-10 w-10 animate-spin rounded-full border-2 border-primary-200 border-t-primary-600 dark:border-primary-500/40 dark:border-t-primary-200"></div>
+                    <div
+                        class="border-primary-200 border-t-primary-600 dark:border-primary-500/40 dark:border-t-primary-200 h-10 w-10 animate-spin rounded-full border-2">
+                    </div>
                     <span class="sr-only">جاري فتح الذكر...</span>
                 </div>
             </article>

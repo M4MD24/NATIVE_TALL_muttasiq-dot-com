@@ -684,7 +684,9 @@ const scheduleTransitionRefit = (boxElement) => {
 };
 
 const shouldScheduleTransitionRefit = (event) => {
-    const propertyName = String(event?.propertyName ?? '').trim().toLowerCase();
+    const propertyName = String(event?.propertyName ?? '')
+        .trim()
+        .toLowerCase();
 
     if (!propertyName) {
         return true;

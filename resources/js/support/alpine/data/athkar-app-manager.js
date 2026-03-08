@@ -30,7 +30,8 @@ document.addEventListener('alpine:init', () => {
             return true;
         },
         managerSortConfig() {
-            const shouldUseBodyFallback = this.nativeMobileRuntime || Boolean(this.$store?.bp?.is?.('base'));
+            const shouldUseBodyFallback =
+                this.nativeMobileRuntime || Boolean(this.$store?.bp?.is?.('base'));
 
             return {
                 animation: 150,
@@ -46,14 +47,18 @@ document.addEventListener('alpine:init', () => {
         },
         handleManagerSort(event) {
             const item = event?.item;
-            const cardId = Number(item?.dataset?.athkarCardId ?? item?.getAttribute?.('wire:sort:item') ?? 0);
+            const cardId = Number(
+                item?.dataset?.athkarCardId ?? item?.getAttribute?.('wire:sort:item') ?? 0,
+            );
 
             if (!Number.isFinite(cardId) || cardId < 1) {
                 return;
             }
 
             const grid = this.resolveCardsGrid();
-            const cards = grid ? Array.from(grid.querySelectorAll('[data-athkar-manager-card]')) : [];
+            const cards = grid
+                ? Array.from(grid.querySelectorAll('[data-athkar-manager-card]'))
+                : [];
             const total = cards.length;
 
             if (!total) {
@@ -79,9 +84,10 @@ document.addEventListener('alpine:init', () => {
             this.$root.addEventListener(
                 'pointerdown',
                 (event) => {
-                    const dragHandle = event.target instanceof Element
-                        ? event.target.closest('[data-athkar-sort-handle]')
-                        : null;
+                    const dragHandle =
+                        event.target instanceof Element
+                            ? event.target.closest('[data-athkar-sort-handle]')
+                            : null;
                     const cardElement = this.resolveManagedCard(event.target);
 
                     if (!(dragHandle instanceof Element) || !cardElement) {
@@ -235,7 +241,9 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (moveDistance >= this.cardHoldMoveThresholdInPixels) {
-                const hoveredCard = this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
+                const hoveredCard = this.resolveManagedCard(
+                    document.elementFromPoint(event.clientX, event.clientY),
+                );
                 this.activeCardPointer.leftCard = hoveredCard !== cardElement;
             }
 
@@ -297,16 +305,23 @@ document.addEventListener('alpine:init', () => {
                 observer.observe(grid, { childList: true });
             }
 
-            signal.addEventListener('abort', () => {
-                observer.disconnect();
-                rootObserver.disconnect();
-            }, { once: true });
+            signal.addEventListener(
+                'abort',
+                () => {
+                    observer.disconnect();
+                    rootObserver.disconnect();
+                },
+                { once: true },
+            );
 
             window.addEventListener('resize', schedule, { passive: true, signal });
             window.addEventListener('orientationchange', schedule, { passive: true, signal });
 
             if (typeof this.$watch === 'function') {
-                this.$watch(() => this.$store?.bp?.current, () => schedule());
+                this.$watch(
+                    () => this.$store?.bp?.current,
+                    () => schedule(),
+                );
             }
 
             window.addEventListener(
@@ -449,9 +464,12 @@ document.addEventListener('alpine:init', () => {
             return cardElement instanceof HTMLElement ? cardElement : null;
         },
         isExcludedCardTarget(target) {
-            return target instanceof Element && Boolean(
-                target.closest('[data-athkar-sort-handle]') ||
-                target.closest('[wire\\:sort\\:ignore]'),
+            return (
+                target instanceof Element &&
+                Boolean(
+                    target.closest('[data-athkar-sort-handle]') ||
+                    target.closest('[wire\\:sort\\:ignore]'),
+                )
             );
         },
         shouldSkipCardClick(cardElement) {
@@ -484,11 +502,17 @@ document.addEventListener('alpine:init', () => {
             const heldFor = pressedAt > 0 ? Date.now() - pressedAt : 0;
             const heldLongEnough = heldFor >= this.cardPressHoldDelayInMs;
             const releasedTarget = this.resolveManagedCard(event.target);
-            const releasedCard = releasedTarget
-                ?? this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
+            const releasedCard =
+                releasedTarget ??
+                this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
             const releasedOnCard = releasedCard === cardElement;
 
-            if (!shouldCancel && releasedOnCard && !this.activeCardPointer.holdMoved && !this.activeCardPointer.leftCard) {
+            if (
+                !shouldCancel &&
+                releasedOnCard &&
+                !this.activeCardPointer.holdMoved &&
+                !this.activeCardPointer.leftCard
+            ) {
                 this.endCardRepel(cardElement, event);
             } else {
                 this.cancelCardRepel(cardElement);
@@ -498,7 +522,10 @@ document.addEventListener('alpine:init', () => {
                 this.markCardClickHandled(cardElement);
             }
 
-            if (heldLongEnough && (this.activeCardPointer.holdMoved || this.activeCardPointer.leftCard)) {
+            if (
+                heldLongEnough &&
+                (this.activeCardPointer.holdMoved || this.activeCardPointer.leftCard)
+            ) {
                 this.markCardClickHandled(cardElement);
             }
 
@@ -506,10 +533,14 @@ document.addEventListener('alpine:init', () => {
         },
         setCardRepelOrigin(cardElement, event) {
             const rect = cardElement.getBoundingClientRect();
-            const fallbackX = rect.left + (rect.width / 2);
-            const fallbackY = rect.top + (rect.height / 2);
-            const clientX = Number.isFinite(Number(event.clientX)) ? Number(event.clientX) : fallbackX;
-            const clientY = Number.isFinite(Number(event.clientY)) ? Number(event.clientY) : fallbackY;
+            const fallbackX = rect.left + rect.width / 2;
+            const fallbackY = rect.top + rect.height / 2;
+            const clientX = Number.isFinite(Number(event.clientX))
+                ? Number(event.clientX)
+                : fallbackX;
+            const clientY = Number.isFinite(Number(event.clientY))
+                ? Number(event.clientY)
+                : fallbackY;
             const localX = Math.max(0, Math.min(rect.width, clientX - rect.left));
             const localY = Math.max(0, Math.min(rect.height, clientY - rect.top));
             const distanceToFarthestCorner = Math.max(
@@ -519,13 +550,22 @@ document.addEventListener('alpine:init', () => {
                 Math.hypot(rect.width - localX, rect.height - localY),
             );
             const baseRadius = 8;
-            const animationScale = Math.max(14, Math.ceil((distanceToFarthestCorner + 24) / baseRadius));
+            const animationScale = Math.max(
+                14,
+                Math.ceil((distanceToFarthestCorner + 24) / baseRadius),
+            );
 
             cardElement.style.setProperty('--athkar-repel-x', `${localX}px`);
             cardElement.style.setProperty('--athkar-repel-y', `${localY}px`);
             cardElement.style.setProperty('--athkar-repel-scale', String(animationScale));
-            cardElement.style.setProperty('--athkar-repel-hold-duration', `${this.cardRepelHoldDurationInMs}ms`);
-            cardElement.style.setProperty('--athkar-repel-release-duration', `${this.cardRepelReleaseDurationInMs}ms`);
+            cardElement.style.setProperty(
+                '--athkar-repel-hold-duration',
+                `${this.cardRepelHoldDurationInMs}ms`,
+            );
+            cardElement.style.setProperty(
+                '--athkar-repel-release-duration',
+                `${this.cardRepelReleaseDurationInMs}ms`,
+            );
         },
         startCardRepel(cardElement, event) {
             this.setCardRepelOrigin(cardElement, event);
@@ -546,13 +586,20 @@ document.addEventListener('alpine:init', () => {
             const startedAt = Number(cardElement._athkarRepelStartedAt ?? 0);
             const elapsed = startedAt > 0 ? Date.now() - startedAt : 0;
             const holdRatio = Math.max(0, Math.min(1, elapsed / this.cardRepelHoldDurationInMs));
-            const releaseStartScale = 0.08 + (0.54 * holdRatio);
-            const releaseStartOpacity = holdRatio >= 0.86
-                ? Math.max(0, 0.12 - ((holdRatio - 0.86) * 0.85))
-                : 0.34 - (0.14 * holdRatio);
+            const releaseStartScale = 0.08 + 0.54 * holdRatio;
+            const releaseStartOpacity =
+                holdRatio >= 0.86
+                    ? Math.max(0, 0.12 - (holdRatio - 0.86) * 0.85)
+                    : 0.34 - 0.14 * holdRatio;
 
-            cardElement.style.setProperty('--athkar-repel-release-start-scale', String(releaseStartScale));
-            cardElement.style.setProperty('--athkar-repel-release-start-opacity', String(releaseStartOpacity));
+            cardElement.style.setProperty(
+                '--athkar-repel-release-start-scale',
+                String(releaseStartScale),
+            );
+            cardElement.style.setProperty(
+                '--athkar-repel-release-start-opacity',
+                String(releaseStartOpacity),
+            );
             cardElement.setAttribute('data-athkar-press', 'release');
 
             if (cardElement._athkarRepelTimer) {
@@ -602,7 +649,9 @@ document.addEventListener('alpine:init', () => {
             }, this.cardRepelReleaseDurationInMs + 48);
         },
         captureManagerScrollPosition() {
-            const managerContentElement = document.querySelector('.fi-modal.fi-modal-open .fi-modal-content');
+            const managerContentElement = document.querySelector(
+                '.fi-modal.fi-modal-open .fi-modal-content',
+            );
 
             if (!(managerContentElement instanceof HTMLElement)) {
                 return null;

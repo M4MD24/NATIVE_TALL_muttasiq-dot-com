@@ -1,12 +1,14 @@
 <script>
     (function() {
         const isMobileRuntime = @js(is_platform('mobile'));
+        const isNativeRuntime = @js((bool) config('nativephp-internal.running', false));
+        const nativePlatform = @js(config('nativephp-internal.platform'));
         const storageKey = 'jsErrorLog';
         const maxEntries = 30;
         const openCooldownInMs = 650;
         const maxMessageLength = 1000;
         const maxSourceLength = 2048;
-        const maxStackLength = 12000;
+        const maxStackLength = 20000;
         const maxTimeLength = 50;
         let lastOpenedAt = 0;
         let isModalOpen = false;
@@ -43,6 +45,26 @@
             }
 
             return trimmed.slice(0, maxLength);
+        };
+
+        const clipTo = (value, maxLength, tailLength = Math.min(2000, Math.floor(maxLength * 0.35))) => {
+            if (typeof value !== 'string') {
+                return null;
+            }
+
+            const trimmed = value.trim();
+            if (trimmed === '') {
+                return null;
+            }
+
+            if (trimmed.length <= maxLength) {
+                return trimmed;
+            }
+
+            const normalizedTailLength = Math.min(Math.max(tailLength, 0), Math.floor(maxLength / 2));
+            const headLength = Math.max(maxLength - normalizedTailLength - 5, 0);
+
+            return `${trimmed.slice(0, headLength)} ... ${trimmed.slice(-normalizedTailLength)}`;
         };
 
         const normalizeNoiseMessage = (message) => {
@@ -177,10 +199,37 @@
                 source: trimTo(entry.source, maxSourceLength),
                 line: Number.isFinite(Number(entry.line)) ? Math.max(0, Number(entry.line)) : null,
                 column: Number.isFinite(Number(entry.column)) ? Math.max(0, Number(entry.column)) : null,
-                stack: trimTo(entry.stack, maxStackLength),
+                stack: clipTo(entry.stack, maxStackLength),
             };
 
             return normalized;
+        };
+
+        const readBreakpoint = () => {
+            const alpineStore = window.Alpine?.store?.('bp');
+            if (alpineStore?.current) {
+                return alpineStore.current;
+            }
+
+            const cssBreakpoint = getComputedStyle(document.documentElement)
+                .getPropertyValue('--breakpoint')
+                .trim()
+                .replace(/['"]+/g, '');
+
+            return cssBreakpoint || null;
+        };
+
+        const buildPlatformLabel = () => {
+            const prefix = isNativeRuntime ? 'Native' : 'Web';
+            const resolvedNativePlatform = trimTo(nativePlatform, 32);
+            const resolvedBrowserPlatform = trimTo(window.navigator?.platform ?? null, 32);
+            const resolvedPlatform = resolvedNativePlatform || resolvedBrowserPlatform;
+
+            if (!resolvedPlatform) {
+                return prefix;
+            }
+
+            return `${prefix} - ${resolvedPlatform}`;
         };
 
         const collectContext = () => {
@@ -188,7 +237,8 @@
                 url: trimTo(window.location?.href ?? null, 2048),
                 user_agent: trimTo(window.navigator?.userAgent ?? null, 1000),
                 language: trimTo(window.navigator?.language ?? null, 32),
-                platform: trimTo(window.navigator?.platform ?? null, 32),
+                platform: buildPlatformLabel(),
+                breakpoint: isNativeRuntime ? null : trimTo(readBreakpoint(), 8),
             };
         };
 

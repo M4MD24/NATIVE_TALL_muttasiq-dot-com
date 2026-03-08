@@ -65,28 +65,28 @@
                 if (this.isControlPanelOpen || this.isAthkarManagerOpen) {
                     return;
                 }
-
+        
                 const layoutManager = this.$store?.layoutManager;
-
+        
                 if (!layoutManager || layoutManager.isActionOpen) {
                     return;
                 }
-
+        
                 const requestedDuration = Number(options?.durationMs ?? 34);
                 const durationMs = Number.isFinite(requestedDuration) ?
                     Math.max(0, Math.trunc(requestedDuration)) :
                     34;
                 const token = this.actionStatePulseToken + 1;
-
+        
                 this.actionStatePulseToken = token;
                 this.isControlPanelOpen = true;
                 layoutManager.isActionOpen = true;
-
+        
                 window.setTimeout(() => {
                     if (this.actionStatePulseToken !== token) {
                         return;
                     }
-
+        
                     this.isControlPanelOpen = false;
                     layoutManager.isActionOpen = false;
                 }, durationMs);

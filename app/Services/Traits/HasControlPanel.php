@@ -431,7 +431,7 @@ trait HasControlPanel
     {
         $mountedActions = $this->mountedActions ?? [];
 
-        if (! is_array($mountedActions) || $mountedActions === []) {
+        if ($mountedActions === []) {
             return false;
         }
 

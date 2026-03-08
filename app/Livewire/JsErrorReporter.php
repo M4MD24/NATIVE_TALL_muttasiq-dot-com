@@ -39,7 +39,8 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
      *     url: string|null,
      *     user_agent: string|null,
      *     language: string|null,
-     *     platform: string|null
+     *     platform: string|null,
+     *     breakpoint: string|null
      * }
      */
     public array $clientContext = [
@@ -47,6 +48,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         'user_agent' => null,
         'language' => null,
         'platform' => null,
+        'breakpoint' => null,
     ];
 
     public function openReportModal(array $payload = []): void
@@ -76,9 +78,9 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                 $this->openGithubIssueAction(),
             ])
             ->modalContentFooter(
-                fn(Action $action): View => view('livewire.js-error-reporter.modal-footer', ['action' => $action]),
+                fn (Action $action): View => view('livewire.js-error-reporter.modal-footer', ['action' => $action]),
             )
-            ->fillForm(fn(): array => [
+            ->fillForm(fn (): array => [
                 'user_note' => '',
                 'technical_snapshot' => $this->formatErrorsForDisplay(),
             ])
@@ -158,11 +160,12 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
             'user_agent' => null,
             'language' => null,
             'platform' => null,
+            'breakpoint' => null,
         ];
     }
 
     /**
-     * @return array{url: string|null, user_agent: string|null, language: string|null, platform: string|null}
+     * @return array{url: string|null, user_agent: string|null, language: string|null, platform: string|null, breakpoint: string|null}
      */
     private function normalizeContext(mixed $context): array
     {
@@ -172,6 +175,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                 'user_agent' => null,
                 'language' => null,
                 'platform' => null,
+                'breakpoint' => null,
             ];
         }
 
@@ -180,6 +184,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
             'user_agent' => $this->trimToLength($context['user_agent'] ?? null, 1000),
             'language' => $this->trimToLength($context['language'] ?? null, 32),
             'platform' => $this->trimToLength($context['platform'] ?? null, 32),
+            'breakpoint' => $this->trimToLength($context['breakpoint'] ?? null, 8),
         ];
     }
 
@@ -193,16 +198,16 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         }
 
         return collect($errors)
-            ->filter(fn(mixed $entry): bool => is_array($entry))
+            ->filter(fn (mixed $entry): bool => is_array($entry))
             ->take(15)
-            ->map(fn(array $entry): array => [
+            ->map(fn (array $entry): array => [
                 'type' => $this->trimToLength($entry['type'] ?? null, 20) ?: 'error',
                 'time' => $this->trimToLength($entry['time'] ?? null, 50),
                 'message' => $this->trimToLength($entry['message'] ?? null, 1000) ?: 'Unknown error',
                 'source' => $this->trimToLength($entry['source'] ?? null, 2048),
                 'line' => is_numeric($entry['line'] ?? null) ? max(0, (int) $entry['line']) : null,
                 'column' => is_numeric($entry['column'] ?? null) ? max(0, (int) $entry['column']) : null,
-                'stack' => $this->trimToLength($entry['stack'] ?? null, 12000),
+                'stack' => $this->clipToLength($entry['stack'] ?? null, 20000),
             ])
             ->values()
             ->all();
@@ -213,16 +218,16 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         return collect($this->capturedErrors)
             ->map(function (array $entry): string {
                 $parts = [
-                    '[' . $entry['type'] . ']',
+                    '['.$entry['type'].']',
                     $entry['message'],
                 ];
 
                 if ($entry['source']) {
-                    $parts[] = '(' . $entry['source'] . ':' . ($entry['line'] ?? 0) . ':' . ($entry['column'] ?? 0) . ')';
+                    $parts[] = '('.$entry['source'].':'.($entry['line'] ?? 0).':'.($entry['column'] ?? 0).')';
                 }
 
                 if ($entry['time']) {
-                    $parts[] = '@ ' . $entry['time'];
+                    $parts[] = '@ '.$entry['time'];
                 }
 
                 $summary = implode(' ', $parts);
@@ -231,7 +236,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                     return $summary;
                 }
 
-                return $summary . "\n" . $entry['stack'];
+                return $summary."\n".$entry['stack'];
             })
             ->implode("\n\n");
     }
@@ -249,6 +254,28 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         }
 
         return mb_substr($trimmed, 0, $length);
+    }
+
+    private function clipToLength(mixed $value, int $length, int $tailLength = 2000): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim(strip_tags($value));
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (mb_strlen($trimmed) <= $length) {
+            return $trimmed;
+        }
+
+        $normalizedTailLength = min(max($tailLength, 0), intdiv($length, 2));
+        $headLength = max($length - $normalizedTailLength - 5, 0);
+
+        return mb_substr($trimmed, 0, $headLength).' ... '.mb_substr($trimmed, -$normalizedTailLength);
     }
 
     private function githubIssueUrl(): string

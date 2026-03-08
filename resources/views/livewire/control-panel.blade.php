@@ -12,10 +12,10 @@
             async runReaderMaintenancePulse() {
                 if (this.isReaderMaintenanceInFlight) {
                     this.hasQueuedReaderMaintenance = true;
-
+        
                     return;
                 }
-
+        
                 if (
                     isControlPanelOpen ||
                     isAthkarManagerOpen ||
@@ -23,17 +23,17 @@
                 ) {
                     return;
                 }
-
+        
                 this.isReaderMaintenanceInFlight = true;
-
+        
                 try {
                     await $wire.triggerReaderMaintenancePulse();
                 } finally {
                     this.isReaderMaintenanceInFlight = false;
-
+        
                     if (this.hasQueuedReaderMaintenance) {
                         this.hasQueuedReaderMaintenance = false;
-
+        
                         queueMicrotask(() => this.runReaderMaintenancePulse());
                     }
                 }

@@ -1193,7 +1193,9 @@ document.addEventListener('alpine:init', () => {
                 const requiredCountSeed = Number(item?.count ?? 1);
                 const completedCountSeed = Number(counts[index] ?? 0);
                 const requiredCount =
-                    Number.isFinite(requiredCountSeed) && requiredCountSeed > 0 ? requiredCountSeed : 0;
+                    Number.isFinite(requiredCountSeed) && requiredCountSeed > 0
+                        ? requiredCountSeed
+                        : 0;
                 const completedCount =
                     Number.isFinite(completedCountSeed) && completedCountSeed > 0
                         ? completedCountSeed
@@ -2005,7 +2007,13 @@ document.addEventListener('alpine:init', () => {
 
             const previousTotal = this.totalCompletedCount;
             this.progress[this.activeMode].counts[index] = required;
-            this.updateModeMetricsForCountChange(this.activeMode, index, current, required, required);
+            this.updateModeMetricsForCountChange(
+                this.activeMode,
+                index,
+                current,
+                required,
+                required,
+            );
             this.markProgressDirty({
                 completionChanged: current < required,
             });

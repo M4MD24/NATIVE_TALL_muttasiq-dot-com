@@ -51,6 +51,11 @@ class JsErrorReportsTable
                     ->badge()
                     ->placeholder('غير محدد'),
 
+                TextColumn::make('screen_breakpoint')
+                    ->label('نقطة التوقف')
+                    ->badge()
+                    ->placeholder('غير محدد'),
+
                 TextColumn::make('created_at')
                     ->label('وقت البلاغ')
                     ->since()
