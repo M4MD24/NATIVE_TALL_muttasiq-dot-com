@@ -392,7 +392,7 @@
                         >
                             <x-filament::icon
                                 class="text-danger-600 dark:text-danger-400 h-4 w-4"
-                                icon="heroicon-o-trash"
+                                icon="heroicon-o-x-mark"
                             />
                         </button>
 
@@ -434,9 +434,9 @@
                 </div>
 
                 <div
-                    class="absolute inset-0 z-10 hidden place-items-center rounded-2xl bg-white/55 backdrop-blur-xs dark:bg-gray-900/45"
-                    wire:loading.delay.class="grid"
-                    wire:loading.delay.class.remove="hidden"
+                    class="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-white/55 opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out pointer-events-none dark:bg-gray-900/45"
+                    wire:loading.delay.class="opacity-100 pointer-events-auto"
+                    wire:loading.delay.class.remove="opacity-0 pointer-events-none"
                     wire:target="openEditAthkar({{ $card['id'] }})"
                     role="status"
                     aria-live="polite"

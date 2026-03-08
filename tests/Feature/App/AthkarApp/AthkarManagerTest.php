@@ -83,6 +83,8 @@ it('renders explicit sortable config and dedicated drag handle markup for manage
         ->and($rendered)->toContain('data-athkar-order-index')
         ->and($rendered)->toContain('dir="rtl"')
         ->and($rendered)->toContain('data-athkar-sort-handle')
+        ->and($rendered)->toContain('wire:loading.delay.class="opacity-100 pointer-events-auto"')
+        ->and($rendered)->toContain('wire:loading.delay.class.remove="opacity-0 pointer-events-none"')
         ->and($rendered)->not->toContain('wire:sort:handle')
         ->and($rendered)->not->toContain('x-bind:data-athkar-touch-drag')
         ->and($rendered)->not->toContain('wire:click.preserve-scroll="openEditAthkar(');

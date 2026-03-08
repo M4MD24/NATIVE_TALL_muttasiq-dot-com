@@ -82,7 +82,6 @@ class AthkarManager extends Component implements HasActions, HasSchemas
             ->modalHeading('تعديل الذكر')
             ->modalAutofocus(false)
             ->modalSubmitActionLabel('حفظ التعديل')
-            ->modalFooterActionsAlignment(Alignment::End)
             ->extraModalFooterActions([
                 Action::make('deleteAthkarFromEdit')
                     ->label('حذف الذكر')
