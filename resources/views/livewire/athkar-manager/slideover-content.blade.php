@@ -26,27 +26,99 @@
         }
 
         .athkar-manager-card:hover {
-            transform: translateY(-2px);
             box-shadow: 0 12px 24px color-mix(in srgb, var(--gray-900) 12%, transparent);
         }
 
-        .athkar-manager-card[data-athkar-touch-drag='true'] {
+        .athkar-manager--handle-only .athkar-manager-card {
             transition: box-shadow 120ms ease, border-color 120ms ease;
         }
 
-        .athkar-manager-card[data-athkar-touch-drag='true']:hover {
+        .athkar-manager--handle-only .athkar-manager-card:hover {
             transform: none;
             box-shadow: 0 8px 20px color-mix(in srgb, var(--gray-900) 8%, transparent);
         }
 
-        .athkar-manager-card:active {
-            cursor: pointer;
-            border-radius: 0 !important;
+        .athkar-manager-card::after {
+            content: '';
+            position: absolute;
+            left: var(--athkar-repel-x, 50%);
+            top: var(--athkar-repel-y, 50%);
+            width: 1rem;
+            height: 1rem;
+            pointer-events: none;
+            border-radius: 9999px;
+            opacity: 0;
+            background:
+                radial-gradient(
+                    circle,
+                    color-mix(in srgb, var(--primary-500) 28%, transparent) 0%,
+                    color-mix(in srgb, var(--primary-500) 16%, transparent) 48%,
+                    transparent 72%
+                );
+            transform: translate(-50%, -50%) scale(0.1);
+            will-change: transform, opacity;
+        }
+
+        .athkar-manager-card[data-athkar-press='hold']::after {
+            animation: athkar-manager-card-repel-hold var(--athkar-repel-hold-duration, 700ms) linear forwards;
+        }
+
+        .athkar-manager-card[data-athkar-press='release']::after {
+            animation: athkar-manager-card-repel-release var(--athkar-repel-release-duration, 220ms) cubic-bezier(0.1, 0.65, 0.2, 1) forwards;
+        }
+
+        @keyframes athkar-manager-card-repel-hold {
+            0% {
+                opacity: 0.34;
+                transform: translate(-50%, -50%) scale(0.08);
+            }
+
+            72% {
+                opacity: 0.24;
+                transform: translate(-50%, -50%) scale(calc(var(--athkar-repel-scale, 24) * 0.52));
+            }
+
+            92% {
+                opacity: 0.08;
+                transform: translate(-50%, -50%) scale(calc(var(--athkar-repel-scale, 24) * 0.6));
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(calc(var(--athkar-repel-scale, 24) * 0.62));
+            }
+        }
+
+        @keyframes athkar-manager-card-repel-release {
+            0% {
+                opacity: var(--athkar-repel-release-start-opacity, 0.3);
+                transform: translate(-50%, -50%) scale(var(--athkar-repel-release-start-scale, 0.16));
+            }
+
+            78% {
+                opacity: 0.08;
+                transform: translate(-50%, -50%) scale(calc(var(--athkar-repel-scale, 24) * 0.92));
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(var(--athkar-repel-scale, 24));
+            }
         }
 
         .dark .athkar-manager-card {
             border-color: color-mix(in srgb, var(--primary-400) 45%, transparent);
             background: color-mix(in srgb, #2b2a30 74%, transparent);
+        }
+
+        .dark .athkar-manager-card::after {
+            background:
+                radial-gradient(
+                    circle,
+                    color-mix(in srgb, var(--primary-300) 30%, transparent) 0%,
+                    color-mix(in srgb, var(--primary-300) 18%, transparent) 48%,
+                    transparent 72%
+                );
         }
 
         .athkar-manager-card__click {
@@ -110,18 +182,6 @@
             border-color: color-mix(in srgb, var(--gray-400) 50%, transparent);
             background: color-mix(in srgb, var(--gray-300) 16%, transparent);
             color: var(--gray-700);
-        }
-
-        .athkar-manager-card__badge--order[data-athkar-sort-handle] {
-            cursor: grab;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
-
-        .athkar-manager-card__badge--order[data-athkar-sort-handle]:active {
-            cursor: grabbing;
-            border-radius: 0 !important;
         }
 
         .dark .athkar-manager-card__badge--order {
@@ -201,11 +261,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .athkar-manager-card__drag-handle:active {
-            cursor: grabbing;
-            border-radius: 0 !important;
-        }
-
         .dark .athkar-manager-card__drag-handle {
             border-color: color-mix(in srgb, var(--gray-600) 60%, transparent);
             background: color-mix(in srgb, var(--gray-700) 24%, transparent);
@@ -251,7 +306,11 @@
 
 <div
     @class(['space-y-4', 'mt-12 sm:mt-0' => $isMobile])
-    x-data="athkarAppManager({ componentId: @js($componentId) })"
+    x-data="athkarAppManager({
+        componentId: @js($componentId),
+        nativeMobileRuntime: @js((bool) config('nativephp-internal.running', false) && is_platform('mobile')),
+    })"
+    x-bind:class="{ 'athkar-manager--handle-only': shouldRestrictSortHandles() }"
 >
     <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -287,6 +346,7 @@
         class="athkar-manager-cards-grid grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
         wire:key="athkar-manager-cards-grid"
         wire:sort="reorderAthkar"
+        wire:sort:config="managerSortConfig()"
         x-cloak
         x-show="$wire.hasHydratedOverrides"
         x-transition.opacity.duration.200ms
@@ -295,24 +355,17 @@
             <article
                 class="athkar-manager-card athkar-manager-card__click"
                 data-athkar-manager-card
+                data-athkar-card-id="{{ $card['id'] }}"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"
                 wire:key="athkar-manager-card-{{ $card['id'] }}"
                 wire:sort:item="{{ $card['id'] }}"
-                wire:click.preserve-scroll="openEditAthkar({{ $card['id'] }})"
                 x-on:contextmenu.prevent
-                x-on:dragstart.prevent
-                x-bind="$store.bp.shouldUseSortHandles() ? {} : { 'wire:sort:handle': '' }"
-                x-bind:data-athkar-touch-drag="$store.bp.shouldUseSortHandles() ? 'true' : 'false'"
             >
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex flex-wrap items-center gap-2">
                         <span
                             class="athkar-manager-card__badge athkar-manager-card__badge--order"
-                            data-athkar-sort-handle
                             title="ترتيب الذكر"
-                            wire:sort:handle
-                            wire:click.stop
-                            x-on:click.stop
                         >#{{ $card['order'] }}</span>
                         <span
                             class="athkar-manager-card__badge athkar-manager-card__badge--time">{{ \App\Services\Enums\ThikrTime::labelFor($card['time']) }}</span>
@@ -338,7 +391,6 @@
                             class="athkar-manager-card__drag-handle"
                             data-athkar-sort-handle
                             title="اسحب لإعادة الترتيب"
-                            wire:sort:handle
                             wire:click.stop
                             x-on:click.stop
                         >

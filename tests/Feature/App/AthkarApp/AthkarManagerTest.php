@@ -42,6 +42,47 @@ it('opens athkar manager in modal mode on mobile breakpoints', function () {
         ->assertSet('mountedActions.0.name', 'manageAthkar');
 });
 
+it('passes native mobile runtime flag to the manager card interaction bridge', function () {
+    config()->set('nativephp-internal.running', true);
+    config()->set('nativephp-internal.platform', 'ios');
+
+    $cards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards())
+        ->take(1)
+        ->values()
+        ->all();
+
+    expect($cards)->not->toBeEmpty();
+
+    $rendered = view('livewire.athkar-manager.slideover-content', [
+        'componentId' => 'athkar-manager-native-test',
+        'cards' => $cards,
+        'isMobile' => true,
+    ])->render();
+
+    expect($rendered)->toContain('nativeMobileRuntime: true');
+});
+
+it('renders explicit sortable config and unrestricted drag handle markup for web manager cards', function () {
+    $cards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards())
+        ->take(1)
+        ->values()
+        ->all();
+
+    expect($cards)->not->toBeEmpty();
+
+    $rendered = view('livewire.athkar-manager.slideover-content', [
+        'componentId' => 'athkar-manager-sort-config-test',
+        'cards' => $cards,
+        'isMobile' => false,
+    ])->render();
+
+    expect($rendered)->toContain('wire:sort:config="managerSortConfig()"')
+        ->and($rendered)->toContain('data-athkar-sort-handle')
+        ->and($rendered)->not->toContain('wire:sort:handle')
+        ->and($rendered)->not->toContain('x-bind:data-athkar-touch-drag')
+        ->and($rendered)->not->toContain('wire:click.preserve-scroll="openEditAthkar(');
+});
+
 it('mounts the edit action when opening a card from the manager', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false);
