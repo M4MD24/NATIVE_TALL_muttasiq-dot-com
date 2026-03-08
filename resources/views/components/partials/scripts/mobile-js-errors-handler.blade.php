@@ -45,6 +45,18 @@
             return trimmed.slice(0, maxLength);
         };
 
+        const normalizeNoiseMessage = (message) => {
+            const normalizedMessage = trimTo(message, maxMessageLength);
+            if (!normalizedMessage) {
+                return null;
+            }
+
+            return normalizedMessage
+                .replace(/^\[[^\]]+\]\s*/i, '')
+                .replace(/[.!?]+$/g, '')
+                .trim();
+        };
+
         const extensionSchemePattern = /^(chrome-extension|moz-extension|safari-web-extension):\/\//i;
         const knownNoiseMessagePatterns = [
             /^ResizeObserver loop limit exceeded$/i,
@@ -67,7 +79,7 @@
         };
 
         const isLikelyBrowserNoise = (message) => {
-            const normalizedMessage = trimTo(message, maxMessageLength);
+            const normalizedMessage = normalizeNoiseMessage(message);
             if (!normalizedMessage) {
                 return false;
             }
@@ -76,7 +88,7 @@
         };
 
         const isLikelyExternalOnlyNoise = (message) => {
-            const normalizedMessage = trimTo(message, maxMessageLength);
+            const normalizedMessage = normalizeNoiseMessage(message);
             if (!normalizedMessage) {
                 return false;
             }
@@ -140,7 +152,9 @@
                 return true;
             }
 
-            if (isLikelyBrowserNoise(entry.message) && !hasAppSignal) {
+            const isKnownBrowserNoise = isLikelyBrowserNoise(entry.message);
+
+            if (isKnownBrowserNoise) {
                 return true;
             }
 

@@ -113,3 +113,41 @@ JS);
 
     waitForScript($page, modalClosedScript());
 });
+
+it('ignores resize observer browser noise even with same-origin source details', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+
+    $page->script(<<<'JS'
+(() => {
+  document.documentElement.dataset.disableJsErrorReporting = 'false';
+  window.__disableJsErrorReporting = false;
+  localStorage.removeItem('jsErrorLog');
+  return true;
+})()
+JS);
+
+    $entriesCount = (int) $page->script(<<<'JS'
+(() => {
+  window.dispatchEvent(new ErrorEvent('error', {
+    message: 'ResizeObserver loop completed with undelivered notifications.',
+    filename: `${window.location.origin}/#athkar-app-gate`,
+    lineno: 0,
+    colno: 0,
+  }));
+
+  const entries = JSON.parse(localStorage.getItem('jsErrorLog') || '[]');
+  return Array.isArray(entries) ? entries.length : -1;
+})()
+JS);
+
+    expect($entriesCount)->toBe(0);
+
+    waitForScript(
+        $page,
+        'Boolean(document.querySelector(".fi-modal-window"))',
+        false,
+    );
+});
