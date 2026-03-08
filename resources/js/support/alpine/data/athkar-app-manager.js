@@ -20,19 +20,18 @@ document.addEventListener('alpine:init', () => {
             this.registerCardInteractionListeners();
         },
         shouldRestrictSortHandles() {
-            const isBaseBreakpoint = Boolean(this.$store?.bp?.is?.('base'));
-
-            return this.nativeMobileRuntime || isBaseBreakpoint;
+            return true;
         },
         managerSortConfig() {
-            const shouldRestrictHandles = this.shouldRestrictSortHandles();
-
             return {
-                animation: shouldRestrictHandles ? 150 : 120,
+                animation: 150,
                 forceFallback: true,
-                fallbackOnBody: shouldRestrictHandles,
-                fallbackTolerance: shouldRestrictHandles ? 0 : 4,
-                handle: shouldRestrictHandles ? '[data-athkar-sort-handle]' : null,
+                fallbackOnBody: true,
+                fallbackTolerance: 0,
+                handle: '[data-athkar-sort-handle]',
+                invertSwap: true,
+                swapThreshold: 0.7,
+                invertedSwapThreshold: 0.7,
             };
         },
         registerCardInteractionListeners() {

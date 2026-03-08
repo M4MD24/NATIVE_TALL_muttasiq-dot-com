@@ -62,7 +62,7 @@ it('passes native mobile runtime flag to the manager card interaction bridge', f
     expect($rendered)->toContain('nativeMobileRuntime: true');
 });
 
-it('renders explicit sortable config and unrestricted drag handle markup for web manager cards', function () {
+it('renders explicit sortable config and dedicated drag handle markup for manager cards', function () {
     $cards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards())
         ->take(1)
         ->values()

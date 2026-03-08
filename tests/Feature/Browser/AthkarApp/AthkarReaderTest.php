@@ -519,9 +519,9 @@ JS,
   const config = data.managerSortConfig();
 
   return bp.is('sm+')
-    && config.handle === null
+    && config.handle === '[data-athkar-sort-handle]'
     && config.forceFallback === true
-    && config.fallbackOnBody === false;
+    && config.fallbackOnBody === true;
 })()
 JS,
         true,
@@ -529,7 +529,7 @@ JS,
     );
 });
 
-it('opens athkar manager as a modal on tablet layouts while still allowing center-card drag', function () {
+it('opens athkar manager as a modal on tablet layouts while using the dedicated drag handle', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -572,9 +572,9 @@ JS,
   const config = data.managerSortConfig();
 
   return bp.isTablet() === true
-    && config.handle === null
+    && config.handle === '[data-athkar-sort-handle]'
     && config.forceFallback === true
-    && config.fallbackOnBody === false;
+    && config.fallbackOnBody === true;
 })()
 JS,
         true,
@@ -613,7 +613,7 @@ JS,
   const dragStyles = getComputedStyle(dragHandle);
   const orderStyles = getComputedStyle(orderBadge);
 
-  return String(cardStyles.transitionProperty).includes('transform')
+  return !String(cardStyles.transitionProperty).includes('transform')
     && dragStyles.touchAction === 'none'
     && orderStyles.touchAction !== 'none';
 })()
