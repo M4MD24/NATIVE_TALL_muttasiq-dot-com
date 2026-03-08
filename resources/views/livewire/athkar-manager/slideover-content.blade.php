@@ -346,10 +346,6 @@
         </div>
     </div>
 
-    @php
-        $cardsForDisplay = $isMobile ? $cards : array_reverse($cards, false);
-    @endphp
-
     <div
         class="athkar-manager-cards-grid flex flex-wrap content-start gap-4"
         dir="ltr"
@@ -360,10 +356,11 @@
         x-show="$wire.hasHydratedOverrides"
         x-transition.opacity.duration.200ms
     >
-        @foreach ($cardsForDisplay as $card)
+        @foreach ($cards as $card)
             <article
                 class="athkar-manager-card athkar-manager-card__click basis-full flex-none sm:basis-[calc((100%-1rem)/2)] sm:max-w-[calc((100%-1rem)/2)] xl:basis-[calc((100%-2rem)/3)] xl:max-w-[calc((100%-2rem)/3)]"
                 data-athkar-manager-card
+                data-athkar-order-index="{{ $loop->index }}"
                 data-athkar-card-id="{{ $card['id'] }}"
                 dir="rtl"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"

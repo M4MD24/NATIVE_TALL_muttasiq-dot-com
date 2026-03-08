@@ -272,10 +272,6 @@ class AthkarManager extends Component implements HasActions, HasSchemas
         $previousOrderedIds = $orderedIds->values()->all();
         $targetIndex = max(0, min((int) $position, $orderedIds->count() - 1));
 
-        if (! $this->isManageAthkarMobile) {
-            $targetIndex = ($orderedIds->count() - 1) - $targetIndex;
-        }
-
         if ($fromIndex === $targetIndex) {
             return;
         }

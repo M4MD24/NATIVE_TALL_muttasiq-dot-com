@@ -80,6 +80,7 @@ it('renders explicit sortable config and dedicated drag handle markup for manage
         ->and($rendered)->toContain('athkar-manager-cards-grid flex flex-wrap content-start gap-4')
         ->and($rendered)->toContain('dir="ltr"')
         ->and($rendered)->toContain('data-athkar-manager-card')
+        ->and($rendered)->toContain('data-athkar-order-index')
         ->and($rendered)->toContain('dir="rtl"')
         ->and($rendered)->toContain('data-athkar-sort-handle')
         ->and($rendered)->not->toContain('wire:sort:handle')
@@ -199,36 +200,6 @@ it('reorders athkar cards locally without mutating database defaults', function 
 
     $component
         ->call('reorderAthkar', $movedId, 1)
-        ->assertDispatched('athkar-manager-overrides-persisted')
-        ->instance();
-
-    $overridesById = collect($component->instance()->athkarOverrides)->keyBy('thikr_id');
-
-    expect($overridesById->get($movedId)['order'])->toBe(2)
-        ->and($overridesById->get($swappedId)['order'])->toBe(1)
-        ->and(Thikr::query()->findOrFail($movedId)->order)->toBe($movedDbOrder)
-        ->and(Thikr::query()->findOrFail($swappedId)->order)->toBe($swappedDbOrder);
-});
-
-it('reorders athkar cards using reversed indices on desktop layouts', function () {
-    $component = livewire(AthkarManager::class);
-    $component->set('isManageAthkarMobile', false);
-
-    $cards = collect($component->instance()->resolvedAthkarCards())->values();
-
-    expect($cards->count())->toBeGreaterThan(2);
-
-    $movedId = (int) $cards[0]['id'];
-    $swappedId = (int) $cards[1]['id'];
-    $totalCards = $cards->count();
-
-    $movedDbOrder = Thikr::query()->findOrFail($movedId)->order;
-    $swappedDbOrder = Thikr::query()->findOrFail($swappedId)->order;
-
-    $reversedTargetIndex = max(0, $totalCards - 2);
-
-    $component
-        ->call('reorderAthkar', $movedId, $reversedTargetIndex)
         ->assertDispatched('athkar-manager-overrides-persisted')
         ->instance();
 

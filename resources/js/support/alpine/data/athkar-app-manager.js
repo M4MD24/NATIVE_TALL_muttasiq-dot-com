@@ -14,10 +14,14 @@ document.addEventListener('alpine:init', () => {
         pendingCardOpenTimer: null,
         pendingCardOpenId: null,
         cardInteractionAbortController: null,
+        cardOrderAbortController: null,
+        pendingCardOrderFrame: null,
+        isApplyingCardOrder: false,
         init() {
             this.hydrateOverridesFromStorage();
             this.registerOverridesPersistenceListener();
             this.registerCardInteractionListeners();
+            this.registerCardOrderSync();
         },
         shouldRestrictSortHandles() {
             return true;
@@ -154,6 +158,121 @@ document.addEventListener('alpine:init', () => {
                 },
                 { signal },
             );
+        },
+        registerCardOrderSync() {
+            this.cardOrderAbortController?.abort();
+
+            const controller = new AbortController();
+            const { signal } = controller;
+
+            this.cardOrderAbortController = controller;
+
+            const grid = this.resolveCardsGrid();
+
+            if (!grid) {
+                return;
+            }
+
+            const schedule = () => this.scheduleCardOrderSync();
+
+            schedule();
+
+            const observer = new MutationObserver(() => {
+                if (this.isApplyingCardOrder) {
+                    return;
+                }
+
+                schedule();
+            });
+
+            observer.observe(grid, { childList: true });
+
+            signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+
+            window.addEventListener('resize', schedule, { passive: true, signal });
+            window.addEventListener('orientationchange', schedule, { passive: true, signal });
+
+            if (typeof this.$watch === 'function') {
+                this.$watch(() => this.$store?.bp?.current, () => schedule());
+            }
+        },
+        scheduleCardOrderSync() {
+            if (this.pendingCardOrderFrame !== null) {
+                return;
+            }
+
+            this.pendingCardOrderFrame = window.requestAnimationFrame(() => {
+                this.pendingCardOrderFrame = null;
+                this.applyRtlCardOrder();
+            });
+        },
+        applyRtlCardOrder() {
+            if (document.body.classList.contains('sorting')) {
+                return;
+            }
+
+            const grid = this.resolveCardsGrid();
+
+            if (!grid) {
+                return;
+            }
+
+            const cards = Array.from(grid.querySelectorAll('[data-athkar-manager-card]'));
+
+            if (cards.length < 2) {
+                return;
+            }
+
+            const columns = this.detectGridColumns(cards);
+
+            if (columns <= 1) {
+                return;
+            }
+
+            const orderedCards = cards
+                .map((card, index) => ({
+                    card,
+                    index: Number(card.dataset.athkarOrderIndex ?? index),
+                }))
+                .sort((a, b) => a.index - b.index)
+                .map(({ card }) => card);
+
+            const reordered = [];
+            for (let offset = 0; offset < orderedCards.length; offset += columns) {
+                const slice = orderedCards.slice(offset, offset + columns).reverse();
+                reordered.push(...slice);
+            }
+
+            const currentIds = cards.map((card) => card.dataset.athkarCardId);
+            const nextIds = reordered.map((card) => card.dataset.athkarCardId);
+
+            if (currentIds.join('|') === nextIds.join('|')) {
+                return;
+            }
+
+            this.isApplyingCardOrder = true;
+
+            const fragment = document.createDocumentFragment();
+            reordered.forEach((card) => fragment.appendChild(card));
+            grid.appendChild(fragment);
+
+            this.isApplyingCardOrder = false;
+        },
+        detectGridColumns(cards) {
+            const threshold = 8;
+            const sorted = cards
+                .map((card) => ({ card, top: card.getBoundingClientRect().top }))
+                .sort((a, b) => a.top - b.top);
+
+            if (sorted.length === 0) {
+                return 1;
+            }
+
+            const firstTop = sorted[0].top;
+            return sorted.filter((item) => Math.abs(item.top - firstTop) <= threshold).length || 1;
+        },
+        resolveCardsGrid() {
+            return this.$root?.querySelector?.('[wire\\:sort="reorderAthkar"]') ?? null;
         },
         resolveManagedCard(target) {
             if (!(target instanceof Element)) {
