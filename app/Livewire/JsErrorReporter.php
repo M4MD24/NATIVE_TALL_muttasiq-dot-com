@@ -76,9 +76,9 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                 $this->openGithubIssueAction(),
             ])
             ->modalContentFooter(
-                fn (Action $action): View => view('livewire.js-error-reporter.modal-footer', ['action' => $action]),
+                fn(Action $action): View => view('livewire.js-error-reporter.modal-footer', ['action' => $action]),
             )
-            ->fillForm(fn (): array => [
+            ->fillForm(fn(): array => [
                 'user_note' => '',
                 'technical_snapshot' => $this->formatErrorsForDisplay(),
             ])
@@ -109,12 +109,6 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                         'errors' => $this->capturedErrors,
                         'context' => $this->clientContext,
                     ], request());
-
-                    notify(
-                        iconName: 'heroicon-o-check-circle',
-                        title: 'تم إرسال البلاغ بنجاح',
-                        body: 'جزاك الله خيرا...',
-                    );
 
                     $this->dispatch('js-error-report-submitted', reportId: $report->id);
                     $this->resetCapturedData();
@@ -152,7 +146,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         notify(
             iconName: 'heroicon-o-check-circle',
             title: 'تم إرسال البلاغ بنجاح',
-            body: 'جزاك الله خيرًا، تم استلام البلاغ ومراجعته مبدئيًا.',
+            body: 'جزاك الله خيرا...',
         );
     }
 
@@ -199,9 +193,9 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         }
 
         return collect($errors)
-            ->filter(fn (mixed $entry): bool => is_array($entry))
+            ->filter(fn(mixed $entry): bool => is_array($entry))
             ->take(15)
-            ->map(fn (array $entry): array => [
+            ->map(fn(array $entry): array => [
                 'type' => $this->trimToLength($entry['type'] ?? null, 20) ?: 'error',
                 'time' => $this->trimToLength($entry['time'] ?? null, 50),
                 'message' => $this->trimToLength($entry['message'] ?? null, 1000) ?: 'Unknown error',
@@ -219,16 +213,16 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
         return collect($this->capturedErrors)
             ->map(function (array $entry): string {
                 $parts = [
-                    '['.$entry['type'].']',
+                    '[' . $entry['type'] . ']',
                     $entry['message'],
                 ];
 
                 if ($entry['source']) {
-                    $parts[] = '('.$entry['source'].':'.($entry['line'] ?? 0).':'.($entry['column'] ?? 0).')';
+                    $parts[] = '(' . $entry['source'] . ':' . ($entry['line'] ?? 0) . ':' . ($entry['column'] ?? 0) . ')';
                 }
 
                 if ($entry['time']) {
-                    $parts[] = '@ '.$entry['time'];
+                    $parts[] = '@ ' . $entry['time'];
                 }
 
                 $summary = implode(' ', $parts);
@@ -237,7 +231,7 @@ class JsErrorReporter extends Component implements HasActions, HasSchemas
                     return $summary;
                 }
 
-                return $summary."\n".$entry['stack'];
+                return $summary . "\n" . $entry['stack'];
             })
             ->implode("\n\n");
     }
