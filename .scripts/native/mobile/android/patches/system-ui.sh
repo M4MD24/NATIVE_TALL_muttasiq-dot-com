@@ -178,7 +178,7 @@ Log.d(
             "For edge-to-edge mode, system bars are transparent to allow content to draw behind them",
             "For edge-to-edge mode, system bars follow the system light/dark theme so content does not bleed through",
             "status bar docstring",
-            already_contains="For edge-to-edge mode, system bars follow the system light/dark theme so content does not bleed through",
+            already_contains="SystemBarsScrim",
         )
         changed = changed or updated
 

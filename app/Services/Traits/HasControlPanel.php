@@ -403,9 +403,9 @@ trait HasControlPanel
 
     private function changelogImageBaseUrl(): string
     {
-        if (config('nativephp-internal.running')) {
-            return '/_assets/docs/updates/images/';
-        }
+        // if (config('nativephp-internal.running') && is_platform('ios')) {
+        //     return '/_assets/docs/updates/images/';
+        // }
 
         return '/docs/updates/images/';
     }

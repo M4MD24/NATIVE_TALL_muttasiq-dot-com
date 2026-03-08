@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-native_root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../" && pwd)"
+native_root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"
 
 native_read_mobile_version() {
     php -r '

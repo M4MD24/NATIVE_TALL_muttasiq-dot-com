@@ -375,6 +375,20 @@ document.addEventListener('alpine:init', () => {
 
         const currentView = normalizeViewName(currentHash);
 
+        // if (!currentView || !viewIndex.viewSet.has(currentView)) {
+        //     return false;
+        // }
+
+        // if (
+        //     isNativeShell() &&
+        //     currentView === viewIndex.rootView &&
+        //     window.location.pathname === '/'
+        // ) {
+        //     return { handled: false, shouldExit: true };
+        // }
+
+        // window.history.back();
+        // return { handled: true, shouldExit: false };
         if (
             !currentView ||
             currentView === viewIndex.rootView ||
@@ -478,6 +492,14 @@ document.addEventListener('alpine:init', () => {
 
         window.addEventListener('hashchange', onHashChange);
         waitForHistoryReady(() => {
+            // const currentHash = normalizeHash(window.location.hash || '#');
+            // const hasRestoredHistory = window.history.state?.__hashActionRemember === true;
+
+            // if (currentHash !== '#' && isViewHash(currentHash) && hasRestoredHistory) {
+            //     dispatchSwitchView(normalizeViewName(currentHash), { restoring: true });
+            //     return;
+            // }
+
             const defaultHash = normalizeHash(el.dataset?.hashDefault);
             const restoreHash = normalizeHash(el.dataset?.hashRestore || '');
 
