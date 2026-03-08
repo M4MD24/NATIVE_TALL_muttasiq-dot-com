@@ -45,6 +45,23 @@ document.addEventListener('alpine:init', () => {
             this.$root.addEventListener(
                 'pointerdown',
                 (event) => {
+                    const dragHandle = event.target instanceof Element
+                        ? event.target.closest('[data-athkar-sort-handle]')
+                        : null;
+                    const cardElement = this.resolveManagedCard(event.target);
+
+                    if (!(dragHandle instanceof Element) || !cardElement) {
+                        return;
+                    }
+
+                    this.markCardClickHandled(cardElement);
+                },
+                { signal, passive: true, capture: true },
+            );
+
+            this.$root.addEventListener(
+                'pointerdown',
+                (event) => {
                     const cardElement = this.resolveManagedCard(event.target);
 
                     if (!cardElement || this.isExcludedCardTarget(event.target)) {

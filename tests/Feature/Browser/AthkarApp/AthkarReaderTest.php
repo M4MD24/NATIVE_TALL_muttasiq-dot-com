@@ -668,6 +668,48 @@ JS,
     );
 });
 
+it('does not open a card modal when releasing the dedicated drag handle', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout(
+        $page,
+        <<<'JS'
+(() => Boolean(document.querySelector('[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]')))()
+JS,
+        true,
+        5_000,
+    );
+
+    $page->script(<<<'JS'
+(() => {
+  const dragHandle = document.querySelector('[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]');
+
+  if (!(dragHandle instanceof HTMLElement)) {
+    return false;
+  }
+
+  dragHandle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 16, clientY: 16, pointerId: 1 }));
+  dragHandle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 16, clientY: 16, pointerId: 1 }));
+  dragHandle.click();
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        'document.querySelectorAll(".fi-modal.fi-modal-open").length',
+        1,
+        5_000,
+    );
+});
+
 it('preserves athkar manager scroll after opening and closing a card modal', function () {
     $page = visit('/');
 
