@@ -124,7 +124,11 @@
             'mt-16' => !is_platform('ios'),
         ])>
             @include('partials.main-menu')
-            @include('partials.athkar-app.index')
+            <x-athkar-app.index
+                :athkar="$athkar"
+                :athkar-settings="$athkarSettings"
+                :athkar-main-text-size-limits="$athkarMainTextSizeLimits"
+            />
         </main>
 
         @include('partials.copyright-and-version')
