@@ -14,7 +14,6 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -82,7 +81,6 @@ class AthkarManager extends Component implements HasActions, HasSchemas
             ->modalHeading('تعديل الذكر')
             ->modalAutofocus(false)
             ->modalSubmitActionLabel('حفظ التعديل')
-            ->modalFooterActionsAlignment(Alignment::End)
             ->extraModalFooterActions([
                 Action::make('deleteAthkarFromEdit')
                     ->label('حذف الذكر')

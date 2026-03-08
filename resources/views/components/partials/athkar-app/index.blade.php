@@ -1,3 +1,9 @@
+@props([
+    'athkar' => [],
+    'athkarSettings' => [],
+    'athkarMainTextSizeLimits' => [],
+])
+
 @assets
     <style>
         .athkar-shift-away {
@@ -23,7 +29,7 @@
         typeLabels: @js(\App\Services\Enums\ThikrType::labels()),
     })"
     x-on:close-athkar-mode.window="closeMode()"
-    x-on:control-panel-updated.window="applySettings($event.detail?.controlPanel)"
+    x-on:control-panel-updated.window="applySettings($event.detail?.controlPanel, { maintenancePulse: Boolean($event.detail?.maintenancePulse) })"
     x-on:athkar-gate-open="openMode($event.detail?.mode)"
     x-on:keydown.escape.window="if (activeMode && !isCompletionVisible) closeMode()"
     x-transition:enter="transition-all ease-out duration-750 delay-400"
@@ -34,9 +40,9 @@
     x-transition:leave-end="opacity-0! blur-[2px]"
 >
     <div class="relative flex h-full w-full items-center justify-center">
-        @include('partials.athkar-app.gate')
-        @include('partials.athkar-app.notice')
-        @include('partials.athkar-app.reader')
-        @include('partials.athkar-app.congrats')
+        <x-partials.athkar-app.gate />
+        <x-partials.athkar-app.notice />
+        <x-partials.athkar-app.reader />
+        <x-partials.athkar-app.congrats />
     </div>
 </div>

@@ -17,7 +17,15 @@
         waitTimeoutId: null,
         hideTimeoutId: null,
         isTouchDevice() {
-            return Boolean($store.bp?.hasTouch ?? $store.bp?.isTouch?.());
+            if (!$store.bp) {
+                return false;
+            }
+    
+            if (typeof $store.bp.isTouch === 'function') {
+                return $store.bp.isTouch();
+            }
+    
+            return Boolean($store.bp.hasTouch);
         },
         clearLoopTimers() {
             if (this.waitTimeoutId) {

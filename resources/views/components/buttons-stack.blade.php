@@ -103,7 +103,9 @@
         observeItems() {
             this.observer = new MutationObserver((mutations) => {
                 if (this.isUpdatingLayout) {
-                    this.hasPendingLayout = true;
+                    if (mutations.some((mutation) => mutation.type === 'childList')) {
+                        this.hasPendingLayout = true;
+                    }
                     return;
                 }
     

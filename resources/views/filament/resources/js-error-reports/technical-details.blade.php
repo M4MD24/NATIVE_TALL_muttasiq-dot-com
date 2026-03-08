@@ -12,6 +12,10 @@
             <p class="text-gray-700 dark:text-gray-300">{{ $record->runtime_platform ?: 'غير محدد' }}</p>
         </div>
         <div>
+            <p class="font-semibold text-gray-900 dark:text-gray-100">نقطة التوقف</p>
+            <p class="text-gray-700 dark:text-gray-300">{{ $record->screen_breakpoint ?: 'غير محدد' }}</p>
+        </div>
+        <div>
             <p class="font-semibold text-gray-900 dark:text-gray-100">وقت البلاغ</p>
             <p class="text-gray-700 dark:text-gray-300">{{ $record->created_at?->toDateTimeString() }}</p>
         </div>

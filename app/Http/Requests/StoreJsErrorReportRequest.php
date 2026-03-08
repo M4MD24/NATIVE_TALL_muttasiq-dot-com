@@ -32,12 +32,13 @@ class StoreJsErrorReportRequest extends FormRequest
             'errors.*.source' => ['nullable', 'string', 'max:2048'],
             'errors.*.line' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
             'errors.*.column' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
-            'errors.*.stack' => ['nullable', 'string', 'max:12000'],
+            'errors.*.stack' => ['nullable', 'string', 'max:50000'],
             'context' => ['nullable', 'array'],
             'context.url' => ['nullable', 'string', 'max:2048'],
             'context.user_agent' => ['nullable', 'string', 'max:1000'],
             'context.language' => ['nullable', 'string', 'max:32'],
-            'context.platform' => ['nullable', 'string', 'max:32'],
+            'context.platform' => ['nullable', 'string', 'max:64'],
+            'context.breakpoint' => ['nullable', 'string', 'in:base,sm,md,lg,xl,2xl'],
         ];
     }
 

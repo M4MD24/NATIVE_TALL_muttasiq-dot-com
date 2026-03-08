@@ -42,6 +42,54 @@ it('opens athkar manager in modal mode on mobile breakpoints', function () {
         ->assertSet('mountedActions.0.name', 'manageAthkar');
 });
 
+it('passes native mobile runtime flag to the manager card interaction bridge', function () {
+    config()->set('nativephp-internal.running', true);
+    config()->set('nativephp-internal.platform', 'ios');
+
+    $cards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards())
+        ->take(1)
+        ->values()
+        ->all();
+
+    expect($cards)->not->toBeEmpty();
+
+    $rendered = view('livewire.athkar-manager.slideover-content', [
+        'componentId' => 'athkar-manager-native-test',
+        'cards' => $cards,
+        'isMobile' => true,
+    ])->render();
+
+    expect($rendered)->toContain('nativeMobileRuntime: true');
+});
+
+it('renders explicit sortable config and dedicated drag handle markup for manager cards', function () {
+    $cards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards())
+        ->take(1)
+        ->values()
+        ->all();
+
+    expect($cards)->not->toBeEmpty();
+
+    $rendered = view('livewire.athkar-manager.slideover-content', [
+        'componentId' => 'athkar-manager-sort-config-test',
+        'cards' => $cards,
+        'isMobile' => false,
+    ])->render();
+
+    expect($rendered)->toContain('wire:sort:config="managerSortConfig()"')
+        ->and($rendered)->toContain('athkar-manager-cards-grid flex flex-wrap content-start gap-4')
+        ->and($rendered)->toContain('dir="ltr"')
+        ->and($rendered)->toContain('data-athkar-manager-card')
+        ->and($rendered)->toContain('data-athkar-order-index')
+        ->and($rendered)->toContain('dir="rtl"')
+        ->and($rendered)->toContain('data-athkar-sort-handle')
+        ->and($rendered)->toContain('wire:loading.delay.class="opacity-100 pointer-events-auto"')
+        ->and($rendered)->toContain('wire:loading.delay.class.remove="opacity-0 pointer-events-none"')
+        ->and($rendered)->not->toContain('wire:sort:handle')
+        ->and($rendered)->not->toContain('x-bind:data-athkar-touch-drag')
+        ->and($rendered)->not->toContain('wire:click.preserve-scroll="openEditAthkar(');
+});
+
 it('mounts the edit action when opening a card from the manager', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false);
@@ -141,6 +189,7 @@ it('resolves defaults with local overrides and marks overridden cards', function
 
 it('reorders athkar cards locally without mutating database defaults', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $cards = collect($component->instance()->resolvedAthkarCards())->values();
 
     expect($cards->count())->toBeGreaterThan(1);
@@ -166,6 +215,7 @@ it('reorders athkar cards locally without mutating database defaults', function 
 
 it('marks only the actually moved default cards as modified after reordering', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $beforeDefaultIds = collect($component->instance()->resolvedAthkarCards())
         ->reject(fn (array $card): bool => (bool) ($card['is_custom'] ?? false))
         ->pluck('id')
@@ -207,6 +257,7 @@ it('marks only the actually moved default cards as modified after reordering', f
 
 it('keeps override badges scoped to actually moved defaults when custom and deleted overrides exist', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $defaults = collect($component->instance()->defaultAthkarCards())->values();
 
     expect($defaults->count())->toBeGreaterThan(6);

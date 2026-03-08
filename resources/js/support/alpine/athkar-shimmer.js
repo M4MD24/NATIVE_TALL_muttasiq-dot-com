@@ -33,6 +33,7 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
         duration: defaultDurationMs,
         delay: defaultDelayMs,
         pause: defaultPauseMs,
+        generation: 0,
     };
 
     const clearTimers = () => {
@@ -48,6 +49,7 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
     };
 
     const stop = () => {
+        state.generation += 1;
         clearTimers();
 
         if (state.target) {
@@ -63,6 +65,8 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
     };
 
     const schedule = ({ immediate = false } = {}) => {
+        const generation = state.generation + 1;
+        state.generation = generation;
         clearTimers();
 
         const { target, delay, duration, pause } = state;
@@ -72,13 +76,22 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
         }
 
         const run = () => {
-            if (!state.target || state.target !== target) {
+            if (
+                state.generation !== generation ||
+                !state.target ||
+                state.target !== target ||
+                !document.contains(target)
+            ) {
                 return;
             }
 
             target.classList.add('is-shimmering');
             state.runTimer = setTimeout(() => {
-                if (state.target !== target) {
+                if (
+                    state.generation !== generation ||
+                    state.target !== target ||
+                    !document.contains(target)
+                ) {
                     return;
                 }
 

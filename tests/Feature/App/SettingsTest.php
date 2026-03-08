@@ -75,6 +75,13 @@ it('accepts a valid main text size range in the settings modal', function () {
         ->assertDispatched('control-panel-updated');
 });
 
+it('can run a silent reader maintenance pulse through the control panel action lifecycle', function () {
+    livewire(ControlPanel::class)
+        ->call('triggerReaderMaintenancePulse')
+        ->assertSet('mountedActions', [])
+        ->assertDispatched('control-panel-updated');
+});
+
 it('keeps changelog image urls renderable when running in native ios runtime', function () {
     config([
         'nativephp-internal.running' => true,

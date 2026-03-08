@@ -233,6 +233,11 @@ it('persists athkar counts, overcounts, and restores the reader on reload', func
     scriptClick($page, '[data-athkar-slide][data-active="true"] [data-athkar-tap]');
 
     waitForScript($page, athkarReaderDataScript('data.countAt(data.activeIndex)'), 2);
+    waitForScript(
+        $page,
+        'JSON.parse(localStorage.getItem("athkar-progress-v1"))?.sabah?.counts?.['.$singleIndex.'] ?? null',
+        2,
+    );
 
     $progress = $page->script('JSON.parse(localStorage.getItem("athkar-progress-v1"))');
 
@@ -503,12 +508,20 @@ JS,
         <<<'JS'
 (() => {
   const bp = window.Alpine?.store?.('bp');
+  const manager = document.querySelector('[wire\\:sort="reorderAthkar"]')?.closest('[x-data]');
   const firstCard = document.querySelector('[data-athkar-manager-card]');
-  if (!bp || !firstCard) {
+  if (!bp || !firstCard || !manager || !window.Alpine?.$data) {
     return false;
   }
 
-  return bp.shouldUseSortHandles() === false && firstCard.hasAttribute('wire:sort:handle');
+  const data = window.Alpine.$data(manager);
+
+  const config = data.managerSortConfig();
+
+  return bp.is('sm+')
+    && config.handle === '[data-athkar-sort-handle]'
+    && config.forceFallback === true
+    && config.fallbackOnBody === false;
 })()
 JS,
         true,
@@ -516,7 +529,7 @@ JS,
     );
 });
 
-it('opens athkar manager as a modal on touch layouts and limits drag handles to order and drag controls', function () {
+it('opens athkar manager as a modal on tablet layouts while using the dedicated drag handle', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -549,11 +562,19 @@ JS,
         <<<'JS'
 (() => {
   const bp = window.Alpine?.store?.('bp');
-  if (!bp) {
+  const manager = document.querySelector('[wire\\:sort="reorderAthkar"]')?.closest('[x-data]');
+  if (!bp || !manager || !window.Alpine?.$data) {
     return false;
   }
 
-  return bp.isTablet() === true && bp.shouldUseSortHandles() === true;
+  const data = window.Alpine.$data(manager);
+
+  const config = data.managerSortConfig();
+
+  return bp.isTablet() === true
+    && config.handle === '[data-athkar-sort-handle]'
+    && config.forceFallback === true
+    && config.fallbackOnBody === false;
 })()
 JS,
         true,
@@ -568,10 +589,10 @@ JS,
     return false;
   }
 
-  const orderHandle = card.querySelector('.athkar-manager-card__badge--order[data-athkar-sort-handle][wire\\:sort\\:handle]');
-  const dragHandle = card.querySelector('.athkar-manager-card__drag-handle[data-athkar-sort-handle][wire\\:sort\\:handle][title="اسحب لإعادة الترتيب"]');
+  const orderBadge = card.querySelector('.athkar-manager-card__badge--order');
+  const dragHandle = card.querySelector('.athkar-manager-card__drag-handle[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]');
 
-  return !card.hasAttribute('wire:sort:handle') && Boolean(orderHandle) && Boolean(dragHandle);
+  return Boolean(orderBadge) && Boolean(dragHandle);
 })()
 JS,
         true,
@@ -583,22 +604,186 @@ JS,
 (() => {
   const card = document.querySelector('[data-athkar-manager-card]');
   const dragHandle = card?.querySelector('.athkar-manager-card__drag-handle[title="اسحب لإعادة الترتيب"]');
-  const orderHandle = card?.querySelector('.athkar-manager-card__badge--order[data-athkar-sort-handle]');
-  if (!card || !dragHandle || !orderHandle) {
+  const orderBadge = card?.querySelector('.athkar-manager-card__badge--order');
+  if (!card || !dragHandle || !orderBadge) {
     return false;
   }
 
   const cardStyles = getComputedStyle(card);
   const dragStyles = getComputedStyle(dragHandle);
-  const orderStyles = getComputedStyle(orderHandle);
+  const orderStyles = getComputedStyle(orderBadge);
 
   return !String(cardStyles.transitionProperty).includes('transform')
     && dragStyles.touchAction === 'none'
-    && orderStyles.touchAction === 'none';
+    && orderStyles.touchAction !== 'none';
 })()
 JS,
         true,
         5_000,
+    );
+});
+
+it('limits card dragging to dedicated handles on base breakpoint touch layouts', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($page, 'window.location.hash', '#athkar-app-gate');
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout(
+        $page,
+        <<<'JS'
+(() => {
+  const bp = window.Alpine?.store?.('bp');
+  const manager = document.querySelector('[wire\\:sort="reorderAthkar"]')?.closest('[x-data]');
+  const card = document.querySelector('[data-athkar-manager-card]');
+  if (!bp || !card || !manager || !window.Alpine?.$data) {
+    return false;
+  }
+
+  const data = window.Alpine.$data(manager);
+  const dragHandle = card.querySelector('.athkar-manager-card__drag-handle[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]');
+  const orderBadge = card.querySelector('.athkar-manager-card__badge--order');
+
+  const config = data.managerSortConfig();
+
+  return bp.current === 'base'
+    && config.handle === '[data-athkar-sort-handle]'
+    && config.forceFallback === true
+    && config.fallbackOnBody === true
+    && Boolean(dragHandle)
+    && Boolean(orderBadge)
+    && !orderBadge.hasAttribute('wire:sort:handle');
+})()
+JS,
+        true,
+        5_000,
+    );
+});
+
+it('does not open a card modal when releasing the dedicated drag handle', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout(
+        $page,
+        <<<'JS'
+(() => Boolean(document.querySelector('[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]')))()
+JS,
+        true,
+        5_000,
+    );
+
+    $page->script(<<<'JS'
+(() => {
+  const dragHandle = document.querySelector('[data-athkar-sort-handle][title="اسحب لإعادة الترتيب"]');
+
+  if (!(dragHandle instanceof HTMLElement)) {
+    return false;
+  }
+
+  dragHandle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 16, clientY: 16, pointerId: 1 }));
+  dragHandle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 16, clientY: 16, pointerId: 1 }));
+  dragHandle.click();
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        'document.querySelectorAll(".fi-modal.fi-modal-open").length',
+        1,
+        5_000,
+    );
+});
+
+it('opens a card modal after a still long press release', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 5_000);
+
+    $page->script(<<<'JS'
+(() => {
+  const card = document.querySelector('[data-athkar-manager-card]');
+  if (!card) {
+    return false;
+  }
+
+  card.click();
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        'document.querySelectorAll(".fi-modal.fi-modal-open").length >= 2',
+        true,
+        6_000,
+    );
+});
+
+it('does not open a card modal after a long press that moves', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 5_000);
+
+    $page->script(<<<'JS'
+(() => {
+  const card = document.querySelector('[data-athkar-manager-card]');
+  const manager = document.querySelector('[wire\\:sort="reorderAthkar"]')?.closest('[x-data]');
+  if (!card || !manager || !window.Alpine?.$data) {
+    return false;
+  }
+
+  const data = window.Alpine.$data(manager);
+  const delay = Number(data?.cardPressHoldDelayInMs ?? data?.cardRepelHoldDurationInMs ?? 700);
+  window.__athkarHoldCancelReady = false;
+
+  data.markCardClickHandled.call(data, card);
+  card.click();
+
+  window.setTimeout(() => {
+    window.__athkarHoldCancelReady = true;
+  }, Math.max(0, delay + 700));
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        <<<'JS'
+(() => window.__athkarHoldCancelReady === true
+  && document.querySelectorAll(".fi-modal.fi-modal-open").length === 1)()
+JS,
+        true,
+        6_000,
     );
 });
 

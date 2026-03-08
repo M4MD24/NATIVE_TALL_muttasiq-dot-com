@@ -28,7 +28,8 @@ class JsErrorReportRecorder
      *         url?: string|null,
      *         user_agent?: string|null,
      *         language?: string|null,
-     *         platform?: string|null
+     *         platform?: string|null,
+     *         breakpoint?: string|null
      *     }
      * } $payload
      */
@@ -43,7 +44,7 @@ class JsErrorReportRecorder
                 'source' => $this->sanitizeString($entry['source'] ?? null, 2048),
                 'line' => is_numeric($entry['line'] ?? null) ? max(0, (int) $entry['line']) : null,
                 'column' => is_numeric($entry['column'] ?? null) ? max(0, (int) $entry['column']) : null,
-                'stack' => $this->sanitizeString($entry['stack'] ?? null, 12000),
+                'stack' => $this->clipString($entry['stack'] ?? null, 20000),
             ])
             ->values()
             ->all();
@@ -62,7 +63,8 @@ class JsErrorReportRecorder
             'page_url' => $this->sanitizeString($context['url'] ?? null, 2048),
             'user_agent' => $this->sanitizeString($context['user_agent'] ?? $request->userAgent(), 1000),
             'client_language' => $this->sanitizeString($context['language'] ?? null, 32),
-            'runtime_platform' => $this->sanitizeString($context['platform'] ?? null, 32),
+            'runtime_platform' => $this->resolveRuntimePlatform($context['platform'] ?? null),
+            'screen_breakpoint' => $this->sanitizeString($context['breakpoint'] ?? null, 8),
             'app_version' => $this->sanitizeString(Setting::appVersion(), 32),
             'ip_address' => $this->sanitizeString($request->ip(), 45),
             'first_occurred_at' => $firstOccurredAt,
@@ -139,5 +141,44 @@ class JsErrorReportRecorder
         }
 
         return (string) Str::of($trimmed)->limit($maxLength, '');
+    }
+
+    private function clipString(mixed $value, int $maxLength, int $tailLength = 2000): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim(strip_tags($value));
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (mb_strlen($trimmed) <= $maxLength) {
+            return $trimmed;
+        }
+
+        $normalizedTailLength = min(max($tailLength, 0), intdiv($maxLength, 2));
+        $headLength = max($maxLength - $normalizedTailLength - 5, 0);
+
+        return mb_substr($trimmed, 0, $headLength).' ... '.mb_substr($trimmed, -$normalizedTailLength);
+    }
+
+    private function resolveRuntimePlatform(mixed $value): ?string
+    {
+        $platform = $this->sanitizeString($value, 64);
+
+        if ($platform === null) {
+            return null;
+        }
+
+        if (Str::startsWith($platform, ['Web', 'Native'])) {
+            return $this->sanitizeString($platform, 32);
+        }
+
+        $prefix = config('nativephp-internal.running') ? 'Native' : 'Web';
+
+        return $this->sanitizeString(sprintf('%s - %s', $prefix, $platform), 32);
     }
 }

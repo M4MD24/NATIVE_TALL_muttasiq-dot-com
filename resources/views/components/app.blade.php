@@ -8,8 +8,8 @@
 >
 
 <head>
-    @include('partials.meta')
-    @include('partials.favicon')
+    <x-partials.meta />
+    <x-partials.favicon />
     @stack('meta')
 
     <!-- Fonts -->
@@ -29,8 +29,8 @@
             display: none !important;
         }
     </style>
-    @include('partials.fast-testing-hacks')
-    @include('partials.filament-overrides')
+    <x-partials.fast-testing-hacks />
+    <x-partials.filament-overrides />
     @filamentStyles
     @lazyCss(['resources/css/core/filament/components.css', 'resources/css/app-lazy.css'])
     @vite('resources/css/app.css')
@@ -59,7 +59,7 @@
     }"
     x-data="layoutManager()"
 >
-    @include('partials.blinker')
+    <x-partials.blinker />
 
     <div class="flex min-h-[calc(100dvh-var(--inset-top,0px)-var(--inset-bottom,0px))] flex-col">
         {{ $slot }}

@@ -17,6 +17,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\HtmlString;
+use Throwable;
 
 trait HasControlPanel
 {
@@ -222,12 +223,40 @@ trait HasControlPanel
                 }
 
                 $savedControlPanel = Setting::normalizeSettings($data);
+                $isMaintenancePulse = $this->isMountedControlPanelMaintenancePulse();
 
                 $this->clientControlPanel = $savedControlPanel;
-                $this->dispatch('control-panel-updated', controlPanel: $savedControlPanel);
+                $this->dispatch(
+                    'control-panel-updated',
+                    controlPanel: $savedControlPanel,
+                    maintenancePulse: $isMaintenancePulse,
+                );
 
-                notify(iconName: 'mdi.content-save-check', title: 'تم حفظ الإعدادات بنجاح');
+                if (! $isMaintenancePulse) {
+                    notify(iconName: 'mdi.content-save-check', title: 'تم حفظ الإعدادات بنجاح');
+                }
             });
+    }
+
+    public function triggerReaderMaintenancePulse(): void
+    {
+        $normalizedControlPanel = $this->filterControlPanel($this->loadControlPanel());
+
+        $this->syncClientControlPanel($normalizedControlPanel);
+        $this->dispatch(
+            'control-panel-updated',
+            controlPanel: $normalizedControlPanel,
+            maintenancePulse: true,
+        );
+
+        $this->runSaveLikeControlPanelPulse();
+        $this->dispatch(
+            'control-panel-updated',
+            controlPanel: $this->clientControlPanel,
+            maintenancePulse: true,
+        );
+
+        $this->forceRender();
     }
 
     public function setControlPanelActiveTab(?string $tab = null): void
@@ -379,5 +408,54 @@ trait HasControlPanel
         }
 
         return '/docs/updates/images/';
+    }
+
+    private function runSaveLikeControlPanelPulse(): void
+    {
+        try {
+            $this->mountAction('controlPanel', ['maintenancePulse' => true]);
+
+            if (! $this->getMountedAction()) {
+                return;
+            }
+
+            $this->callMountedAction();
+        } catch (Throwable) {
+            if (count($this->mountedActions ?? [])) {
+                $this->unmountAction(canCancelParentActions: false);
+            }
+        }
+    }
+
+    private function isMountedControlPanelMaintenancePulse(): bool
+    {
+        $mountedActions = $this->mountedActions ?? [];
+
+        if ($mountedActions === []) {
+            return false;
+        }
+
+        $mountedAction = $mountedActions[array_key_last($mountedActions)] ?? null;
+
+        if (! is_array($mountedAction)) {
+            return false;
+        }
+
+        $arguments = $mountedAction['arguments'] ?? [];
+        $value = $arguments['maintenancePulse'] ?? false;
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === 1 || $value === '1') {
+            return true;
+        }
+
+        if ($value === 0 || $value === '0') {
+            return false;
+        }
+
+        return false;
     }
 }

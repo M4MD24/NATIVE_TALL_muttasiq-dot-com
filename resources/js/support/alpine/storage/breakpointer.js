@@ -63,24 +63,38 @@ document.addEventListener('alpine:init', function () {
         }
     };
 
-    const resizeObserver = new ResizeObserver(() => {
-        syncBreakpoints();
-    });
+    let syncFrameId = null;
+    const scheduleSync = () => {
+        if (syncFrameId !== null) {
+            return;
+        }
 
-    resizeObserver.observe(document.documentElement);
+        syncFrameId = window.requestAnimationFrame(() => {
+            syncFrameId = null;
+            syncBreakpoints();
+            syncTouchState();
+        });
+    };
+
+    if (typeof window.ResizeObserver === 'function') {
+        const resizeObserver = new ResizeObserver(() => {
+            scheduleSync();
+        });
+
+        resizeObserver.observe(document.documentElement);
+    }
+
     window.addEventListener(
         'resize',
         () => {
-            syncBreakpoints();
-            syncTouchState();
+            scheduleSync();
         },
         { passive: true },
     );
     window.addEventListener(
         'orientationchange',
         () => {
-            syncBreakpoints();
-            syncTouchState();
+            scheduleSync();
         },
         { passive: true },
     );
