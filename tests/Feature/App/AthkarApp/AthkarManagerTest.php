@@ -78,6 +78,9 @@ it('renders explicit sortable config and dedicated drag handle markup for manage
 
     expect($rendered)->toContain('wire:sort:config="managerSortConfig()"')
         ->and($rendered)->toContain('athkar-manager-cards-grid flex flex-wrap content-start gap-4')
+        ->and($rendered)->toContain('dir="ltr"')
+        ->and($rendered)->toContain('data-athkar-manager-card')
+        ->and($rendered)->toContain('dir="rtl"')
         ->and($rendered)->toContain('data-athkar-sort-handle')
         ->and($rendered)->not->toContain('wire:sort:handle')
         ->and($rendered)->not->toContain('x-bind:data-athkar-touch-drag')
@@ -183,6 +186,7 @@ it('resolves defaults with local overrides and marks overridden cards', function
 
 it('reorders athkar cards locally without mutating database defaults', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $cards = collect($component->instance()->resolvedAthkarCards())->values();
 
     expect($cards->count())->toBeGreaterThan(1);
@@ -206,8 +210,39 @@ it('reorders athkar cards locally without mutating database defaults', function 
         ->and(Thikr::query()->findOrFail($swappedId)->order)->toBe($swappedDbOrder);
 });
 
+it('reorders athkar cards using reversed indices on desktop layouts', function () {
+    $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', false);
+
+    $cards = collect($component->instance()->resolvedAthkarCards())->values();
+
+    expect($cards->count())->toBeGreaterThan(2);
+
+    $movedId = (int) $cards[0]['id'];
+    $swappedId = (int) $cards[1]['id'];
+    $totalCards = $cards->count();
+
+    $movedDbOrder = Thikr::query()->findOrFail($movedId)->order;
+    $swappedDbOrder = Thikr::query()->findOrFail($swappedId)->order;
+
+    $reversedTargetIndex = max(0, $totalCards - 2);
+
+    $component
+        ->call('reorderAthkar', $movedId, $reversedTargetIndex)
+        ->assertDispatched('athkar-manager-overrides-persisted')
+        ->instance();
+
+    $overridesById = collect($component->instance()->athkarOverrides)->keyBy('thikr_id');
+
+    expect($overridesById->get($movedId)['order'])->toBe(2)
+        ->and($overridesById->get($swappedId)['order'])->toBe(1)
+        ->and(Thikr::query()->findOrFail($movedId)->order)->toBe($movedDbOrder)
+        ->and(Thikr::query()->findOrFail($swappedId)->order)->toBe($swappedDbOrder);
+});
+
 it('marks only the actually moved default cards as modified after reordering', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $beforeDefaultIds = collect($component->instance()->resolvedAthkarCards())
         ->reject(fn (array $card): bool => (bool) ($card['is_custom'] ?? false))
         ->pluck('id')
@@ -249,6 +284,7 @@ it('marks only the actually moved default cards as modified after reordering', f
 
 it('keeps override badges scoped to actually moved defaults when custom and deleted overrides exist', function () {
     $component = livewire(AthkarManager::class);
+    $component->set('isManageAthkarMobile', true);
     $defaults = collect($component->instance()->defaultAthkarCards())->values();
 
     expect($defaults->count())->toBeGreaterThan(6);

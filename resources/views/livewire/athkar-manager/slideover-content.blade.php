@@ -346,8 +346,13 @@
         </div>
     </div>
 
+    @php
+        $cardsForDisplay = $isMobile ? $cards : array_reverse($cards, false);
+    @endphp
+
     <div
         class="athkar-manager-cards-grid flex flex-wrap content-start gap-4"
+        dir="ltr"
         wire:key="athkar-manager-cards-grid"
         wire:sort="reorderAthkar"
         wire:sort:config="managerSortConfig()"
@@ -355,11 +360,12 @@
         x-show="$wire.hasHydratedOverrides"
         x-transition.opacity.duration.200ms
     >
-        @foreach ($cards as $card)
+        @foreach ($cardsForDisplay as $card)
             <article
                 class="athkar-manager-card athkar-manager-card__click basis-full flex-none sm:basis-[calc((100%-1rem)/2)] sm:max-w-[calc((100%-1rem)/2)] xl:basis-[calc((100%-2rem)/3)] xl:max-w-[calc((100%-2rem)/3)]"
                 data-athkar-manager-card
                 data-athkar-card-id="{{ $card['id'] }}"
+                dir="rtl"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"
                 wire:key="athkar-manager-card-{{ $card['id'] }}"
                 wire:sort:item="{{ $card['id'] }}"
