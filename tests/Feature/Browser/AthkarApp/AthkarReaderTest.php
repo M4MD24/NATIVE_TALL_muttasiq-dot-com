@@ -710,6 +710,83 @@ JS);
     );
 });
 
+it('opens a card modal after a still long press release', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 5_000);
+
+    $page->script(<<<'JS'
+(() => {
+  const card = document.querySelector('[data-athkar-manager-card]');
+  if (!card) {
+    return false;
+  }
+
+  card.click();
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        'document.querySelectorAll(".fi-modal.fi-modal-open").length >= 2',
+        true,
+        6_000,
+    );
+});
+
+it('does not open a card modal after a long press that moves', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    safeClick($page, '[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector(".fi-modal-window"))', true, 5_000);
+    waitForScriptWithTimeout($page, 'Boolean(document.querySelector("[data-athkar-manager-card]"))', true, 5_000);
+
+    $page->script(<<<'JS'
+(() => {
+  const card = document.querySelector('[data-athkar-manager-card]');
+  const manager = document.querySelector('[wire\\:sort="reorderAthkar"]')?.closest('[x-data]');
+  if (!card || !manager || !window.Alpine?.$data) {
+    return false;
+  }
+
+  const data = window.Alpine.$data(manager);
+  const delay = Number(data?.cardPressHoldDelayInMs ?? data?.cardRepelHoldDurationInMs ?? 700);
+  window.__athkarHoldCancelReady = false;
+
+  data.markCardClickHandled.call(data, card);
+  card.click();
+
+  window.setTimeout(() => {
+    window.__athkarHoldCancelReady = true;
+  }, Math.max(0, delay + 700));
+
+  return true;
+})()
+JS);
+
+    waitForScriptWithTimeout(
+        $page,
+        <<<'JS'
+(() => window.__athkarHoldCancelReady === true
+  && document.querySelectorAll(".fi-modal.fi-modal-open").length === 1)()
+JS,
+        true,
+        6_000,
+    );
+});
+
 it('preserves athkar manager scroll after opening and closing a card modal', function () {
     $page = visit('/');
 

@@ -365,6 +365,8 @@
                 dir="rtl"
                 style="view-transition-name: athkar-card-{{ $card['id'] }};"
                 wire:key="athkar-manager-card-{{ $card['id'] }}"
+                wire:loading.class="pointer-events-none"
+                wire:target="openEditAthkar({{ $card['id'] }})"
                 wire:sort:item="{{ $card['id'] }}"
                 x-on:contextmenu.prevent
             >
@@ -429,6 +431,18 @@
                             <span class="athkar-manager-card__badge athkar-manager-card__badge--override">مُعَدّل</span>
                         @endif
                     </div>
+                </div>
+
+                <div
+                    class="absolute inset-0 z-10 hidden place-items-center rounded-2xl bg-white/55 backdrop-blur-xs dark:bg-gray-900/45"
+                    wire:loading.delay.class="grid"
+                    wire:loading.delay.class.remove="hidden"
+                    wire:target="openEditAthkar({{ $card['id'] }})"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div class="h-10 w-10 animate-spin rounded-full border-2 border-primary-200 border-t-primary-600 dark:border-primary-500/40 dark:border-t-primary-200"></div>
+                    <span class="sr-only">جاري فتح الذكر...</span>
                 </div>
             </article>
         @endforeach

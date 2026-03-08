@@ -9,7 +9,10 @@ document.addEventListener('alpine:init', () => {
         nativeMobileRuntime: Boolean(config.nativeMobileRuntime ?? false),
         cardRepelHoldDurationInMs: 700,
         cardRepelReleaseDurationInMs: 420,
+        cardPressHoldDelayInMs: 700,
+        cardHoldMoveThresholdInPixels: 1,
         cardPressMoveThresholdInPixels: 8,
+        suppressMouseUntil: 0,
         activeCardPointer: null,
         pendingCardOpenTimer: null,
         pendingCardOpenId: null,
@@ -93,21 +96,8 @@ document.addEventListener('alpine:init', () => {
             this.$root.addEventListener(
                 'pointerdown',
                 (event) => {
-                    const cardElement = this.resolveManagedCard(event.target);
-
-                    if (!cardElement || this.isExcludedCardTarget(event.target)) {
-                        return;
-                    }
-
-                    this.startCardRepel(cardElement, event);
-                    this.activeCardPointer = {
-                        pointerId: event.pointerId,
-                        cardId: String(cardElement.dataset.athkarCardId ?? ''),
-                        startX: event.clientX,
-                        startY: event.clientY,
-                        moved: false,
-                        leftCard: false,
-                    };
+                    this.suppressMouseInteractions();
+                    this.handleCardPointerDown(event);
                 },
                 { signal, passive: true },
             );
@@ -115,32 +105,7 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener(
                 'pointermove',
                 (event) => {
-                    if (!this.activeCardPointer || this.activeCardPointer.pointerId !== event.pointerId) {
-                        return;
-                    }
-
-                    const cardElement = this.cardElementById(this.activeCardPointer.cardId);
-
-                    if (!cardElement) {
-                        this.activeCardPointer = null;
-
-                        return;
-                    }
-
-                    const deltaX = event.clientX - this.activeCardPointer.startX;
-                    const deltaY = event.clientY - this.activeCardPointer.startY;
-                    const moveDistance = Math.hypot(deltaX, deltaY);
-
-                    if (moveDistance >= this.cardPressMoveThresholdInPixels) {
-                        this.activeCardPointer.moved = true;
-                    }
-
-                    const hoveredCard = this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
-                    this.activeCardPointer.leftCard = hoveredCard !== cardElement;
-
-                    if (this.activeCardPointer.moved || this.activeCardPointer.leftCard) {
-                        this.cancelCardRepel(cardElement);
-                    }
+                    this.handleCardPointerMove(event);
                 },
                 { signal, passive: true },
             );
@@ -162,6 +127,42 @@ document.addEventListener('alpine:init', () => {
             );
 
             this.$root.addEventListener(
+                'mousedown',
+                (event) => {
+                    if (this.shouldIgnoreMouseInteraction()) {
+                        return;
+                    }
+
+                    this.handleCardPointerDown(this.normalizeMouseEvent(event));
+                },
+                { signal, passive: true },
+            );
+
+            window.addEventListener(
+                'mousemove',
+                (event) => {
+                    if (this.shouldIgnoreMouseInteraction()) {
+                        return;
+                    }
+
+                    this.handleCardPointerMove(this.normalizeMouseEvent(event));
+                },
+                { signal, passive: true },
+            );
+
+            window.addEventListener(
+                'mouseup',
+                (event) => {
+                    if (this.shouldIgnoreMouseInteraction()) {
+                        return;
+                    }
+
+                    this.finishCardPointerInteraction(this.normalizeMouseEvent(event));
+                },
+                { signal, passive: true },
+            );
+
+            this.$root.addEventListener(
                 'click',
                 (event) => {
                     const cardElement = this.resolveManagedCard(event.target);
@@ -176,13 +177,89 @@ document.addEventListener('alpine:init', () => {
                         return;
                     }
 
-                    this.startCardRepel(cardElement, event);
-                    this.endCardRepel(cardElement, event);
                     this.queueCardOpen(cardElement);
                     event.preventDefault();
                 },
                 { signal },
             );
+        },
+        handleCardPointerDown(event) {
+            const cardElement = this.resolveManagedCard(event.target);
+
+            if (!cardElement || this.isExcludedCardTarget(event.target)) {
+                return;
+            }
+
+            this.startCardRepel(cardElement, event);
+            this.activeCardPointer = {
+                pointerId: Number(event.pointerId ?? 0),
+                cardId: String(cardElement.dataset.athkarCardId ?? ''),
+                startX: event.clientX,
+                startY: event.clientY,
+                pressedAt: Date.now(),
+                moved: false,
+                holdMoved: false,
+                leftCard: false,
+            };
+        },
+        handleCardPointerMove(event) {
+            if (!this.activeCardPointer) {
+                return;
+            }
+
+            const eventPointerId = Number(event.pointerId ?? 0);
+            const activePointerId = Number(this.activeCardPointer.pointerId ?? 0);
+
+            if (eventPointerId > 0 && activePointerId > 0 && activePointerId !== eventPointerId) {
+                return;
+            }
+
+            const cardElement = this.cardElementById(this.activeCardPointer.cardId);
+
+            if (!cardElement) {
+                this.activeCardPointer = null;
+
+                return;
+            }
+
+            const deltaX = event.clientX - this.activeCardPointer.startX;
+            const deltaY = event.clientY - this.activeCardPointer.startY;
+            const moveDistance = Math.hypot(deltaX, deltaY);
+
+            if (moveDistance >= this.cardHoldMoveThresholdInPixels) {
+                this.activeCardPointer.holdMoved = true;
+            }
+
+            if (moveDistance >= this.cardPressMoveThresholdInPixels) {
+                this.activeCardPointer.moved = true;
+            }
+
+            if (moveDistance >= this.cardHoldMoveThresholdInPixels) {
+                const hoveredCard = this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
+                this.activeCardPointer.leftCard = hoveredCard !== cardElement;
+            }
+
+            if (this.activeCardPointer.holdMoved || this.activeCardPointer.leftCard) {
+                this.cancelCardRepel(cardElement);
+            }
+
+            if (this.activeCardPointer.moved || this.activeCardPointer.leftCard) {
+                this.markCardClickHandled(cardElement);
+            }
+        },
+        suppressMouseInteractions() {
+            this.suppressMouseUntil = Date.now() + 700;
+        },
+        shouldIgnoreMouseInteraction() {
+            return Date.now() < this.suppressMouseUntil;
+        },
+        normalizeMouseEvent(event) {
+            return {
+                pointerId: 0,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                target: event.target,
+            };
         },
         registerCardOrderSync() {
             this.cardOrderAbortController?.abort();
@@ -384,7 +461,14 @@ document.addEventListener('alpine:init', () => {
             cardElement.dataset.athkarSkipClickUntil = String(Date.now() + 400);
         },
         finishCardPointerInteraction(event, shouldCancel = false) {
-            if (!this.activeCardPointer || this.activeCardPointer.pointerId !== event.pointerId) {
+            if (!this.activeCardPointer) {
+                return;
+            }
+
+            const eventPointerId = Number(event.pointerId ?? 0);
+            const activePointerId = Number(this.activeCardPointer.pointerId ?? 0);
+
+            if (eventPointerId > 0 && activePointerId > 0 && activePointerId !== eventPointerId) {
                 return;
             }
 
@@ -396,19 +480,26 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const releasedCard = this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
-            const shouldOpen =
-                !shouldCancel &&
-                !this.activeCardPointer.moved &&
-                !this.activeCardPointer.leftCard &&
-                releasedCard === cardElement;
+            const pressedAt = Number(this.activeCardPointer.pressedAt ?? 0);
+            const heldFor = pressedAt > 0 ? Date.now() - pressedAt : 0;
+            const heldLongEnough = heldFor >= this.cardPressHoldDelayInMs;
+            const releasedTarget = this.resolveManagedCard(event.target);
+            const releasedCard = releasedTarget
+                ?? this.resolveManagedCard(document.elementFromPoint(event.clientX, event.clientY));
+            const releasedOnCard = releasedCard === cardElement;
 
-            if (shouldOpen) {
+            if (!shouldCancel && releasedOnCard && !this.activeCardPointer.holdMoved && !this.activeCardPointer.leftCard) {
                 this.endCardRepel(cardElement, event);
-                this.markCardClickHandled(cardElement);
-                this.queueCardOpen(cardElement);
             } else {
                 this.cancelCardRepel(cardElement);
+            }
+
+            if (!releasedOnCard) {
+                this.markCardClickHandled(cardElement);
+            }
+
+            if (heldLongEnough && (this.activeCardPointer.holdMoved || this.activeCardPointer.leftCard)) {
+                this.markCardClickHandled(cardElement);
             }
 
             this.activeCardPointer = null;
