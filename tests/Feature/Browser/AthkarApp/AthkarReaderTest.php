@@ -521,7 +521,7 @@ JS,
   return bp.is('sm+')
     && config.handle === '[data-athkar-sort-handle]'
     && config.forceFallback === true
-    && config.fallbackOnBody === true;
+    && config.fallbackOnBody === false;
 })()
 JS,
         true,
@@ -574,7 +574,7 @@ JS,
   return bp.isTablet() === true
     && config.handle === '[data-athkar-sort-handle]'
     && config.forceFallback === true
-    && config.fallbackOnBody === true;
+    && config.fallbackOnBody === false;
 })()
 JS,
         true,

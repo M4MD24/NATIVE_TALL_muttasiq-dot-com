@@ -23,10 +23,12 @@ document.addEventListener('alpine:init', () => {
             return true;
         },
         managerSortConfig() {
+            const shouldUseBodyFallback = this.nativeMobileRuntime || Boolean(this.$store?.bp?.is?.('base'));
+
             return {
                 animation: 150,
                 forceFallback: true,
-                fallbackOnBody: true,
+                fallbackOnBody: shouldUseBodyFallback,
                 fallbackTolerance: 0,
                 handle: '[data-athkar-sort-handle]',
                 invertSwap: true,
