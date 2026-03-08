@@ -38,7 +38,32 @@ document.addEventListener('alpine:init', () => {
                 invertSwap: true,
                 swapThreshold: 0.7,
                 invertedSwapThreshold: 0.7,
+                onSort: (event) => this.handleManagerSort(event),
             };
+        },
+        handleManagerSort(event) {
+            const item = event?.item;
+            const cardId = Number(item?.dataset?.athkarCardId ?? item?.getAttribute?.('wire:sort:item') ?? 0);
+
+            if (!Number.isFinite(cardId) || cardId < 1) {
+                return;
+            }
+
+            const grid = this.resolveCardsGrid();
+            const cards = grid ? Array.from(grid.querySelectorAll('[data-athkar-manager-card]')) : [];
+            const total = cards.length;
+
+            if (!total) {
+                return;
+            }
+
+            const visualIndex = Math.max(0, Math.min(Number(event?.newIndex ?? 0), total - 1));
+            const columns = this.detectGridColumns(cards);
+            const logicalIndex = this.mapVisualIndexToLogical(visualIndex, total, columns);
+
+            if (typeof this.$wire?.reorderAthkar === 'function') {
+                this.$wire.reorderAthkar(cardId, logicalIndex);
+            }
         },
         registerCardInteractionListeners() {
             this.cardInteractionAbortController?.abort();
@@ -167,15 +192,19 @@ document.addEventListener('alpine:init', () => {
 
             this.cardOrderAbortController = controller;
 
-            const grid = this.resolveCardsGrid();
-
-            if (!grid) {
-                return;
-            }
-
             const schedule = () => this.scheduleCardOrderSync();
 
             schedule();
+
+            const rootObserver = new MutationObserver(() => {
+                if (this.isApplyingCardOrder) {
+                    return;
+                }
+
+                schedule();
+            });
+
+            rootObserver.observe(this.$root, { childList: true, subtree: true });
 
             const observer = new MutationObserver(() => {
                 if (this.isApplyingCardOrder) {
@@ -185,9 +214,16 @@ document.addEventListener('alpine:init', () => {
                 schedule();
             });
 
-            observer.observe(grid, { childList: true });
+            const grid = this.resolveCardsGrid();
 
-            signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+            if (grid) {
+                observer.observe(grid, { childList: true });
+            }
+
+            signal.addEventListener('abort', () => {
+                observer.disconnect();
+                rootObserver.disconnect();
+            }, { once: true });
 
             window.addEventListener('resize', schedule, { passive: true, signal });
             window.addEventListener('orientationchange', schedule, { passive: true, signal });
@@ -270,6 +306,17 @@ document.addEventListener('alpine:init', () => {
 
             const firstTop = sorted[0].top;
             return sorted.filter((item) => Math.abs(item.top - firstTop) <= threshold).length || 1;
+        },
+        mapVisualIndexToLogical(visualIndex, total, columns) {
+            if (columns <= 1) {
+                return visualIndex;
+            }
+
+            const rowStart = Math.floor(visualIndex / columns) * columns;
+            const rowLen = Math.min(columns, total - rowStart);
+            const offset = visualIndex - rowStart;
+
+            return rowStart + (rowLen - 1 - offset);
         },
         resolveCardsGrid() {
             return this.$root?.querySelector?.('[wire\\:sort="reorderAthkar"]') ?? null;
