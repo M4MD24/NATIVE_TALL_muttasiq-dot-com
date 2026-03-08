@@ -110,28 +110,28 @@
                     :jsShowCondition="'views[`athkar-app-gate`].isReaderVisible'"
                     :jsClickCallback="'if (views[`athkar-app-gate`].isReaderVisible) $dispatch(`close-athkar-mode`)'"
                 />
-                @include('partials.home-button')
+                <x-partials.home-button />
             @endif
             <livewire:color-scheme-switcher />
             <livewire:control-panel />
         </x-buttons-stack>
 
-        @include('partials.colorful-background')
+        <x-partials.colorful-background />
 
         <main @class([
             'fixed inset-0 grid place-items-center sm:mt-0 dark:text-white',
             'mt-22' => is_platform('ios'),
             'mt-16' => !is_platform('ios'),
         ])>
-            @include('partials.main-menu')
-            <x-athkar-app.index
+            <x-partials.main-menu />
+            <x-partials.athkar-app.index
                 :athkar="$athkar"
                 :athkar-settings="$athkarSettings"
                 :athkar-main-text-size-limits="$athkarMainTextSizeLimits"
             />
         </main>
 
-        @include('partials.copyright-and-version')
+        <x-partials.copyright-and-version />
 
         <livewire:js-error-reporter />
     </div>

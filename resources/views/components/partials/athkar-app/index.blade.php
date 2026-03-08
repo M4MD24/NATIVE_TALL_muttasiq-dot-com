@@ -1,3 +1,9 @@
+@props([
+    'athkar' => [],
+    'athkarSettings' => [],
+    'athkarMainTextSizeLimits' => [],
+])
+
 @assets
     <style>
         .athkar-shift-away {
@@ -34,9 +40,9 @@
     x-transition:leave-end="opacity-0! blur-[2px]"
 >
     <div class="relative flex h-full w-full items-center justify-center">
-        @include('partials.athkar-app.gate')
-        @include('partials.athkar-app.notice')
-        @include('partials.athkar-app.reader')
-        @include('partials.athkar-app.congrats')
+        <x-partials.athkar-app.gate />
+        <x-partials.athkar-app.notice />
+        <x-partials.athkar-app.reader />
+        <x-partials.athkar-app.congrats />
     </div>
 </div>

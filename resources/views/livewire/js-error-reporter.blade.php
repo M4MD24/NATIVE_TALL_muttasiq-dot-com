@@ -21,5 +21,5 @@
 </div>
 
 @assets
-    @include('partials.scripts.mobile-js-errors-handler')
+    <x-partials.scripts.mobile-js-errors-handler />
 @endassets
