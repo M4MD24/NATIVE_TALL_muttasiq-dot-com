@@ -9,6 +9,7 @@
             isControlPanelOpen: false,
             isAthkarManagerOpen: false,
             activeView: $persist('main-menu').as('app-active-view'),
+            actionStatePulseToken: 0,
             viewTree: {
                 'main-menu': {
                     children: {
@@ -60,6 +61,36 @@
                     callback();
                 }
             },
+            pulseActionState(options = {}) {
+                if (this.isControlPanelOpen || this.isAthkarManagerOpen) {
+                    return;
+                }
+
+                const layoutManager = this.$store?.layoutManager;
+
+                if (!layoutManager || layoutManager.isActionOpen) {
+                    return;
+                }
+
+                const requestedDuration = Number(options?.durationMs ?? 34);
+                const durationMs = Number.isFinite(requestedDuration) ?
+                    Math.max(0, Math.trunc(requestedDuration)) :
+                    34;
+                const token = this.actionStatePulseToken + 1;
+
+                this.actionStatePulseToken = token;
+                this.isControlPanelOpen = true;
+                layoutManager.isActionOpen = true;
+
+                window.setTimeout(() => {
+                    if (this.actionStatePulseToken !== token) {
+                        return;
+                    }
+
+                    this.isControlPanelOpen = false;
+                    layoutManager.isActionOpen = false;
+                }, durationMs);
+            },
             applyViewState(nextView, { persist = true } = {}) {
                 const view = this.views?.[nextView] ? nextView : 'main-menu';
         
@@ -99,6 +130,7 @@
             }),
         }"
         x-on:switch-view.window="applyViewState($event.detail?.to)"
+        x-on:athkar-action-state-pulse.window="pulseActionState($event.detail ?? {})"
     >
         <x-buttons-stack
             x-bind:data-respecting-stack="$store.bp.current === 'base'"

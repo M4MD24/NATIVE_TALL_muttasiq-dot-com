@@ -1917,6 +1917,13 @@ document.addEventListener('alpine:init', () => {
             }
 
             window.dispatchEvent(new CustomEvent('athkar-reader-maintenance'));
+            window.dispatchEvent(
+                new CustomEvent('athkar-action-state-pulse', {
+                    detail: {
+                        durationMs: 34,
+                    },
+                }),
+            );
         },
         handleTap() {
             if (!this.activeMode) {
