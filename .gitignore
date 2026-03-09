@@ -19,7 +19,6 @@
 /public/css
 /public/fonts
 /public/js
-native-log-android.txt
 native-log-ios.txt
 
 # Credential files (keystores, private keys, etc.)

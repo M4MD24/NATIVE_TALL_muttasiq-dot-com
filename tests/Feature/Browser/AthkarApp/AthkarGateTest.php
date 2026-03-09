@@ -40,7 +40,7 @@ it('native back returns a restored gate view to the main menu before exiting', f
     waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
     waitForScript($page, 'window.location.hash', '#main-menu');
 
-    expect($page->script('window.__nativeBackAction()'))->toBeFalse();
+    expect($page->script('window.__nativeBackAction()'))->toBe('exit');
     waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
     waitForScript($page, 'window.location.hash', '#main-menu');
 });
@@ -98,4 +98,46 @@ it('swipes the notice forward and back on desktop', function () {
     swipeNotice($page, 'forward', 'mouse');
 
     waitForReaderVisible($page);
+});
+
+it('native back exits from the main menu after bypassing a restored notice into the reader', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+    openAthkarReader($page, 'sabah', true);
+
+    $settings = [
+        'does_skip_notice_panels' => false,
+        'does_prevent_switching_athkar_until_completion' => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    waitForReaderVisible($page);
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+
+    $page->refresh();
+
+    waitForAlpineReady($page);
+    enableMobileContext($page);
+    waitForNoticeVisible($page);
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+
+    swipeNotice($page, 'forward', 'touch');
+
+    waitForReaderVisible($page);
+    waitForScript($page, athkarReaderDataScript('data.isNoticeVisible'), false);
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+
+    expect($page->script('window.__nativeBackAction()'))->toBeTrue();
+    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($page, 'window.location.hash', '#athkar-app-gate');
+
+    expect($page->script('window.__nativeBackAction()'))->toBeTrue();
+    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($page, 'window.location.hash', '#main-menu');
+
+    expect($page->script('window.__nativeBackAction()'))->toBe('exit');
+    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($page, 'window.location.hash', '#main-menu');
 });

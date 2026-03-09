@@ -390,13 +390,13 @@ document.addEventListener('alpine:init', () => {
             currentView === viewIndex.rootView ||
             !viewIndex.viewSet.has(currentView)
         ) {
-            return false;
+            return currentView === viewIndex.rootView ? 'exit' : false;
         }
 
         const parentView = getParentView(currentView);
 
         if (!parentView) {
-            return false;
+            return 'exit';
         }
 
         applyHash(`#${parentView}`, {

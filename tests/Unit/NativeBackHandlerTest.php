@@ -14,5 +14,7 @@ test('native back action climbs the view tree instead of browser history', funct
     expect($contents)->toContain('window.__nativeBackAction');
     expect($nativeBackSection)->toContain('const parentView = getParentView(currentView);');
     expect($nativeBackSection)->toContain('applyHash(`#${parentView}`');
+    expect($nativeBackSection)->toContain("return currentView === viewIndex.rootView ? 'exit' : false;");
+    expect($nativeBackSection)->toContain("return 'exit';");
     expect($nativeBackSection)->not()->toContain('window.history.back();');
 });

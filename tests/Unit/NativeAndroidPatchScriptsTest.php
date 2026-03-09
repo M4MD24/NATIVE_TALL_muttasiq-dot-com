@@ -22,14 +22,23 @@ test('native patches hook command is registered with artisan', function () {
 
 test('native run script relies on plugin patches', function () {
     $root = dirname(__DIR__, 2);
-    $nativeRun = $root.'/.scripts/native-run-android.sh';
+    $androidScripts = [
+        $root.'/.scripts/run-android.sh',
+        $root.'/.scripts/watch-android.sh',
+        $root.'/.scripts/share-android.sh',
+    ];
 
-    expect(file_exists($nativeRun))->toBeTrue();
+    foreach ($androidScripts as $script) {
+        expect(file_exists($script))->toBeTrue();
 
-    $nativeRunContents = file_get_contents($nativeRun);
+        $contents = file_get_contents($script);
 
-    expect($nativeRunContents)->not()->toContain('.scripts/native/mobile/android/patches/');
-    expect($nativeRunContents)->not()->toContain('.scripts/native/mobile/support/patches/');
+        expect($contents)->not()->toContain('.scripts/native/mobile/android/patches/');
+        expect($contents)->not()->toContain('.scripts/native/mobile/support/patches/edge-components.sh');
+    }
+
+    $nativeShareContents = file_get_contents($root.'/.scripts/share-android.sh');
+    expect($nativeShareContents)->toContain('.scripts/native/mobile/support/patches/jump-status-texts.sh');
 });
 
 test('app service provider leaves livewire routes untouched', function () {
@@ -57,6 +66,7 @@ test('native patches plugin installs request interception at document start', fu
     expect($pluginContents)->toContain('window.__nativePostInterceptionInstalled');
     expect($pluginContents)->toContain('isSaveEnabled = false');
     expect($pluginContents)->toContain('var lastModified: Long = if (reloadFile.exists()) reloadFile.lastModified() else 0');
+    expect($pluginContents)->toContain('val shouldExit = normalized == "exit"');
 });
 
 test('native patches package is ready for publishing', function () {
@@ -95,4 +105,27 @@ test('native patches package is ready for publishing', function () {
     expect($readmeContents)->toContain('goodm4ven/nativephp-muttasiq-patches');
     expect($readmeContents)->toContain('pre_compile');
     expect($readmeContents)->toContain('Internal package');
+});
+
+test('composer local plugin switch script toggles the muttasiq patches package by default', function () {
+    $root = dirname(__DIR__, 2);
+    $script = file_get_contents($root.'/.scripts/composer-local-plugins-switch.sh');
+
+    expect($script)->toContain('goodm4ven/nativephp-muttasiq-patches');
+    expect($script)->toContain('${HOME}/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches');
+    expect($script)->toContain('current_repository="$(composer config "repositories.${repository_key}" 2>/dev/null || true)"');
+    expect($script)->toContain("grep -Fq '\"type\":\"path\"' <<<\"${current_repository}\"");
+    expect($script)->toContain('composer config --unset "repositories.${repository_key}"');
+    expect($script)->toContain('composer config "repositories.${repository_key}" path "${package_path}"');
+    expect($script)->toContain('composer update "${package_name}" --with-all-dependencies');
+});
+
+test('android log script writes into storage logs', function () {
+    $root = dirname(__DIR__, 2);
+    $script = file_get_contents($root.'/.scripts/log-android.sh');
+    $logIgnore = file_get_contents($root.'/storage/logs/.gitignore');
+
+    expect($script)->toContain('output_dir="${project_root}/storage/logs"');
+    expect($script)->toContain('output_file="${output_dir}/log-android.txt"');
+    expect($logIgnore)->toContain('!log-android.txt');
 });

@@ -1,7 +1,8 @@
 <?php
 
-test('google reviews patch script is syntactically valid', function () {
-    $script = dirname(__DIR__, 2).'/.scripts/native/mobile/android/patches/google-reviews.sh';
+test('composer local plugin switch script is syntactically valid', function () {
+    $root = dirname(__DIR__, 2);
+    $script = $root.'/.scripts/composer-local-plugins-switch.sh';
 
     expect(file_exists($script))->toBeTrue();
 
