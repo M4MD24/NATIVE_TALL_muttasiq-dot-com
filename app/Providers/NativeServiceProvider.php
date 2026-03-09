@@ -36,6 +36,7 @@ class NativeServiceProvider extends ServiceProvider
     public function plugins(): array
     {
         return [
+            'Goodm4ven\\NativePatches\\NativePatchesServiceProvider',
             'Native\\Mobile\\Providers\\BrowserServiceProvider',
         ];
     }

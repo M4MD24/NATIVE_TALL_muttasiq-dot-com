@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d0e698a6e8d7dd47b59d4cabd236e8c2",
+    "content-hash": "8432fc2dd2296557fceb9d9c29d89e37",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1957,6 +1957,42 @@
                 }
             ],
             "time": "2026-02-21T20:31:14+00:00"
+        },
+        {
+            "name": "goodm4ven/nativephp-muttasiq-patches",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../../LaravelPackages/NATIVE_PLUGIN_muttasiq",
+                "reference": "aaee143c8e3b6555ee76b3255eabee3f075a5ee1"
+            },
+            "require": {
+                "nativephp/mobile": "^3.0",
+                "php": "^8.2"
+            },
+            "type": "nativephp-plugin",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Goodm4ven\\NativePatches\\NativePatchesServiceProvider"
+                    ]
+                },
+                "nativephp": {
+                    "manifest": "nativephp.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Goodm4ven\\NativePatches\\": "src/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "NativePHP Mobile build patches for Muttasiq",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "goodm4ven/tailwind-merge",
@@ -16106,7 +16142,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,

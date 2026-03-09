@@ -127,6 +127,7 @@ return [
     */
 
     'cleanup_exclude_files' => [
+        '.agents',
         '.assets',
         '.claude',
         '.codex',
@@ -150,7 +151,6 @@ return [
         'AGENTS.md',
         'boost.json',
         'CLAUDE.md',
-        'codex.config.json',
         'laravel-boost-mcp.sh',
         'phpstan-baseline.neon',
         'phpstan.neon.dist',

@@ -95,15 +95,6 @@ class AppServiceProvider extends ServiceProvider
 
         URL::forceRootUrl('php://127.0.0.1');
         URL::forceScheme('php');
-
-        if (! app()->bound('livewire')) {
-            return;
-        }
-
-        $livewirePrefix = ltrim((string) app('livewire')->getUriPrefix(), '/');
-        config([
-            'livewire.asset_url' => '/'.$livewirePrefix.'/livewire.js',
-        ]);
     }
 
     private function rateLimitSettings(): void
