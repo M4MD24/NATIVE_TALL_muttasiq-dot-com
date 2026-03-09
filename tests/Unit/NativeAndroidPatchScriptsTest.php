@@ -45,7 +45,7 @@ test('app service provider leaves livewire routes untouched', function () {
 });
 
 test('native patches plugin installs request interception at document start', function () {
-    $pluginCommand = '/home/goodm4ven/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq/src/Commands/ApplyNativePatchesCommand.php';
+    $pluginCommand = '/home/goodm4ven/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches/src/Commands/ApplyNativePatchesCommand.php';
 
     expect(file_exists($pluginCommand))->toBeTrue();
 
@@ -57,4 +57,42 @@ test('native patches plugin installs request interception at document start', fu
     expect($pluginContents)->toContain('window.__nativePostInterceptionInstalled');
     expect($pluginContents)->toContain('isSaveEnabled = false');
     expect($pluginContents)->toContain('var lastModified: Long = if (reloadFile.exists()) reloadFile.lastModified() else 0');
+});
+
+test('native patches package is ready for publishing', function () {
+    $packageRoot = '/home/goodm4ven/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches';
+    $composerPath = $packageRoot.'/composer.json';
+    $readmePath = $packageRoot.'/README.md';
+    $licensePath = $packageRoot.'/LICENSE';
+
+    expect(file_exists($composerPath))->toBeTrue();
+    expect(file_exists($readmePath))->toBeTrue();
+    expect(file_exists($licensePath))->toBeTrue();
+
+    /** @var array{
+     *     name: string,
+     *     version: string,
+     *     license: string,
+     *     authors: array<int, array{name: string, email: string}>,
+     *     support: array{source: string, issues: string, email: string}
+     * } $composer
+     */
+    $composer = json_decode(file_get_contents($composerPath), true, flags: JSON_THROW_ON_ERROR);
+    $readmeContents = file_get_contents($readmePath);
+
+    expect($composer['name'])->toBe('goodm4ven/nativephp-muttasiq-patches');
+    expect($composer['version'])->toBe('1.0.0');
+    expect($composer['license'])->toBe('AGPL-3.0-only');
+    expect($composer['authors'][0])->toMatchArray([
+        'name' => 'GoodM4ven',
+        'email' => 'goodm4ven@proton.me',
+    ]);
+    expect($composer['support'])->toMatchArray([
+        'source' => 'https://github.com/GoodM4ven/nativephp-muttasiq-patches',
+        'issues' => 'https://github.com/GoodM4ven/nativephp-muttasiq-patches/issues',
+        'email' => 'goodm4ven@proton.me',
+    ]);
+    expect($readmeContents)->toContain('goodm4ven/nativephp-muttasiq-patches');
+    expect($readmeContents)->toContain('pre_compile');
+    expect($readmeContents)->toContain('Internal package');
 });

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8432fc2dd2296557fceb9d9c29d89e37",
+    "content-hash": "92ccf3d6c7adfdfebf41ca1b18b99a8e",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1960,11 +1960,17 @@
         },
         {
             "name": "goodm4ven/nativephp-muttasiq-patches",
-            "version": "dev-main",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/GoodM4ven/NATIVE_PLUGIN_muttasiq-patches.git",
+                "reference": "10a9c8899b0d208e0b0a09a31292dad13b291ded"
+            },
             "dist": {
-                "type": "path",
-                "url": "../../LaravelPackages/NATIVE_PLUGIN_muttasiq",
-                "reference": "aaee143c8e3b6555ee76b3255eabee3f075a5ee1"
+                "type": "zip",
+                "url": "https://api.github.com/repos/GoodM4ven/NATIVE_PLUGIN_muttasiq-patches/zipball/10a9c8899b0d208e0b0a09a31292dad13b291ded",
+                "reference": "10a9c8899b0d208e0b0a09a31292dad13b291ded",
+                "shasum": ""
             },
             "require": {
                 "nativephp/mobile": "^3.0",
@@ -1986,13 +1992,35 @@
                     "Goodm4ven\\NativePatches\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "proprietary"
+                "AGPL-3.0-only"
             ],
-            "description": "NativePHP Mobile build patches for Muttasiq",
-            "transport-options": {
-                "relative": true
-            }
+            "authors": [
+                {
+                    "name": "GoodM4ven",
+                    "email": "goodm4ven@proton.me",
+                    "homepage": "https://github.com/GoodM4ven",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Internal NativePHP Mobile Android build patches used by Muttasiq.",
+            "homepage": "https://github.com/GoodM4ven/nativephp-muttasiq-patches",
+            "keywords": [
+                "android",
+                "filament",
+                "laravel",
+                "livewire",
+                "muttasiq",
+                "nativephp",
+                "nativephp-plugin"
+            ],
+            "support": {
+                "email": "goodm4ven@proton.me",
+                "issues": "https://github.com/GoodM4ven/nativephp-muttasiq-patches/issues",
+                "source": "https://github.com/GoodM4ven/nativephp-muttasiq-patches"
+            },
+            "time": "2026-03-09T09:21:46+00:00"
         },
         {
             "name": "goodm4ven/tailwind-merge",
@@ -16142,7 +16170,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,

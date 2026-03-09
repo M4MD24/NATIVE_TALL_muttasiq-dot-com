@@ -13,12 +13,6 @@
         "athkar"
     ],
     "license": "AGPL-3.0-only",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../../LaravelPackages/NATIVE_PLUGIN_muttasiq"
-        }
-    ],
     "require": {
         "php": "^8.2",
         "blade-ui-kit/blade-heroicons": "^2.6",
@@ -33,7 +27,7 @@
         "livewire/livewire": "^4.0",
         "nativephp/mobile": "^3.0",
         "nativephp/mobile-browser": "^1.0",
-        "goodm4ven/nativephp-muttasiq-patches": "*",
+        "goodm4ven/nativephp-muttasiq-patches": "^1.0.0",
         "spatie/eloquent-sortable": "^4.5"
     },
     "require-dev": {
@@ -165,6 +159,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
