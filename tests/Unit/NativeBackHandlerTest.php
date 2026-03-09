@@ -1,20 +1,18 @@
 <?php
 
-test('native back action exposes exit hint for root view', function () {
+test('native back action climbs the view tree instead of browser history', function () {
     $path = dirname(__DIR__, 2).'/resources/js/packages/alpine/hash-actions.js';
-    $script = dirname(__DIR__, 2).'/.scripts/native/mobile/android/patches/back-handler.sh';
 
     expect(file_exists($path))->toBeTrue();
-    expect(file_exists($script))->toBeTrue();
 
     $contents = file_get_contents($path);
+    $nativeBackSection = str($contents)
+        ->after('window.__nativeBackAction = () => {')
+        ->before("window.Alpine.magic('hashAction'")
+        ->toString();
 
-    expect($contents)->toContain('shouldExit');
     expect($contents)->toContain('window.__nativeBackAction');
-
-    $output = [];
-    $status = null;
-    exec('bash -n '.escapeshellarg($script), $output, $status);
-
-    expect($status)->toBe(0);
+    expect($nativeBackSection)->toContain('const parentView = getParentView(currentView);');
+    expect($nativeBackSection)->toContain('applyHash(`#${parentView}`');
+    expect($nativeBackSection)->not()->toContain('window.history.back();');
 });

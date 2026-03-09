@@ -7,6 +7,19 @@ test('native patches plugin is registered for android builds', function () {
     expect($plugins)->toContain('Goodm4ven\\NativePatches\\NativePatchesServiceProvider');
 });
 
+test('native patches hook command is registered with artisan', function () {
+    $providersPath = dirname(__DIR__, 2).'/bootstrap/providers.php';
+    $providersContents = file_get_contents($providersPath);
+    $commandOutput = [];
+    $status = null;
+
+    exec('php artisan nativephp:muttasiq:patches --help', $commandOutput, $status);
+
+    expect($providersContents)->toContain('Goodm4ven\\NativePatches\\NativePatchesServiceProvider::class');
+    expect($status)->toBe(0);
+    expect(implode("\n", $commandOutput))->toContain('nativephp:muttasiq:patches');
+});
+
 test('native run script relies on plugin patches', function () {
     $root = dirname(__DIR__, 2);
     $nativeRun = $root.'/.scripts/native-run-android.sh';
