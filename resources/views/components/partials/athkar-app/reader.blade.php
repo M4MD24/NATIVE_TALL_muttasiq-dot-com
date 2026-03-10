@@ -1422,6 +1422,7 @@
                     <div
                         class="athkar-nav__flow"
                         aria-hidden="true"
+                        x-bind:style="shouldEnableVisualEnhancements() ? null : 'animation: none;'"
                     ></div>
                     <div
                         class="athkar-nav__highlight rounded-[1px]!"

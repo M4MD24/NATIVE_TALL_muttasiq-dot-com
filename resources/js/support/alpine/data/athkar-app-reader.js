@@ -450,7 +450,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            if (!this.shouldEnableMainTextShimmering()) {
+            if (!this.shouldEnableVisualEnhancements()) {
                 this.stopTextShimmer();
             }
 
@@ -1475,8 +1475,11 @@ document.addEventListener('alpine:init', () => {
         shouldSkipNoticePanels() {
             return this.settingValue('does_skip_notice_panels', false);
         },
-        shouldEnableMainTextShimmering() {
+        shouldEnableVisualEnhancements() {
             return this.settingValue(doesEnableMainTextShimmeringKey, true);
+        },
+        shouldEnableMainTextShimmering() {
+            return this.shouldEnableVisualEnhancements();
         },
         shouldExitReaderAfterForwardSwipe() {
             if (this.shouldPreventSwitching()) {

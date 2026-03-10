@@ -1985,6 +1985,41 @@ JS,
     );
 });
 
+it('disables the nav flow animation when visual enhancements are turned off', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    setAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    waitForAthkarSettings($page, [
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ]);
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const flow = document.querySelector('.athkar-nav__flow');
+
+  if (!flow) {
+    return false;
+  }
+
+  const styles = window.getComputedStyle(flow);
+
+  return styles.animationName === 'none' || styles.animationDuration === '0s';
+})()
+JS,
+        true,
+    );
+});
+
 it('keeps text scrollable after toggling origin on and back off', function () {
     $page = visit('/');
 
