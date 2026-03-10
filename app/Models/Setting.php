@@ -77,7 +77,7 @@ class Setting extends Model
             ],
             self::DOES_ENABLE_MAIN_TEXT_SHIMMERING => [
                 'default' => true,
-                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحويرة.',
+                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحورية.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],
