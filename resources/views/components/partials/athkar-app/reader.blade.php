@@ -809,12 +809,11 @@
                 class="athkar-chip shadow-inner! focus-visible:outline-primary-500 relative inline-flex cursor-pointer items-center justify-center px-3 py-2 text-xs font-semibold transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3"
                 data-athkar-open-manager
                 type="button"
-                x-data="{ tip: null }"
-                x-on:click="openGateAndManageAthkar()"
-                x-on:mouseenter="tip = $tippy('إدارة الأذكار', 'bottom')"
-                x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                x-on:focus="tip = $tippy('إدارة الأذكار', 'bottom')"
-                x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                x-on:click="$tippy.hide(); openGateAndManageAthkar()"
+                x-on:mouseenter="$tippy('إدارة الأذكار', 'bottom', 2000, { showWhenGuidancePanelsSkipped: true })"
+                x-on:mouseleave="$tippy.hide()"
+                x-on:focus="$tippy('إدارة الأذكار', 'bottom', 2000, { showWhenGuidancePanelsSkipped: true })"
+                x-on:blur="$tippy.hide()"
                 x-text="activeLabel"
             ></button>
 
@@ -1051,16 +1050,15 @@
                                     <button
                                         class="athkar-origin-indicator athkar-origin-indicator--mobile"
                                         type="button"
-                                        x-data="{ tip: null }"
                                         x-bind:class="isOriginVisible(index) && 'is-active'"
                                         x-bind:aria-pressed="isOriginVisible(index)"
                                         x-on:click.stop="toggleOrigin(index)"
                                         x-on:pointerdown.stop
                                         x-on:touchstart.stop
-                                        x-on:mouseenter="tip = $tippy('مأثور', 'right')"
-                                        x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                        x-on:focus="tip = $tippy('مأثور', 'right')"
-                                        x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                        x-on:mouseenter="$tippy('مأثور', 'right')"
+                                        x-on:mouseleave="$tippy.hide()"
+                                        x-on:focus="$tippy('مأثور', 'right')"
+                                        x-on:blur="$tippy.hide()"
                                     >
                                         <x-icon
                                             class="athkar-origin-indicator__icon"
@@ -1144,12 +1142,11 @@
                                                         x-show="countAt(index) !== requiredCount(index)"
                                                         x-bind:class="!completionHack.canHover && $store.bp.is('sm+') ?
                                                             'pointer-events-auto! scale-100! opacity-100!' : ''"
-                                                        x-data="{ tip: null }"
-                                                        x-on:click.stop="tip?._clearHideTimer?.(); tip?.hide(); requestSingleThikrCompletion(index)"
-                                                        x-on:mouseenter="tip = $tippy('إتمام الذكر', 'right')"
-                                                        x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                                        x-on:focus="tip = $tippy('إتمام الذكر', 'right')"
-                                                        x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                                        x-on:click.stop="$tippy.hide(); requestSingleThikrCompletion(index)"
+                                                        x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
+                                                        x-on:mouseleave="$tippy.hide()"
+                                                        x-on:focus="$tippy('إتمام الذكر', 'right')"
+                                                        x-on:blur="$tippy.hide()"
                                                     >
                                                         <x-icon
                                                             class="h-4 w-4"
@@ -1169,9 +1166,6 @@
                                             <button
                                                 class="athkar-origin-indicator athkar-origin-indicator--desktop"
                                                 type="button"
-                                                x-data="{
-                                                    tip: null,
-                                                }"
                                                 x-show="isOriginalThikr(index) && !slide.isActive"
                                                 x-transition.opacity.duration.300ms
                                                 x-bind:class="{
@@ -1179,10 +1173,10 @@
                                                 }"
                                                 x-bind:aria-pressed="isOriginVisible(index)"
                                                 x-on:click.stop="toggleOrigin(index)"
-                                                x-on:mouseenter="tip = $tippy('مأثور', 'right')"
-                                                x-on:mouseleave="tip?._clearHideTimer?.(); tip?.hide()"
-                                                x-on:focus="tip = $tippy('مأثور', 'right')"
-                                                x-on:blur="tip?._clearHideTimer?.(); tip?.hide()"
+                                                x-on:mouseenter="$tippy('مأثور', 'right')"
+                                                x-on:mouseleave="$tippy.hide()"
+                                                x-on:focus="$tippy('مأثور', 'right')"
+                                                x-on:blur="$tippy.hide()"
                                             >
                                                 <x-icon
                                                     class="athkar-origin-indicator__icon"

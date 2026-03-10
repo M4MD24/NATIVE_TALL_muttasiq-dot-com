@@ -1,7 +1,7 @@
 <div
     class="absolute inset-0 z-40 flex items-center justify-center px-6 py-12"
     x-cloak
-    x-show="isCompletionVisible && !shouldSkipNoticePanels()"
+    x-show="isCompletionVisible && !shouldSkipGuidancePanels()"
     x-transition:enter="transition-all ease-out duration-700 delay-500"
     x-transition:enter-start="opacity-0! translate-y-6 blur-[2px]"
     x-transition:enter-end="opacity-100 translate-y-0 blur-0"

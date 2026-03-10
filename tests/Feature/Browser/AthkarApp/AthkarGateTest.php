@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\Setting;
+
 it('navigates to the athkar gate and persists the active view', function () {
     $page = visit('/');
 
@@ -50,7 +52,7 @@ it('shows the athkar notice and mode hash when selecting a mode', function () {
 
     resetBrowserState($page);
     openAthkarGate($page, false);
-    $settings = ['does_skip_notice_panels' => false];
+    $settings = [Setting::DOES_SKIP_GUIDANCE_PANELS => false];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
     openAthkarNotice($page, 'sabah', false);
@@ -64,7 +66,7 @@ it('confirms the athkar notice via the CTA button on desktop', function () {
 
     resetBrowserState($page);
     openAthkarGate($page, false);
-    $settings = ['does_skip_notice_panels' => false];
+    $settings = [Setting::DOES_SKIP_GUIDANCE_PANELS => false];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
     openAthkarNotice($page, 'sabah', false);
@@ -80,7 +82,7 @@ it('swipes the notice forward and back on desktop', function () {
 
     resetBrowserState($page);
     openAthkarGate($page, false);
-    $settings = ['does_skip_notice_panels' => false];
+    $settings = [Setting::DOES_SKIP_GUIDANCE_PANELS => false];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
     openAthkarNotice($page, 'sabah', false);
@@ -107,8 +109,8 @@ it('native back exits from the main menu after bypassing a restored notice into 
     openAthkarReader($page, 'sabah', true);
 
     $settings = [
-        'does_skip_notice_panels' => false,
-        'does_prevent_switching_athkar_until_completion' => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);

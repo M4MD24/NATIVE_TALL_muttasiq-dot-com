@@ -1175,8 +1175,8 @@ it('restores the notice on reload and allows continuing to the reader when notic
     openAthkarReader($page, 'sabah', false);
 
     $settings = [
-        'does_skip_notice_panels' => false,
-        'does_prevent_switching_athkar_until_completion' => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
@@ -1188,7 +1188,7 @@ it('restores the notice on reload and allows continuing to the reader when notic
     $page->refresh();
 
     waitForAlpineReady($page);
-    waitForScript($page, athkarReaderDataScript('data.settings.does_skip_notice_panels'), false);
+    waitForScript($page, athkarReaderDataScript('data.settings.'.Setting::DOES_SKIP_GUIDANCE_PANELS), false);
     waitForNoticeVisible($page);
 
     confirmAthkarNotice($page);
@@ -1204,8 +1204,8 @@ it('locks completed modes on the gate unless setting 3 is disabled', function ()
     openAthkarReader($page, 'sabah', false);
 
     $settings = [
-        'does_skip_notice_panels' => true,
-        'does_prevent_switching_athkar_until_completion' => true,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => true,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => true,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
@@ -1247,7 +1247,7 @@ JS,
     );
 
     $settings = [
-        'does_prevent_switching_athkar_until_completion' => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
@@ -1260,16 +1260,16 @@ JS,
     waitForNoticeVisible($page);
 });
 
-it('bypasses hint and completion popups when setting 4 is enabled', function () {
+it('bypasses hint popups but still requires confirmation for single-thikr completion when setting 4 is enabled', function () {
     $page = visit('/');
 
     resetBrowserState($page);
     openAthkarReader($page, 'sabah', false);
 
     $settings = [
-        'does_skip_notice_panels' => true,
-        'does_prevent_switching_athkar_until_completion' => false,
-        'does_automatically_switch_completed_athkar' => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => true,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
@@ -1293,9 +1293,16 @@ it('bypasses hint and completion popups when setting 4 is enabled', function () 
     $page->script(athkarReaderCommandScript("data.toggleHint({$multiIndex});"));
     waitForScript($page, athkarReaderDataScript('data.hintIndex'), null);
 
-    $page->script(
-        athkarReaderCommandScript("data.requestSingleThikrCompletion({$multiIndex});"),
+    $desktopCompleteSelector = '[data-athkar-slide][data-active="true"] .sm\\:flex button[aria-label="إتمام الذكر"]';
+    waitForScript(
+        $page,
+        js_template('Boolean(document.querySelector({{selector}}))', ['selector' => $desktopCompleteSelector]),
+        true,
     );
+    scriptClick($page, $desktopCompleteSelector);
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    clickModalAction($page, 'نعم، أكملت قراءته');
 
     waitForScript(
         $page,
@@ -1304,7 +1311,81 @@ it('bypasses hint and completion popups when setting 4 is enabled', function () 
         ),
         true,
     );
-    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', false);
+});
+
+it('suppresses helper tippies by default when guidance panels are skipped, but allows explicit opt-out tooltips', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+
+    $settings = [
+        Setting::DOES_SKIP_GUIDANCE_PANELS => true,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $page->script('window.hideAllTippies?.({ duration: 0, suppressMs: 0 });');
+    $page->hover('[data-athkar-open-manager]');
+
+    waitForScriptWithTimeout($page, <<<'JS'
+(() => {
+  const tooltip = [...document.querySelectorAll('.tippy-box')]
+    .find((el) => (el.textContent ?? '').includes('إدارة الأذكار'));
+
+  if (!tooltip) {
+    return true;
+  }
+
+  return tooltip.getAttribute('data-state') !== 'visible' || getComputedStyle(tooltip).visibility === 'hidden';
+})()
+JS, true, 600);
+
+    $prepared = (bool) $page->script(<<<'JS'
+(() => {
+  const root = document.querySelector('[data-athkar-app-reader-root]');
+
+  if (!root || !window.Alpine?.initTree) {
+    return false;
+  }
+
+  const host = document.createElement('div');
+
+  host.innerHTML = `
+    <button
+      data-testid="guidance-tippy-opt-out"
+      type="button"
+      x-on:mouseenter="$tippy('تلميح استثنائي', 'bottom', 2000, { showWhenGuidancePanelsSkipped: true })"
+      x-on:mouseleave="$tippy.hide()"
+      x-on:focus="$tippy('تلميح استثنائي', 'bottom', 2000, { showWhenGuidancePanelsSkipped: true })"
+      x-on:blur="$tippy.hide()"
+    >x</button>
+  `;
+
+  root.appendChild(host);
+  window.Alpine.initTree(host);
+
+  return true;
+})()
+JS);
+
+    expect($prepared)->toBeTrue();
+
+    $page->hover('[data-testid="guidance-tippy-opt-out"]');
+
+    waitForScriptWithTimeout($page, <<<'JS'
+(() => {
+  const tooltip = [...document.querySelectorAll('.tippy-box')]
+    .find((el) => (el.textContent ?? '').includes('تلميح استثنائي'));
+
+  if (!tooltip) {
+    return false;
+  }
+
+  return getComputedStyle(tooltip).visibility !== 'hidden';
+})()
+JS, true, 1000);
 });
 
 it('expands the mobile counter hint when tapped while hint bypass is disabled', function () {
@@ -1316,9 +1397,9 @@ it('expands the mobile counter hint when tapped while hint bypass is disabled', 
     waitForReaderVisible($page);
 
     $settings = [
-        'does_skip_notice_panels' => false,
-        'does_prevent_switching_athkar_until_completion' => false,
-        'does_automatically_switch_completed_athkar' => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);
@@ -2269,7 +2350,7 @@ it('shows the congrats panel briefly then returns to the gate when setting 4 is 
     openAthkarReader($page, 'sabah', false);
 
     setAthkarSettings($page, [
-        'does_skip_notice_panels' => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => false,
     ]);
 
     $page->script(athkarReaderCommandScript('data.markAllActiveModeComplete();'));

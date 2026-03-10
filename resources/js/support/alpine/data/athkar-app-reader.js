@@ -14,6 +14,7 @@ import {
 import { createAthkarShimmerController } from '../athkar-shimmer';
 
 const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
+const skipGuidancePanelsSettingKey = 'does_skip_notice_panels';
 const progressStorageKey = 'athkar-progress-v1';
 
 const defaultProgressState = () => ({
@@ -426,7 +427,7 @@ document.addEventListener('alpine:init', () => {
                     this.activeList[this.maxNavigableIndex]?.id ?? null;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.closeHint();
 
                 if (this.isNoticeVisible) {
@@ -470,7 +471,7 @@ document.addEventListener('alpine:init', () => {
             this.queueReaderTextFit();
         },
         toggleHint(index) {
-            if (this.shouldSkipNoticePanels() && !this.isMobileViewport()) {
+            if (this.shouldSkipGuidancePanels() && !this.isMobileViewport()) {
                 this.closeHint();
                 return;
             }
@@ -787,7 +788,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.confirmNotice();
                 return;
             }
@@ -821,7 +822,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.confirmNotice();
                 return;
             }
@@ -1103,12 +1104,6 @@ document.addEventListener('alpine:init', () => {
             const normalizedIndex = Number(index ?? -1);
 
             if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
-                return;
-            }
-
-            if (this.shouldSkipNoticePanels()) {
-                this.closeHint();
-                this.completeThikr(normalizedIndex);
                 return;
             }
 
@@ -1472,8 +1467,8 @@ document.addEventListener('alpine:init', () => {
         shouldPreventSwitching() {
             return this.settingValue('does_prevent_switching_athkar_until_completion', true);
         },
-        shouldSkipNoticePanels() {
-            return this.settingValue('does_skip_notice_panels', false);
+        shouldSkipGuidancePanels() {
+            return this.settingValue(skipGuidancePanelsSettingKey, false);
         },
         shouldEnableVisualEnhancements() {
             return this.settingValue(doesEnableMainTextShimmeringKey, true);
@@ -1730,7 +1725,7 @@ document.addEventListener('alpine:init', () => {
 
             if (this.activeIndex <= 0) {
                 if (!this.isNoticeVisible && this.views?.['athkar-app-gate']?.isReaderVisible) {
-                    if (this.shouldSkipNoticePanels()) {
+                    if (this.shouldSkipGuidancePanels()) {
                         this.closeMode();
                         return;
                     }
@@ -2095,7 +2090,7 @@ document.addEventListener('alpine:init', () => {
                 [mode]: this.todayKey(),
             };
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.isNoticeVisible = false;
                 this.isCompletionVisible = false;
 

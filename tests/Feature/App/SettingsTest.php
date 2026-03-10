@@ -20,20 +20,20 @@ it('composes the control panel from tab-specific traits', function () {
 
 it('does not persist settings changes globally', function () {
     Setting::query()->firstOrCreate(
-        ['name' => 'does_skip_notice_panels'],
+        ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
         ['value' => false],
     );
 
     $initialSettings = Setting::query()->pluck('value', 'name')->all();
 
     $payload = [
-        'does_automatically_switch_completed_athkar' => false,
-        'does_clicking_switch_athkar_too' => false,
-        'does_prevent_switching_athkar_until_completion' => false,
-        'does_skip_notice_panels' => true,
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
+        Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+        Setting::DOES_SKIP_GUIDANCE_PANELS => true,
         Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
-        'minimum_main_text_size' => 18,
-        'maximum_main_text_size' => 20,
+        Setting::MINIMUM_MAIN_TEXT_SIZE => 18,
+        Setting::MAXIMUM_MAIN_TEXT_SIZE => 20,
     ];
 
     livewire(ControlPanel::class)

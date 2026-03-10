@@ -64,10 +64,10 @@ trait HasControlPanelSettingsTab
                             ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-1 sm:mt-3 md:mt-0'])
                             ->label($generalDefinitions[Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING]['label']),
 
-                        Components\Checkbox::make('does_skip_notice_panels')
-                            ->default((bool) ($generalDefinitions['does_skip_notice_panels']['default'] ?? false))
+                        Components\Checkbox::make(Setting::DOES_SKIP_GUIDANCE_PANELS)
+                            ->default((bool) ($generalDefinitions[Setting::DOES_SKIP_GUIDANCE_PANELS]['default'] ?? false))
                             ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-3 sm:mt-0'])
-                            ->label($generalDefinitions['does_skip_notice_panels']['label']),
+                            ->label($generalDefinitions[Setting::DOES_SKIP_GUIDANCE_PANELS]['label']),
                     ]),
 
                 Text::make(new HtmlString('<hr class="border-0 h-px bg-linear-to-r from-transparent via-gray-400 to-transparent mt-5">'))
@@ -84,22 +84,22 @@ trait HasControlPanelSettingsTab
                         'xl' => 3,
                     ])
                     ->schema([
-                        Components\Checkbox::make('does_automatically_switch_completed_athkar')
-                            ->default((bool) ($athkarDefinitions['does_automatically_switch_completed_athkar']['default'] ?? true))
-                            ->label($athkarDefinitions['does_automatically_switch_completed_athkar']['label']),
+                        Components\Checkbox::make(Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR)
+                            ->default((bool) ($athkarDefinitions[Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR]['default'] ?? true))
+                            ->label($athkarDefinitions[Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR]['label']),
 
-                        Components\Checkbox::make('does_clicking_switch_athkar_too')
-                            ->default((bool) ($athkarDefinitions['does_clicking_switch_athkar_too']['default'] ?? true))
-                            ->label($athkarDefinitions['does_clicking_switch_athkar_too']['label'])
+                        Components\Checkbox::make(Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO)
+                            ->default((bool) ($athkarDefinitions[Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO]['default'] ?? true))
+                            ->label($athkarDefinitions[Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO]['label'])
                             ->belowContent([
-                                Text::make((string) ($athkarDefinitions['does_clicking_switch_athkar_too']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                                Text::make((string) ($athkarDefinitions[Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO]['help'] ?? ''))->size(TextSize::ExtraSmall),
                             ]),
 
-                        Components\Checkbox::make('does_prevent_switching_athkar_until_completion')
-                            ->default((bool) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['default'] ?? true))
-                            ->label($athkarDefinitions['does_prevent_switching_athkar_until_completion']['label'])
+                        Components\Checkbox::make(Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION)
+                            ->default((bool) ($athkarDefinitions[Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION]['default'] ?? true))
+                            ->label($athkarDefinitions[Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION]['label'])
                             ->belowContent([
-                                Text::make((string) ($athkarDefinitions['does_prevent_switching_athkar_until_completion']['help'] ?? ''))->size(TextSize::ExtraSmall),
+                                Text::make((string) ($athkarDefinitions[Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION]['help'] ?? ''))->size(TextSize::ExtraSmall),
                             ]),
                     ]),
             ]);

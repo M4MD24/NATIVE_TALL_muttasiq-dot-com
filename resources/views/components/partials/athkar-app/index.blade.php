@@ -20,6 +20,7 @@
 
 <div
     class="-top-7! sm:top-0! absolute inset-0 flex items-center justify-center"
+    data-athkar-app-reader-root
     x-cloak
     x-show="views['athkar-app-gate'].isOpen || views['athkar-app-sabah'].isOpen || views['athkar-app-masaa'].isOpen"
     x-data="athkarAppReader({

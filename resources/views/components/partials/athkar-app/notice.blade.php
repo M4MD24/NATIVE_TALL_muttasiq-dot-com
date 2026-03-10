@@ -233,7 +233,7 @@
 <div
     class="absolute inset-0 z-10 flex touch-pan-y select-none items-center justify-center px-4 py-6 sm:px-6"
     x-cloak
-    x-show="isNoticeVisible && !isCompletionVisible && !shouldSkipNoticePanels()"
+    x-show="isNoticeVisible && !isCompletionVisible && !shouldSkipGuidancePanels()"
     x-transition:enter="transition-all ease-out duration-600 delay-150"
     x-transition:enter-start="opacity-0! blur-[2px]"
     x-transition:enter-end="opacity-100 blur-0"

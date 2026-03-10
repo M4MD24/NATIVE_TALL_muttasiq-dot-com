@@ -59,6 +59,7 @@ if (isBrowserPluginEnabled()) {
 |
 */
 
+use App\Models\Setting;
 use Pest\Browser\Execution;
 use Pest\Browser\Playwright\Playwright;
 use Pest\Plugins\Parallel;
@@ -544,7 +545,9 @@ function openAthkarNotice($page, string $mode, bool $isMobile): void
     waitForScript($page, athkarReaderReadyScript());
     waitForScript($page, athkarGateDataScript('true'), true);
 
-    $page->script(athkarReaderCommandScript('data.settings = { ...(data.settings ?? {}), does_skip_notice_panels: false };'));
+    $page->script(athkarReaderCommandScript(
+        'data.settings = { ...(data.settings ?? {}), '.Setting::DOES_SKIP_GUIDANCE_PANELS.': false };',
+    ));
 
     $label = $mode === 'sabah' ? 'أذكار الصباح' : 'أذكار المساء';
     $selector = "button[aria-label=\"{$label}\"]";

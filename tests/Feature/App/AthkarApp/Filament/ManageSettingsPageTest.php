@@ -27,7 +27,7 @@ it('loads current settings into the form', function () {
     $admin = User::factory()->create(['email' => 'admin@example.test']);
 
     Setting::query()->updateOrCreate(
-        ['name' => 'does_skip_notice_panels'],
+        ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
         ['value' => 1],
     );
     Setting::query()->updateOrCreate(
@@ -44,7 +44,7 @@ it('loads current settings into the form', function () {
 
     livewire(ManageSettings::class)
         ->assertFormSet([
-            'does_skip_notice_panels' => true,
+            Setting::DOES_SKIP_GUIDANCE_PANELS => true,
             Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
             Setting::APP_VERSION => '2.5.1',
         ]);
@@ -61,20 +61,20 @@ it('saves settings to the database', function () {
     livewire(ManageSettings::class)
         ->fillForm([
             Setting::APP_VERSION => '3.0.0',
-            'does_skip_notice_panels' => true,
+            Setting::DOES_SKIP_GUIDANCE_PANELS => true,
             Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
-            'does_automatically_switch_completed_athkar' => false,
-            'minimum_main_text_size' => 18,
-            'maximum_main_text_size' => 22,
+            Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
+            Setting::MINIMUM_MAIN_TEXT_SIZE => 18,
+            Setting::MAXIMUM_MAIN_TEXT_SIZE => 22,
         ])
         ->call('save')
         ->assertHasNoFormErrors()
         ->assertNotified();
 
-    expect(Setting::query()->where('name', 'does_skip_notice_panels')->value('value'))
+    expect(Setting::query()->where('name', Setting::DOES_SKIP_GUIDANCE_PANELS)->value('value'))
         ->toBe(1);
 
-    expect(Setting::query()->where('name', 'does_automatically_switch_completed_athkar')->value('value'))
+    expect(Setting::query()->where('name', Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR)->value('value'))
         ->toBe(0);
 
     expect(Setting::query()->where('name', Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING)->value('value'))
@@ -83,10 +83,10 @@ it('saves settings to the database', function () {
     expect(Setting::query()->where('name', Setting::APP_VERSION)->value('value_text'))
         ->toBe('3.0.0');
 
-    expect((int) Setting::query()->where('name', 'minimum_main_text_size')->value('value'))
+    expect((int) Setting::query()->where('name', Setting::MINIMUM_MAIN_TEXT_SIZE)->value('value'))
         ->toBe(18);
 
-    expect((int) Setting::query()->where('name', 'maximum_main_text_size')->value('value'))
+    expect((int) Setting::query()->where('name', Setting::MAXIMUM_MAIN_TEXT_SIZE)->value('value'))
         ->toBe(22);
 });
 
@@ -100,14 +100,14 @@ it('normalizes min/max text size when saving with inverted values', function () 
 
     livewire(ManageSettings::class)
         ->fillForm([
-            'minimum_main_text_size' => 22,
-            'maximum_main_text_size' => 18,
+            Setting::MINIMUM_MAIN_TEXT_SIZE => 22,
+            Setting::MAXIMUM_MAIN_TEXT_SIZE => 18,
         ])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    $min = (int) Setting::query()->where('name', 'minimum_main_text_size')->value('value');
-    $max = (int) Setting::query()->where('name', 'maximum_main_text_size')->value('value');
+    $min = (int) Setting::query()->where('name', Setting::MINIMUM_MAIN_TEXT_SIZE)->value('value');
+    $max = (int) Setting::query()->where('name', Setting::MAXIMUM_MAIN_TEXT_SIZE)->value('value');
 
     expect($min)->toBeLessThanOrEqual($max);
 });
