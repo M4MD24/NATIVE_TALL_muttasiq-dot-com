@@ -1024,7 +1024,7 @@
                             <div class="contents">
                                 <!-- Floating Mobile Counter (togglable) -->
                                 <div
-                                    class="absolute right-2 top-2 z-30 overflow-visible sm:hidden"
+                                    class="absolute inset-x-0 top-2 z-30 overflow-visible sm:hidden"
                                     data-athkar-mobile-counter
                                     x-show="(requiredCount(index) > 1 || countAt(index) > requiredCount(index)) &&
                             (countAt(index) !== requiredCount(index))"
@@ -1033,7 +1033,7 @@
                                     <div class="group relative">
                                         <!-- Top Right Counter -->
                                         <button
-                                            class="relative z-30 size-9 touch-manipulation transition-all"
+                                            class="relative z-30 size-9 touch-manipulation transition-all mx-auto flex"
                                             data-hint-allow
                                             type="button"
                                             aria-label="العدد"
@@ -1107,7 +1107,7 @@
 
                                         <!-- Completion button -->
                                         <button
-                                            class="bg-success-500/90 absolute -bottom-2 right-0 z-30 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-lg"
+                                            class="bg-success-500/90 inset-x-0 mx-auto translate-x-[15px] absolute -bottom-2 z-30 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-lg"
                                             data-hint-allow
                                             type="button"
                                             aria-label="إتمام الذكر"
@@ -1126,7 +1126,7 @@
 
                                     <!-- Label -->
                                     <div
-                                        class="pointer-events-none absolute -left-8 top-1/2 z-30 -mt-[2px] -translate-y-1/2 select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
+                                        class="pointer-events-none absolute flex mx-auto inset-x-0 justify-center -translate-y-[0.3rem] -translate-x-[3.2rem] top-1/2 z-30 -mt-[2px] select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
                                         x-show="isHintOpen(index)"
                                         x-transition.opacity.duration.200ms
                                     >
@@ -1449,7 +1449,7 @@
                                                 x-bind:class="isVisible && isItemComplete(index) && 'opacity-100!'"
                                             >تم بحمد الله</span>
                                             <span
-                                                class="rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                class="rounded-sm rounded-bl-lg! shadow-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                                 x-bind:class="isVisible && 'opacity-100!'"
                                                 x-text="activeTypeLabel(index)"
                                             ></span>
