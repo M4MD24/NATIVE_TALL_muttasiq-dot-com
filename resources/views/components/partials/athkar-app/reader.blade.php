@@ -35,6 +35,11 @@
             --athkar-scrollbar-track: color-mix(in srgb, var(--warning-100) 35%, transparent);
             --athkar-scrollbar-thumb: color-mix(in srgb, var(--warning-200) 80%, transparent);
             --athkar-scrollbar-thumb-hover: color-mix(in srgb, var(--warning-300) 80%, transparent);
+            --athkar-manager-button-fill-start: color-mix(in srgb, var(--primary-600) 94%, var(--background));
+            --athkar-manager-button-fill-end: color-mix(in srgb, var(--primary-500) 88%, var(--background));
+            --athkar-manager-button-glow: color-mix(in srgb, var(--primary-400) 42%, transparent);
+            --athkar-manager-button-bevel: color-mix(in srgb, var(--gray-900) 8%, transparent);
+            --athkar-manager-button-text: var(--foreground-dark);
         }
 
         .dark .athkar-reader {
@@ -72,6 +77,11 @@
             --athkar-scrollbar-track: color-mix(in srgb, var(--warning-900) 45%, transparent);
             --athkar-scrollbar-thumb: color-mix(in srgb, var(--warning-300) 74%, transparent);
             --athkar-scrollbar-thumb-hover: color-mix(in srgb, var(--warning-200) 72%, transparent);
+            --athkar-manager-button-fill-start: color-mix(in srgb, var(--primary-100) 96%, var(--background-dark));
+            --athkar-manager-button-fill-end: color-mix(in srgb, var(--primary-50) 94%, var(--background-dark));
+            --athkar-manager-button-glow: color-mix(in srgb, var(--primary-500) 34%, transparent);
+            --athkar-manager-button-bevel: color-mix(in srgb, var(--gray-950) 40%, transparent);
+            --athkar-manager-button-text: var(--primary-600);
         }
 
         .athkar-panel {
@@ -268,6 +278,90 @@
                     color-mix(in srgb, var(--background-dark) 80%, transparent));
             color: var(--primary-100);
             box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gray-950) 40%, transparent);
+        }
+
+        /* Credits: https://uiverse.io/mrhyddenn/stale-cheetah-42 */
+        .athkar-chip--manager {
+            position: relative;
+            /* overflow: hidden; */
+            isolation: isolate;
+            box-shadow:
+                inset 0 0 0 1px var(--athkar-manager-button-bevel),
+                0 0 0 0 rgba(15, 23, 42, 0);
+            transition:
+                box-shadow 220ms ease,
+                color 220ms ease;
+        }
+
+        .athkar-chip--manager > span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .athkar-chip--manager::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg,
+                    var(--athkar-manager-button-fill-start),
+                    var(--athkar-manager-button-fill-end));
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 220ms ease;
+        }
+
+        .athkar-chip--manager::before {
+            content: "";
+            position: absolute;
+            top: 7%;
+            left: 0;
+            width: 0;
+            height: 86%;
+            opacity: 0;
+            transform: skewX(-20deg);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .athkar-chip--manager:focus-visible,
+        .athkar-chip--manager:active {
+            color: var(--athkar-manager-button-text);
+        }
+
+        .athkar-chip--manager:focus-visible {
+            box-shadow:
+                inset 0 0 0 1px var(--athkar-manager-button-bevel),
+                0 0 30px 5px var(--athkar-manager-button-glow);
+        }
+
+        .athkar-chip--manager:focus-visible::after,
+        .athkar-chip--manager:active::after {
+            opacity: 1;
+        }
+
+        .athkar-chip--manager:focus-visible::before,
+        .athkar-chip--manager:active::before {
+            animation: athkar-manager-sheen 500ms linear;
+        }
+
+        .athkar-chip--manager:active {
+            box-shadow:
+                inset 0 0 0 1px var(--athkar-manager-button-bevel),
+                0 0 18px 3px var(--athkar-manager-button-glow);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .athkar-chip--manager:hover {
+                box-shadow:
+                    inset 0 0 0 1px var(--athkar-manager-button-bevel),
+                    0 0 30px 5px var(--athkar-manager-button-glow);
+                color: var(--athkar-manager-button-text);
+            }
+
+            .athkar-chip--manager:hover::after {
+                opacity: 1;
+            }
         }
 
         .athkar-progress {
@@ -806,7 +900,7 @@
         <div
             class="athkar-panel athkar-panel-actions flex flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap sm:gap-4 sm:px-4 sm:py-3">
             <button
-                class="athkar-chip shadow-inner! focus-visible:outline-primary-500 relative inline-flex cursor-pointer items-center justify-center px-3 py-2 text-xs font-semibold transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3"
+                class="athkar-chip athkar-chip--manager shadow-inner focus-visible:outline-primary-500 relative inline-flex cursor-pointer items-center justify-center px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3"
                 data-athkar-open-manager
                 type="button"
                 x-on:click="$tippy.hide(); openGateAndManageAthkar()"
@@ -814,8 +908,7 @@
                 x-on:mouseleave="$tippy.hide()"
                 x-on:focus="$tippy('إدارة الأذكار', 'bottom', 2000, { showWhenGuidancePanelsSkipped: true })"
                 x-on:blur="$tippy.hide()"
-                x-text="activeLabel"
-            ></button>
+            ><span x-text="activeLabel"></span></button>
 
             <div class="flex flex-1 items-center gap-0.5 text-xs text-gray-600 sm:gap-3 dark:text-gray-300">
                 <span
