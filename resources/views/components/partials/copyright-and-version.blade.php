@@ -114,16 +114,16 @@
     x-on:touchcancel.passive="handleTouchEnd()"
 >
     <div
-        class="relative rounded-2xl border border-white/70 bg-gray-100/30 px-4 py-3 text-[0.8rem] text-gray-600 opacity-0 ring-1 ring-gray-200/70 transition-opacity duration-500 ease-out sm:px-6 sm:py-4 sm:text-[1rem] dark:border-white/10 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-white/10"
+        class="relative w-fit max-w-[90vw] rounded-2xl border border-white/70 bg-gray-100/30 px-4 py-3 text-[clamp(0.6rem,2.65vw,0.8rem)] text-gray-600 opacity-0 ring-1 ring-gray-200/70 transition-opacity duration-500 ease-out sm:max-w-none sm:px-6 sm:py-4 sm:text-[1rem] dark:border-white/10 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-white/10"
         data-testid="copyright-version-panel"
         x-bind:class="isVisible && 'opacity-100!'"
     >
-        <p class="whitespace-nowrap">
+        <p class="text-center leading-tight whitespace-normal">
             جميع الحقوق محفوظة •
             متسق @ <span x-text="window.dayjs().calendar('hijri').format('YYYY')"></span> هـ
             • النسخة
             <button
-                class="inline rounded-sm font-semibold text-gray-800 underline decoration-gray-400/80 underline-offset-4 transition-colors hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/60 dark:text-gray-100 dark:decoration-gray-400/60 dark:hover:text-white dark:focus-visible:ring-gray-200/40"
+                class="inline whitespace-nowrap rounded-sm font-semibold text-gray-800 underline decoration-gray-400/80 underline-offset-4 transition-colors hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/60 dark:text-gray-100 dark:decoration-gray-400/60 dark:hover:text-white dark:focus-visible:ring-gray-200/40"
                 data-testid="copyright-version-button"
                 type="button"
                 x-bind:class="isVisible && (views['main-menu'].isOpen || views['athkar-app-gate'].isOpen) && 'pointer-events-auto!'"

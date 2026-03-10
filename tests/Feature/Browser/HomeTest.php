@@ -247,6 +247,54 @@ JS);
 JS, true);
 });
 
+it('keeps the copyright panel within a narrow mobile viewport', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+
+    waitForScript($page, 'Boolean(document.querySelector(\'[data-testid="copyright-version-panel"]\'))', true);
+
+    /** @var array<string, float|int>|null $snapshot */
+    $snapshot = $page->script(<<<'JS'
+(() => {
+  const shell = document.querySelector('[data-testid="copyright-version-shell"]');
+  const panel = document.querySelector('[data-testid="copyright-version-panel"]');
+  const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
+
+  if (!panel || !data) {
+    return null;
+  }
+
+  data.clearLoopTimers();
+  data.isVisible = true;
+
+  const rect = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+
+  return {
+    leftInset: rect.left,
+    rightInset: window.innerWidth - rect.right,
+    width: rect.width,
+    viewportWidth: window.innerWidth,
+    fontSize: Number.parseFloat(style.fontSize),
+    scrollWidth: panel.scrollWidth,
+    clientWidth: panel.clientWidth,
+  };
+})()
+JS);
+
+    expect($snapshot)->toBeArray();
+    expect((float) ($snapshot['fontSize'] ?? 0.0))->toBeLessThanOrEqual(12.8);
+    expect((float) ($snapshot['width'] ?? 0.0))
+        ->toBeLessThanOrEqual(((float) ($snapshot['viewportWidth'] ?? 0.0) * 0.9) + 1.0);
+    expect((float) ($snapshot['leftInset'] ?? 0.0))
+        ->toBeGreaterThanOrEqual(((float) ($snapshot['viewportWidth'] ?? 0.0) * 0.04) - 1.0);
+    expect((float) ($snapshot['rightInset'] ?? 0.0))
+        ->toBeGreaterThanOrEqual(((float) ($snapshot['viewportWidth'] ?? 0.0) * 0.04) - 1.0);
+    expect((int) ($snapshot['scrollWidth'] ?? 0))
+        ->toBeLessThanOrEqual((int) ($snapshot['clientWidth'] ?? 0) + 1);
+});
+
 it('adds the main menu hash on a fresh load', function () {
     $page = visit('/');
 

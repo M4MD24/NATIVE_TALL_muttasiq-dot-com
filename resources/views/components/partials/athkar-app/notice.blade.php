@@ -258,7 +258,7 @@
 
     <!-- Panel -->
     <section
-        class="athkar-notice relative z-10 flex max-h-[75svh] flex-col gap-4 overflow-hidden text-center sm:max-h-[65svh] sm:gap-6 md:max-h-[75svh]"
+        class="athkar-notice relative z-10 flex max-h-fit mt-4 sm:mt-0 flex-col gap-4 overflow-hidden text-center sm:max-h-[65svh] sm:gap-6 md:max-h-[75svh]"
         role="dialog"
         aria-live="polite"
     >
