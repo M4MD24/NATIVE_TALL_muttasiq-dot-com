@@ -3,8 +3,20 @@
 use App\Livewire\ControlPanel;
 use App\Models\Setting;
 use App\Providers\AppServiceProvider;
+use App\Services\Traits\HasControlPanelAboutTab;
+use App\Services\Traits\HasControlPanelChangelogsTab;
+use App\Services\Traits\HasControlPanelSettingsTab;
 
 use function Pest\Livewire\livewire;
+
+it('composes the control panel from tab-specific traits', function () {
+    $usedTraits = class_uses_recursive(ControlPanel::class);
+
+    expect($usedTraits)
+        ->toContain(HasControlPanelSettingsTab::class)
+        ->toContain(HasControlPanelChangelogsTab::class)
+        ->toContain(HasControlPanelAboutTab::class);
+});
 
 it('does not persist settings changes globally', function () {
     Setting::query()->firstOrCreate(

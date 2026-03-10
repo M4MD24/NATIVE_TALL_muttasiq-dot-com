@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\HomeController;
 // use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+
 // use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 Route::get('/', HomeController::class)->name('home');
@@ -15,7 +16,7 @@ Route::get('/', HomeController::class)->name('home');
 //         if ($imagesDirectory === false) {
 //             abort(404);
 //         }
-    
+
 //         $requestedPath = realpath(public_path('docs/updates/images/'.$path));
 //         if (
 //             $requestedPath === false
@@ -24,7 +25,7 @@ Route::get('/', HomeController::class)->name('home');
 //         ) {
 //             abort(404);
 //         }
-    
+
 //         return response()->file($requestedPath, [
 //             'Content-Type' => File::mimeType($requestedPath) ?? 'application/octet-stream',
 //         ]);
