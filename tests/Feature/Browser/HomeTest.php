@@ -452,6 +452,103 @@ JS);
         ->toBeLessThanOrEqual((float) ($snapshot['expectedMaxOffset'] ?? 0.0) + 0.15);
 });
 
+it('repositions the quick stack after restoring the athkar gate on mobile reload', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+    openAthkarGate($page, true);
+
+    $page->refresh();
+
+    waitForAlpineReady($page);
+    applyTestSpeedups($page);
+    enableMobileContext($page);
+    waitForGateVisible($page);
+    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
+});
+
+it('repositions the quick stack after restoring the athkar reader on mobile reload', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+    openAthkarReader($page, 'sabah', true);
+
+    $page->refresh();
+
+    waitForAlpineReady($page);
+    applyTestSpeedups($page);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
+});
+
+it('rate limits repeated taps on the active quick stack action while keeping it expanded', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+
+    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
+    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme'))", true);
+    waitForScript($page, "window.Alpine.store('colorScheme').isDarkModeOn", false);
+
+    $snapshot = $page->script(<<<'JS'
+(() => {
+  const button = document.querySelector('[data-testid="color-scheme-switch-button"]');
+  const root = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
+
+  if (!button || !root || !window.Alpine) {
+    return null;
+  }
+
+  const click = () => {
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  };
+
+  click();
+  click();
+  click();
+  click();
+
+  const data = window.Alpine.$data ? window.Alpine.$data(root) : (root.__x?.$data ?? null);
+
+  return {
+    isDarkModeOn: window.Alpine.store('colorScheme').isDarkModeOn,
+    isQuickStackOpen: data?.isQuickStackOpen ?? null,
+    isInteractionLocked: data?.isInteractionLocked ?? null,
+  };
+})()
+JS);
+
+    expect($snapshot)->toBeArray();
+    expect($snapshot['isDarkModeOn'] ?? null)->toBeTrue();
+    expect($snapshot['isQuickStackOpen'] ?? null)->toBeTrue();
+    expect($snapshot['isInteractionLocked'] ?? null)->toBeTrue();
+
+    waitForScriptWithTimeout($page, quickStackDataScript('data.isInteractionLocked'), false, 1_500);
+    waitForScript($page, quickStackDataScript('data.isQuickStackOpen'), true);
+    waitForScript($page, "window.Alpine.store('colorScheme').isDarkModeOn", true);
+});
+
+it('repositions the quick stack after opening and closing the control panel on mobile', function () {
+    $page = visit('/');
+
+    resetBrowserState($page, true);
+    openAthkarGate($page, true);
+
+    openControlPanelModal($page);
+    $closed = (bool) $page->script(<<<'JS'
+(() => {
+  const closeButton = document.querySelector('.fi-modal-window [aria-label="Close"], .fi-modal-window [aria-label="إغلاق"], .fi-modal-close-btn');
+  closeButton?.click();
+  return Boolean(closeButton);
+})()
+JS);
+    expect($closed)->toBeTrue();
+    waitForScriptWithTimeout($page, modalClosedScript(), true, 3_000);
+
+    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
+});
+
 it('can return to the main menu after toggle-color-scheme resets the hash', function () {
     $page = visit('/');
 

@@ -823,6 +823,61 @@ function homeButtonPositionScript(): string
 JS;
 }
 
+function quickStackDataScript(string $expression): string
+{
+    return js_template(<<<'JS'
+(() => {
+  const root = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
+  if (!root || !window.Alpine) {
+    return null;
+  }
+  const data = window.Alpine.$data ? window.Alpine.$data(root) : (root.__x?.$data ?? null);
+  if (!data) {
+    return null;
+  }
+  const expr = {{expr}};
+  try {
+    return Function('data', 'return ' + expr)(data);
+  } catch (e) {
+    return null;
+  }
+})()
+JS, ['expr' => $expression]);
+}
+
+function quickStackLayoutReadyScript(): string
+{
+    return <<<'JS'
+(() => {
+  const root = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
+  if (!root || !window.Alpine) {
+    return false;
+  }
+
+  const data = window.Alpine.$data ? window.Alpine.$data(root) : (root.__x?.$data ?? null);
+  if (!data || data.respectingStack !== true) {
+    return false;
+  }
+
+  const visibleItems = Array.from(document.querySelectorAll('[data-stack-item]')).filter((item) => {
+    const styles = getComputedStyle(item);
+    return !item.hidden && styles.display !== 'none' && styles.visibility !== 'hidden';
+  });
+
+  if (visibleItems.length < 2) {
+    return false;
+  }
+
+  return visibleItems.every((item) => {
+    const transform = String(item.style.transform ?? '');
+
+    return item.style.position === 'absolute'
+      && /^translateX\((-?\d+(?:\.\d+)?)rem\)$/.test(transform);
+  });
+})()
+JS;
+}
+
 function swipeElement($page, string $selector, string $direction, string $pointerType = 'touch'): void
 {
     $startRatio = $direction === 'forward' ? 0.35 : 0.65;

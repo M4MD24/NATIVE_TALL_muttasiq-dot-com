@@ -4,6 +4,7 @@
         x-cloak
         x-transition.opacity
         x-show="isBodyVisible"
+        x-init="lock = $livewireLock(null, 350, true)"
         x-data="{
             lock: null,
             isControlPanelOpen: false,

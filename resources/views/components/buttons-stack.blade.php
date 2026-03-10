@@ -20,8 +20,13 @@
         items: [],
         observer: null,
         attributeObserver: null,
-        isUpdatingLayout: false,
-        hasPendingLayout: false,
+        layoutFrameId: null,
+        isLayoutQueued: false,
+        pendingLayoutPasses: 0,
+        shouldWaitForNextTick: false,
+        interactionUnlockId: null,
+        isInteractionLocked: false,
+        actionOpenState: false,
         stackTransitionMs: 200,
         shouldManageDisplay(item) {
             if (!item) {
@@ -52,7 +57,7 @@
             this.observeItems();
             this.observeRespecting();
             this.setRespectingStack();
-            this.updateLayout();
+            this.scheduleLayout(3);
         },
         destroy() {
             if (this.observer) {
@@ -66,19 +71,31 @@
             if (this.$refs.stack) {
                 this.$refs.stack.removeEventListener('click', this.handleClick, true);
             }
+    
+            if (this.layoutFrameId !== null) {
+                window.cancelAnimationFrame(this.layoutFrameId);
+            }
+    
+            this.releaseInteractionLock();
         },
         setRespectingStack() {
-            this.respectingStack = String(this.$el.dataset.respectingStack) === 'true';
+            const nextState = String(this.$el.dataset.respectingStack) === 'true';
+    
+            if (this.respectingStack === nextState) {
+                return;
+            }
+    
+            this.respectingStack = nextState;
     
             if (!this.respectingStack) {
-                this.isQuickStackOpen = false;
-                this.activeIndex = 0;
+                this.closeQuickStack();
+                this.releaseInteractionLock();
             }
         },
         observeRespecting() {
             this.attributeObserver = new MutationObserver(() => {
                 this.setRespectingStack();
-                this.updateLayout();
+                this.scheduleLayout(3);
             });
     
             this.attributeObserver.observe(this.$el, {
@@ -102,19 +119,12 @@
         },
         observeItems() {
             this.observer = new MutationObserver((mutations) => {
-                if (this.isUpdatingLayout) {
-                    if (mutations.some((mutation) => mutation.type === 'childList')) {
-                        this.hasPendingLayout = true;
-                    }
-                    return;
-                }
-    
                 if (!this.hasRelevantMutation(mutations)) {
                     return;
                 }
     
                 this.refreshItems();
-                this.updateLayout();
+                this.scheduleLayout(2, { afterDom: false });
             });
     
             this.observer.observe(this.$refs.stack, {
@@ -129,7 +139,7 @@
         },
         isRelevantMutation(mutation) {
             if (mutation.type === 'attributes') {
-                return this.isStackItemElement(mutation.target);
+                return this.isRelevantAttributeMutation(mutation);
             }
     
             if (mutation.type !== 'childList') {
@@ -149,6 +159,100 @@
             }
     
             return this.isStackItemElement(node) || node.querySelector('[data-stack-item]') !== null;
+        },
+        isRelevantAttributeMutation(mutation) {
+            if (!this.isStackItemElement(mutation.target)) {
+                return false;
+            }
+    
+            if (mutation.attributeName !== 'style') {
+                return true;
+            }
+    
+            return mutation.target.hasAttribute('x-show');
+        },
+        scheduleLayout(passCount = 1, { afterDom = true } = {}) {
+            this.pendingLayoutPasses = Math.max(this.pendingLayoutPasses, passCount);
+            this.shouldWaitForNextTick = this.shouldWaitForNextTick || afterDom;
+    
+            if (this.isLayoutQueued) {
+                return;
+            }
+    
+            this.isLayoutQueued = true;
+    
+            const queueFrame = () => {
+                this.layoutFrameId = window.requestAnimationFrame(() => {
+                    this.layoutFrameId = null;
+                    this.isLayoutQueued = false;
+    
+                    const remainingPasses = this.pendingLayoutPasses;
+    
+                    this.pendingLayoutPasses = 0;
+                    this.shouldWaitForNextTick = false;
+    
+                    this.refreshItems();
+                    this.updateLayout();
+    
+                    if (remainingPasses > 1) {
+                        this.scheduleLayout(remainingPasses - 1, { afterDom: false });
+                    }
+                });
+            };
+    
+            if (this.shouldWaitForNextTick && typeof this.$nextTick === 'function') {
+                this.$nextTick(() => {
+                    if (!this.isLayoutQueued || this.layoutFrameId !== null) {
+                        return;
+                    }
+    
+                    queueFrame();
+                });
+    
+                return;
+            }
+    
+            queueFrame();
+        },
+        closeQuickStack() {
+            this.isQuickStackOpen = false;
+            this.activeIndex = 0;
+        },
+        resolveInteractionCooldownMs() {
+            return Math.max(this.stackTransitionMs + 120, 320);
+        },
+        lockInteractions() {
+            this.releaseInteractionLock();
+    
+            this.isInteractionLocked = true;
+            this.interactionUnlockId = window.setTimeout(() => {
+                this.isInteractionLocked = false;
+                this.interactionUnlockId = null;
+            }, this.resolveInteractionCooldownMs());
+        },
+        releaseInteractionLock() {
+            if (this.interactionUnlockId !== null) {
+                window.clearTimeout(this.interactionUnlockId);
+                this.interactionUnlockId = null;
+            }
+    
+            this.isInteractionLocked = false;
+        },
+        syncActionState(isActionOpen) {
+            const nextState = isActionOpen === true;
+    
+            if (this.actionOpenState === nextState) {
+                return;
+            }
+    
+            this.actionOpenState = nextState;
+    
+            if (this.actionOpenState) {
+                this.closeQuickStack();
+                this.releaseInteractionLock();
+            }
+    
+            this.scheduleLayout(3);
         },
         bindClickHandler() {
             this.handleClick = (event) => {
@@ -171,7 +275,7 @@
                 if (!this.isQuickStackOpen) {
                     this.isQuickStackOpen = true;
                     this.activeIndex = index;
-                    this.updateLayout();
+                    this.scheduleLayout(2);
                     event.preventDefault();
                     event.stopImmediatePropagation();
                     return;
@@ -179,16 +283,21 @@
     
                 if (this.activeIndex !== index) {
                     this.activeIndex = index;
-                    this.updateLayout();
+                    this.scheduleLayout(2);
                     event.preventDefault();
                     event.stopImmediatePropagation();
                     return;
                 }
     
-                this.isQuickStackOpen = false;
-                this.activeIndex = 0;
-                this.updateLayout();
-                setTimeout(() => this.resetStackItemState(item), 0);
+                if (this.isInteractionLocked) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+    
+                this.lockInteractions();
+                this.scheduleLayout(1, { afterDom: false });
+                window.setTimeout(() => this.resetStackItemState(item), 0);
             };
     
             this.$refs.stack.addEventListener('click', this.handleClick, true);
@@ -250,30 +359,12 @@
             return 70 - index;
         },
         updateLayout() {
-            this.isUpdatingLayout = true;
-    
-            const finishUpdate = () => {
-                requestAnimationFrame(() => {
-                    this.isUpdatingLayout = false;
-    
-                    if (!this.hasPendingLayout) {
-                        return;
-                    }
-    
-                    this.hasPendingLayout = false;
-                    this.refreshItems();
-                    this.updateLayout();
-                });
-            };
-    
             if (!this.items.length) {
-                finishUpdate();
                 return;
             }
     
             if (!this.respectingStack) {
                 this.items.forEach((item) => this.resetItem(item));
-                finishUpdate();
                 return;
             }
     
@@ -281,7 +372,6 @@
     
             if (!visibleItems.length) {
                 this.items.forEach((item) => this.resetItem(item));
-                finishUpdate();
                 return;
             }
     
@@ -312,8 +402,6 @@
                     item.style.display = 'block';
                 }
             });
-    
-            finishUpdate();
         },
         resetItem(item) {
             item.style.position = '';
@@ -332,15 +420,28 @@
     }"
     x-init="init();
     return () => destroy();"
-    x-effect="if ((typeof isControlPanelOpen !== 'undefined' && isControlPanelOpen) || (typeof isAthkarManagerOpen !== 'undefined' && isAthkarManagerOpen)) { isQuickStackOpen = false; activeIndex = 0; updateLayout(); }"
+    x-effect="syncActionState($store?.layoutManager?.isActionOpen === true)"
+    x-on:switch-view.window="closeQuickStack(); releaseInteractionLock(); scheduleLayout(3)"
+    x-on:hashchange.window="scheduleLayout(3)"
+    x-on:resize.window="scheduleLayout(2, { afterDom: false })"
+    x-on:orientationchange.window="scheduleLayout(2, { afterDom: false })"
+    x-on:open-modal.window="closeQuickStack(); releaseInteractionLock(); scheduleLayout(3)"
+    x-on:x-modal-opened.window="scheduleLayout(3)"
+    x-on:close-modal.window="scheduleLayout(4)"
+    x-on:close-modal-quietly.window="scheduleLayout(4)"
     x-on:click.window="
         if (!respectingStack) return;
         if ($refs.stack && $refs.stack.contains($event.target)) return;
-        isQuickStackOpen = false;
-        activeIndex = 0;
-        updateLayout();
+        closeQuickStack();
+        releaseInteractionLock();
+        scheduleLayout(2, { afterDom: false });
     "
-    x-on:click.outside="if (respectingStack) { isQuickStackOpen = false; activeIndex = 0; updateLayout(); }"
+    x-on:click.outside="
+        if (!respectingStack) return;
+        closeQuickStack();
+        releaseInteractionLock();
+        scheduleLayout(2, { afterDom: false });
+    "
     x-bind:class="anchorClasses()"
 >
     <div
