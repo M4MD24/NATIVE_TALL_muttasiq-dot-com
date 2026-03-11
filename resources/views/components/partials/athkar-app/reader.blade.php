@@ -1166,7 +1166,7 @@
                         </button>
 
                         <button
-                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-9999 mx-auto flex h-7 w-7 translate-x-[15px] items-center justify-center rounded-full text-white shadow-lg"
+                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-[9999] mx-auto flex h-7 w-7 translate-x-[15px] items-center justify-center rounded-full text-white shadow-lg"
                             data-hint-allow
                             type="button"
                             aria-label="إتمام الذكر"
@@ -1174,8 +1174,12 @@
                             x-transition.opacity.duration.200ms
                             x-on:click.stop="requestSingleThikrCompletion(activeIndex)"
                             x-on:pointerdown.stop
-                            x-on:touchstart.stop
-                            x-on:touchend.stop
+                            x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
+                            x-on:mouseleave="$tippy.hide()"
+                            x-on:focus="$tippy('إتمام الذكر', 'right')"
+                            x-on:blur="$tippy.hide()"
+                            x-on:touchstart.stop="$tippy('إتمام الذكر', 'right', 1200)"
+                            x-on:touchend.stop="$tippy.hide()"
                         >
                             <x-icon
                                 class="h-4 w-4"
@@ -1267,6 +1271,12 @@
                                 aria-label="إتمام الذكر"
                                 x-show="countAt(activeIndex) !== requiredCount(activeIndex)"
                                 x-on:click.stop="$tippy.hide(); requestSingleThikrCompletion(activeIndex)"
+                                x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
+                                x-on:mouseleave="$tippy.hide()"
+                                x-on:focus="$tippy('إتمام الذكر', 'right')"
+                                x-on:blur="$tippy.hide()"
+                                x-on:touchstart="$tippy('إتمام الذكر', 'right', 1200)"
+                                x-on:touchend="$tippy.hide()"
                             >
                                 <x-icon
                                     class="h-4 w-4"
