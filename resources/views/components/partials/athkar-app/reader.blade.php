@@ -1040,7 +1040,7 @@
                 'is-tap-pulse': tapPulse.isActive,
                 'outline-transparent! dark:outline-transparent!': countPulse.isActive,
             }"
-            x-on:click.capture="if (hintIndex !== null && !$event.target.closest('[data-hint-allow]')) { closeHint(); $event.stopPropagation(); $event.preventDefault(); }"
+            x-on:click.capture="if (isHintOpen(activeIndex) && !$event.target.closest('[data-hint-allow]')) { closeHint(); $event.stopPropagation(); $event.preventDefault(); }"
             x-on:pointerdown="swipeStart($event)"
             x-on:pointerup="swipeEnd($event)"
             x-on:pointercancel="swipeCancel()"

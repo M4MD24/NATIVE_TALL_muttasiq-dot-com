@@ -344,6 +344,8 @@ document.addEventListener('alpine:init', () => {
             this.$watch('activeMode', () => {
                 this.resetMaintenanceTapTracking();
                 this.resetRapidTapMode();
+                this.closeHint();
+                this.resetSwipeState();
                 this.hideOrigin();
                 this.queueTextFit();
             });
@@ -358,6 +360,8 @@ document.addEventListener('alpine:init', () => {
                 () => this.views?.['athkar-app-gate']?.isReaderVisible,
                 (isVisible) => {
                     if (isVisible) {
+                        this.closeHint();
+                        this.resetSwipeState();
                         this.queueReaderTextFit();
                     }
                 },
@@ -495,6 +499,15 @@ document.addEventListener('alpine:init', () => {
             if (!keepMobileOpen) {
                 this.setMobileCounterOpen(false);
             }
+        },
+        resetSwipeState() {
+            this.swipe.active = false;
+            this.swipe.ignoreClick = false;
+            this.swipe.startedOnTap = false;
+            this.swipe.startedInScrollableText = false;
+            this.swipe.pointerId = null;
+            this.swipe.pointerType = null;
+            this.swipe.source = null;
         },
         shouldShowSharedMobileCounter() {
             if (!this.activeMode) {
@@ -868,6 +881,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.resetNavState();
+            this.closeHint();
+            this.resetSwipeState();
 
             return true;
         },
@@ -931,6 +946,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.isNoticeVisible = false;
+            this.closeHint();
+            this.resetSwipeState();
 
             if (this.views?.['athkar-app-gate']) {
                 this.views['athkar-app-gate'].isReaderVisible = true;
@@ -982,6 +999,8 @@ document.addEventListener('alpine:init', () => {
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
             this.resetTopUiTransition();
+            this.closeHint();
+            this.resetSwipeState();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
             this.stopTextShimmer();
@@ -1011,6 +1030,8 @@ document.addEventListener('alpine:init', () => {
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
             this.resetTopUiTransition();
+            this.closeHint();
+            this.resetSwipeState();
             this.stopTextShimmer();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
