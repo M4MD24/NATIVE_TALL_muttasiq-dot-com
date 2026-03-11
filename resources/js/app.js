@@ -9,6 +9,7 @@ import './packages/color';
 import './packages/day';
 import './packages/fitty';
 import './packages/anime';
+import './packages/ldrs';
 import './packages/nativephp/browser';
 
 import './support/alpine/data/layout-manager';

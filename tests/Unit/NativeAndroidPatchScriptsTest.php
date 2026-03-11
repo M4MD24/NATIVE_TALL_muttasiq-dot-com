@@ -85,8 +85,10 @@ test('native patches package stays pinned in app dependencies', function () {
     expect($lockedPackage)
         ->toMatchArray(['name' => 'goodm4ven/nativephp-muttasiq-patches']);
 
-    expect((string) ($lockedPackage['version'] ?? ''))
-        ->toStartWith('v1.');
+    $lockedVersion = (string) ($lockedPackage['version'] ?? '');
+
+    expect(ltrim($lockedVersion, 'v'))
+        ->toStartWith('1.');
 });
 
 test('composer local plugin switch script toggles the muttasiq patches package by default', function () {
@@ -98,8 +100,10 @@ test('composer local plugin switch script toggles the muttasiq patches package b
     expect($script)->toContain('current_repository="$(composer config "repositories.${repository_key}" 2>/dev/null || true)"');
     expect($script)->toContain('grep -Fq \'"type":"path"\' <<<"${current_repository}"');
     expect($script)->toContain('composer config --unset "repositories.${repository_key}"');
-    expect($script)->toContain('composer config "repositories.${repository_key}" path "${package_path}"');
-    expect($script)->toContain('composer update "${package_name}" --with-all-dependencies');
+    expect($script)->toContain('composer config "repositories.${repository_key}" --json "$(cat <<JSON');
+    expect($script)->toContain('"type": "path"');
+    expect($script)->toContain('"${package_name}": "${local_forced_version}"');
+    expect($script)->toContain('composer update "${package_name}" --with-dependencies');
 });
 
 test('android log script writes into storage logs', function () {

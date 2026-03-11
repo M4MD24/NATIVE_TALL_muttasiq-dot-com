@@ -20,7 +20,7 @@ class ColorSchemeSwitcher extends Component
     #[On('color-scheme-toggled')]
     public function synchronizeColorScheme(?bool $isDarkModeOn): void
     {
-        // if (is_platform('desktop')) {
+        // if (is_platform('web')) {
         //     try {
         //         $this->rateLimit(10);
         //     } catch (TooManyRequestsException) {

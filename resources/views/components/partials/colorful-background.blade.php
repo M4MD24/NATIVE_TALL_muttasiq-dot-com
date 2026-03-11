@@ -1,6 +1,6 @@
 <!-- Background -->
 <div
-    class="pointer-events-none fixed inset-0 -z-20 overflow-hidden"
+    class="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     x-cloak
     x-transition:enter="transition ease-out duration-300 delay-300"
     x-transition:enter-start="opacity-0"

@@ -3,7 +3,6 @@
 use App\Models\Setting;
 use App\Models\Thikr;
 use App\Services\Enums\ThikrType;
-use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
@@ -57,106 +56,68 @@ function buttonsStackClasses(string $content): string
     return $classMatches[1];
 }
 
-it('fetches athkar from the remote api on mobile', function () {
+it('uses local athkar payload on mobile launch and defers remote sync', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
         'app.custom.native_end_points.athkar' => 'athkar',
         'app.custom.native_end_points.settings' => 'settings',
-        'app.custom.native_end_points.retries' => 2,
     ]);
 
-    $payload = [
-        [
-            'id' => 1,
-            'time' => 'sabah',
-            'type' => ThikrType::Glorification->value,
-            'text' => 'Test athkar',
-            'origin' => null,
-            'is_aayah' => false,
-            'is_original' => false,
-            'count' => 1,
-            'order' => 1,
-        ],
-    ];
+    Http::fake();
 
-    Http::fake([
-        route('api.athkar.index') => Http::response(['athkar' => $payload]),
-        route('api.settings.index') => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-        ]),
+    $thikr = Thikr::factory()->create([
+        'type' => ThikrType::Supplication,
+        'origin' => 'مرجع',
     ]);
 
     $response = get('/');
 
     $response->assertSuccessful();
-    $response->assertViewHas('athkar', $payload);
+    $response->assertViewHas('athkar', function (array $athkar) use ($thikr): bool {
+        return collect($athkar)->contains(function (array $item) use ($thikr): bool {
+            return $item['id'] === $thikr->id
+                && $item['type'] === ThikrType::Supplication->value
+                && $item['is_original'] === true
+                && $item['origin'] === 'مرجع';
+        });
+    });
 
-    $shellClasses = copyrightVersionShellClasses($response->getContent());
+    $content = $response->getContent();
+    $shellClasses = copyrightVersionShellClasses($content);
 
     expect($shellClasses)
         ->toContain('bottom-7')
         ->not->toContain('bottom-3')
         ->not->toContain('mb-7');
 
-    Http::assertSent(function (HttpRequest $request): bool {
-        return $request->url() === route('api.athkar.index');
-    });
+    expect($content)->toContain('data-testid="startup-sync-shield"')
+        ->toContain('data-testid="startup-sync-component"')
+        ->toContain('startup-sync-resolved');
+
+    Http::assertNothingSent();
 });
 
-it('persists app version from settings api on mobile launch', function () {
+it('does not render native startup loader markup during normal mobile launch', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
-        'app.custom.app_version' => '1.0.0',
-        'app.custom.native_end_points.athkar' => 'athkar',
-        'app.custom.native_end_points.settings' => 'settings',
-        'app.custom.native_end_points.retries' => 2,
-    ]);
-
-    Setting::setAppVersion('0.9.0');
-
-    Http::fake([
-        route('api.athkar.index') => Http::response([
-            'athkar' => Thikr::defaultsPayload(),
-        ]),
-        route('api.settings.index') => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-            'appVersion' => '2.5.1',
-        ]),
     ]);
 
     $response = get('/');
 
     $response->assertSuccessful()
-        ->assertSee('v2.5.1', false);
-
-    expect(Setting::appVersion())->toBe('2.5.1');
+        ->assertDontSee('data-testid="native-startup-loader"', false);
 });
 
-it('falls back to configured app version on mobile launch when settings api omits app version', function () {
+it('resets app version to configured value on mobile launch before deferred sync', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
         'app.custom.app_version' => '3.1.4',
-        'app.custom.native_end_points.athkar' => 'athkar',
-        'app.custom.native_end_points.settings' => 'settings',
-        'app.custom.native_end_points.retries' => 2,
     ]);
 
     Setting::setAppVersion('0.9.0');
-
-    Http::fake([
-        route('api.athkar.index') => Http::response([
-            'athkar' => Thikr::defaultsPayload(),
-        ]),
-        route('api.settings.index') => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-        ]),
-    ]);
 
     $response = get('/');
 
@@ -200,76 +161,6 @@ it('uses local athkar payload on non-mobile requests', function () {
     Http::assertNothingSent();
 });
 
-it('falls back to local athkar payload on mobile when api request fails', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'android',
-        'app.custom.native_end_points.athkar' => 'athkar',
-        'app.custom.native_end_points.settings' => 'settings',
-        'app.custom.native_end_points.retries' => 2,
-    ]);
-
-    $thikr = Thikr::factory()->create([
-        'type' => ThikrType::Protection,
-        'origin' => null,
-    ]);
-
-    Http::fake([
-        route('api.athkar.index') => Http::failedConnection(),
-        route('api.settings.index') => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-        ]),
-    ]);
-
-    $response = get('/');
-
-    $response->assertSuccessful();
-    $response->assertViewHas('athkar', function (array $athkar) use ($thikr): bool {
-        return collect($athkar)->contains(function (array $item) use ($thikr): bool {
-            return $item['id'] === $thikr->id
-                && $item['type'] === ThikrType::Protection->value
-                && $item['is_original'] === false
-                && $item['origin'] === null;
-        });
-    });
-
-    Http::assertSent(function (HttpRequest $request): bool {
-        return $request->url() === route('api.athkar.index');
-    });
-});
-
-it('uses local athkar payload on mobile when app url has a non-http scheme', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'ios',
-        'app.custom.native_end_points.athkar' => 'athkar',
-        'app.custom.native_end_points.settings' => 'settings',
-        'app.url' => 'php://127.0.0.1',
-    ]);
-
-    Http::fake();
-
-    $thikr = Thikr::factory()->create([
-        'type' => ThikrType::Supplication,
-        'origin' => null,
-    ]);
-
-    $response = get('/');
-
-    $response->assertSuccessful();
-    $response->assertViewHas('athkar', function (array $athkar) use ($thikr): bool {
-        return collect($athkar)->contains(function (array $item) use ($thikr): bool {
-            return $item['id'] === $thikr->id
-                && $item['type'] === ThikrType::Supplication->value
-                && $item['is_original'] === false
-                && $item['origin'] === null;
-        });
-    });
-
-    Http::assertNothingSent();
-});
-
 it('applies ios top margins to stack and main and keeps defaults for android', function () {
     config([
         'nativephp-internal.running' => true,
@@ -307,48 +198,6 @@ it('applies ios top margins to stack and main and keeps defaults for android', f
         ->not->toContain('mt-22');
 
     expect($androidStackClasses)->not->toContain('mt-8');
-});
-
-it('fetches athkar from the configured absolute endpoint on mobile even with a php app url', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'ios',
-        'app.url' => 'php://127.0.0.1',
-        'app.custom.native_end_points.athkar' => 'https://muttasiq.com/api/athkar',
-        'app.custom.native_end_points.settings' => 'https://muttasiq.com/api/settings',
-        'app.custom.native_end_points.retries' => 2,
-    ]);
-
-    $payload = [
-        [
-            'id' => 1,
-            'time' => 'sabah',
-            'type' => ThikrType::Glorification->value,
-            'text' => 'Remote endpoint athkar',
-            'origin' => null,
-            'is_aayah' => false,
-            'is_original' => false,
-            'count' => 1,
-            'order' => 1,
-        ],
-    ];
-
-    Http::fake([
-        'https://muttasiq.com/api/athkar' => Http::response(['athkar' => $payload]),
-        'https://muttasiq.com/api/settings' => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-        ]),
-    ]);
-
-    $response = get('/');
-
-    $response->assertSuccessful();
-    $response->assertViewHas('athkar', $payload);
-
-    Http::assertSent(function (HttpRequest $request): bool {
-        return $request->url() === 'https://muttasiq.com/api/athkar';
-    });
 });
 
 it('renders the shared origin-indicator icon class without pixel offset hacks', function () {

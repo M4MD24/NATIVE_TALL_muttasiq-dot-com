@@ -166,6 +166,10 @@
 
         <x-partials.copyright-and-version />
 
+        @if (is_platform('mobile'))
+            <livewire:startup-sync defer />
+        @endif
+
         <livewire:js-error-reporter />
     </div>
 </x-app>

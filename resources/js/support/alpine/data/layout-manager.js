@@ -1,6 +1,9 @@
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('layoutManager', () => ({
+    window.Alpine.data('layoutManager', (options = {}) => ({
         isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
+        shouldRunStartupSync: options.shouldRunStartupSync === true,
+        isStartupSyncPending: false,
+        startupSyncFallbackTimeoutId: null,
         isFontReady: false,
         isLayoutSetUp: false,
         isBodyVisible: false,
@@ -11,13 +14,45 @@ document.addEventListener('alpine:init', () => {
         isActionOpen: false,
         isScrollingDisabled: false,
 
+        completeStartupSync() {
+            if (!this.isStartupSyncPending) {
+                return;
+            }
+
+            this.isStartupSyncPending = false;
+
+            if (this.startupSyncFallbackTimeoutId !== null) {
+                window.clearTimeout(this.startupSyncFallbackTimeoutId);
+                this.startupSyncFallbackTimeoutId = null;
+            }
+
+            window.__startupSyncResolved = true;
+            window.dispatchEvent(new CustomEvent('startup-sync-resolved'));
+        },
+
         init() {
+            this.isStartupSyncPending = this.shouldRunStartupSync;
+            window.__startupSyncResolved = !this.isStartupSyncPending;
+
+            if (this.isStartupSyncPending) {
+                window.addEventListener('startup-sync-finished', () => this.completeStartupSync(), {
+                    once: true,
+                });
+
+                this.startupSyncFallbackTimeoutId = window.setTimeout(() => {
+                    this.completeStartupSync();
+                }, 3500);
+            }
+
             if (this.isFastUiMode) {
                 this.defaultTransitionDurationInMs = 0;
                 this.fastTransitionDurationInMs = 0;
                 this.useFastTransitionDuration = true;
                 this.isFontReady = true;
                 this.isLayoutSetUp = true;
+                this.isBlinkerShown = false;
+                this.isBodyVisible = true;
+            } else {
                 this.isBlinkerShown = false;
                 this.isBodyVisible = true;
             }
@@ -36,14 +71,9 @@ document.addEventListener('alpine:init', () => {
             // ? Wait for font loading
             this.$store.fontManager.ready(() => (this.isFontReady = true));
 
-            // ? Mark layout ready when both have finished
+            // ? Keep layout state in sync with font readiness
             window.Alpine.effect(() => {
                 this.isLayoutSetUp = this.isFontReady;
-
-                if (this.isLayoutSetUp) {
-                    this.isBlinkerShown = false;
-                    this.isBodyVisible = true;
-                }
             });
         },
 

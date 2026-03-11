@@ -12,10 +12,35 @@
         isVisible: false,
         isHovering: false,
         isTouching: false,
+        shouldWaitForStartupSync: @js(is_platform('mobile')),
+        hasStartedRevealLoop: false,
+        startupSyncResolvedListener: null,
+        appVersion: @js(\App\Models\Setting::appVersion()),
         waitDuration: 3000,
         visibleDuration: 3000,
         waitTimeoutId: null,
         hideTimeoutId: null,
+        startRevealLoop() {
+            if (this.hasStartedRevealLoop) {
+                return;
+            }
+    
+            this.hasStartedRevealLoop = true;
+            this.queueNextReveal();
+        },
+        setAppVersion(version) {
+            if (typeof version !== 'string') {
+                return;
+            }
+    
+            const normalizedVersion = version.trim();
+    
+            if (!normalizedVersion) {
+                return;
+            }
+    
+            this.appVersion = normalizedVersion;
+        },
         isTouchDevice() {
             if (!$store.bp) {
                 return false;
@@ -101,10 +126,27 @@
             this.releaseVisibleAfter(this.visibleDuration);
         },
         init() {
-            this.queueNextReveal();
+            if (!this.shouldWaitForStartupSync || window.__startupSyncResolved === true) {
+                this.startRevealLoop();
+                return;
+            }
+    
+            this.startupSyncResolvedListener = () => {
+                this.startupSyncResolvedListener = null;
+                this.startRevealLoop();
+            };
+    
+            window.addEventListener('startup-sync-resolved', this.startupSyncResolvedListener, {
+                once: true,
+            });
         },
         destroy() {
             this.clearLoopTimers();
+    
+            if (this.startupSyncResolvedListener) {
+                window.removeEventListener('startup-sync-resolved', this.startupSyncResolvedListener);
+                this.startupSyncResolvedListener = null;
+            }
         },
     }"
     x-on:mouseenter="handleMouseEnter()"
@@ -112,6 +154,7 @@
     x-on:touchstart.passive="handleTouchStart()"
     x-on:touchend.passive="handleTouchEnd()"
     x-on:touchcancel.passive="handleTouchEnd()"
+    x-on:app-version-updated.window="setAppVersion($event.detail?.version)"
 >
     <div
         class="relative w-fit max-w-[90vw] rounded-2xl border border-white/70 bg-gray-100/30 px-4 py-3 text-[clamp(0.6rem,2.65vw,0.8rem)] text-gray-600 opacity-0 ring-1 ring-gray-200/70 transition-opacity duration-500 ease-out sm:max-w-none sm:px-6 sm:py-4 sm:text-[1rem] dark:border-white/10 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-white/10"
@@ -129,7 +172,7 @@
                 x-bind:class="isVisible && (views['main-menu'].isOpen || views['athkar-app-gate'].isOpen) && 'pointer-events-auto!'"
                 x-on:click="$dispatch('open-control-panel-modal', { tab: 'updates' })"
             >
-                v{{ \App\Models\Setting::appVersion() }}
+                <span x-text="`v${appVersion}`">v{{ \App\Models\Setting::appVersion() }}</span>
             </button>
         </p>
     </div>
