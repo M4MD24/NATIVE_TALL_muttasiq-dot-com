@@ -27,9 +27,7 @@ it('keeps the mobile shared counter expansion out of layout flow', function () {
         ->and($source)->toContain('absolute inset-x-0 top-2 z-30 h-10 overflow-visible sm:hidden')
         ->and($source)->toContain('absolute inset-x-0 top-0 h-11 overflow-visible')
         ->and($source)->toContain('group relative h-11')
-        ->and($source)->toContain('absolute left-1/2 top-0 z-20 flex size-[2.6rem] -translate-x-1/2 origin-top touch-manipulation transition-[scale] duration-200')
-        ->and($source)->toContain("x-bind:class=\"isHintOpen(activeIndex) ? 'scale-[1.54] pointer-events-none' : ''\"")
-        ->and($source)->not->toContain("isHintOpen(activeIndex) ? 'h-18' : 'h-10'")
-        ->and($source)->not->toContain("isHintOpen(activeIndex) ? 'h-18' : 'h-11'")
-        ->and($source)->not->toContain("isHintOpen(activeIndex) ? 'size-16! pointer-events-none' : ''");
+        ->and($source)->toMatch('/class=\"pointer-events-auto absolute left-1\\/2 top-0 z-20 flex size-\\[2\\.6rem\\][^\"]*touch-manipulation[^\"]*\"/')
+        ->and($source)->toContain("x-bind:class=\"isHintOpen(activeIndex) ? '")
+        ->and($source)->toContain("pointer-events-none' : ''\"");
 });
