@@ -130,15 +130,22 @@ JS,
             <<<'JS'
 (() => {
   const counter = document.querySelector({{selector}});
+  const ring = counter?.querySelector('.athkar-counter-ring');
+  const repel = counter?.querySelector('.athkar-counter-repel');
 
-  if (!counter || !window.Alpine) {
+  if (!counter || !ring || !repel || !window.Alpine) {
     return false;
   }
 
   const root = document.querySelector('[x-data^="athkarAppReader"]');
   const data = window.Alpine.$data ? window.Alpine.$data(root) : (root?.__x?.$data ?? null);
+  const ringOpacity = Number.parseFloat(getComputedStyle(ring).opacity || '1');
+  const animationName = getComputedStyle(repel).animationName;
 
-  return counter.dataset.counterPulse === 'active' && data?.topUi?.pulseActive === true;
+  return counter.dataset.counterPulse === 'active'
+    && data?.topUi?.pulseActive === true
+    && ringOpacity < 1
+    && animationName !== 'none';
 })()
 JS,
             ['selector' => $selector],
@@ -745,7 +752,9 @@ it('limits card dragging to dedicated handles on base breakpoint touch layouts',
     resetBrowserState($page);
     openAthkarReader($page, 'sabah', false);
     enableMobileContext($page);
+    enableTouchContext($page, 320, 570, 'base');
     waitForReaderVisible($page);
+    waitForScript($page, 'window.innerWidth <= 340', true);
     waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
 
     safeClick($page, '[data-athkar-open-manager]');
@@ -1410,9 +1419,26 @@ it('bypasses hint popups but still requires confirmation for single-thikr comple
     waitForScript($page, athkarReaderDataScript('data.hintIndex'), null);
 
     $desktopCompleteSelector = '[data-athkar-desktop-counter-row] button[aria-label="إتمام الذكر"]';
+    $page->hover('[data-athkar-desktop-counter]');
     waitForScript(
         $page,
-        js_template('Boolean(document.querySelector({{selector}}))', ['selector' => $desktopCompleteSelector]),
+        js_template(<<<'JS'
+(() => {
+  const button = document.querySelector({{selector}});
+
+  if (!button) {
+    return false;
+  }
+
+  const rect = button.getBoundingClientRect();
+  const styles = getComputedStyle(button);
+  const target = document.elementFromPoint(rect.left + (rect.width / 2), rect.top + (rect.height / 2));
+
+  return styles.opacity !== '0'
+    && styles.pointerEvents !== 'none'
+    && (target === button || button.contains(target));
+})()
+JS, ['selector' => $desktopCompleteSelector]),
         true,
     );
     scriptClick($page, $desktopCompleteSelector);
@@ -1571,6 +1597,36 @@ JS,
         ),
         true,
     );
+
+    $mobileCompleteSelector = '[data-athkar-mobile-counter] button[aria-label="إتمام الذكر"]';
+    waitForScript(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const button = document.querySelector({{selector}});
+
+  if (!button) {
+    return false;
+  }
+
+  const rect = button.getBoundingClientRect();
+  const styles = getComputedStyle(button);
+  const target = document.elementFromPoint(rect.left + (rect.width / 2), rect.top + (rect.height / 2));
+
+  return styles.pointerEvents !== 'none'
+    && styles.opacity !== '0'
+    && (target === button || button.contains(target));
+})()
+JS,
+            ['selector' => $mobileCompleteSelector],
+        ),
+        true,
+    );
+
+    $page->click($mobileCompleteSelector);
+
+    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
 });
 
 it('executes hidden completion buttons on desktop for single thikr and all athkar', function () {

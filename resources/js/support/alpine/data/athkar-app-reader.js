@@ -179,7 +179,7 @@ document.addEventListener('alpine:init', () => {
         isGateMenuTransition: true,
         pulseDurationMs: 520,
         topUiCompletionLingerMs: 1000,
-        topUiPulseDurationMs: 260,
+        topUiPulseDurationMs: 360,
         originResyncDelayMs: 180,
         completionVisibleMs: 3000,
         textFitSettleMs: 96,
@@ -222,7 +222,7 @@ document.addEventListener('alpine:init', () => {
                 this.slideDurationMs = 120;
                 this.pulseDurationMs = 80;
                 this.topUiCompletionLingerMs = 80;
-                this.topUiPulseDurationMs = 80;
+                this.topUiPulseDurationMs = 120;
                 this.originResyncDelayMs = 0;
                 this.completionVisibleMs = 250;
                 this.textFitSettleMs = 0;

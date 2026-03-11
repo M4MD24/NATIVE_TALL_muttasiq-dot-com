@@ -737,11 +737,63 @@
                     color-mix(in srgb, var(--athkar-accent) 75%, transparent) calc(var(--progress) * 0.6),
                     color-mix(in srgb, var(--athkar-accent) 95%, transparent) var(--progress),
                     color-mix(in srgb, var(--gray-300) 35%, transparent) 0);
-            transition: --progress 320ms ease, background 320ms ease;
+            transition: --progress 320ms ease, background 320ms ease, opacity 300ms ease;
+            will-change: opacity;
         }
 
         .dark .athkar-counter-ring {
             background: conic-gradient(var(--athkar-accent) var(--progress, 0%), color-mix(in srgb, var(--gray-800) 70%, transparent) 0);
+        }
+
+        .athkar-counter-repel {
+            position: absolute;
+            inset: -0.5rem;
+            border-radius: 9999px;
+            border: 2px solid color-mix(in srgb, var(--athkar-accent) 68%, transparent);
+            box-shadow:
+                0 0 0 0 color-mix(in srgb, var(--athkar-accent) 30%, transparent),
+                0 0 24px color-mix(in srgb, var(--athkar-accent) 24%, transparent);
+            opacity: 0;
+            pointer-events: none;
+            will-change: transform, opacity, box-shadow;
+        }
+
+        .dark .athkar-counter-repel {
+            border-color: color-mix(in srgb, var(--athkar-accent) 74%, transparent);
+            box-shadow:
+                0 0 0 0 color-mix(in srgb, var(--athkar-accent) 32%, transparent),
+                0 0 30px color-mix(in srgb, var(--athkar-accent) 26%, transparent);
+        }
+
+        [data-counter-pulse="active"] .athkar-counter-repel {
+            animation: athkar-counter-repel 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        [data-counter-pulse="active"] .athkar-counter-ring {
+            opacity: 0;
+        }
+
+        @keyframes athkar-counter-repel {
+            0% {
+                opacity: 0.88;
+                transform: scale(0.94);
+                box-shadow:
+                    0 0 0 0 color-mix(in srgb, var(--athkar-accent) 40%, transparent),
+                    0 0 18px color-mix(in srgb, var(--athkar-accent) 26%, transparent);
+            }
+
+            62% {
+                opacity: 0.34;
+                transform: scale(1.12);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.28);
+                box-shadow:
+                    0 0 0 14px color-mix(in srgb, var(--athkar-accent) 0%, transparent),
+                    0 0 4px color-mix(in srgb, var(--athkar-accent) 0%, transparent);
+            }
         }
 
         .athkar-nav {
@@ -1006,8 +1058,9 @@
                 aria-hidden="true"
             ></div>
             <div
-                class="pointer-events-none absolute inset-x-0 top-2 z-30 h-10 overflow-visible sm:hidden"
+                class="pointer-events-none absolute inset-x-0 top-2 z-30 overflow-visible sm:hidden"
                 data-athkar-mobile-top-ui
+                x-bind:class="isHintOpen(activeIndex) ? 'h-18' : 'h-10'"
             >
                 <div
                     class="pointer-events-auto absolute left-2 top-0"
@@ -1038,16 +1091,17 @@
                     class="pointer-events-auto absolute inset-x-0 top-0 overflow-visible"
                     data-athkar-mobile-counter
                     x-bind:data-counter-pulse="sharedCounterPulseState()"
+                    x-bind:class="isHintOpen(activeIndex) ? 'h-18' : 'h-11'"
                     x-show="shouldShowSharedMobileCounter()"
                     x-transition.opacity.duration.250ms
                 >
                     <div class="group relative">
                         <button
-                            class="pointer-events-auto relative z-30 mx-auto flex size-[2.6rem] touch-manipulation transition-all"
+                            class="pointer-events-auto relative z-20 mx-auto flex size-[2.6rem] touch-manipulation transition-all"
                             data-hint-allow
                             type="button"
                             aria-label="العدد"
-                            x-bind:class="isHintOpen(activeIndex) && 'size-16!'"
+                            x-bind:class="isHintOpen(activeIndex) ? 'size-16! pointer-events-none' : ''"
                             x-on:click.stop="toggleHint(activeIndex)"
                             x-on:pointerdown.stop
                             x-on:touchstart.stop
@@ -1112,7 +1166,7 @@
                         </button>
 
                         <button
-                            class="bg-success-500/90 inset-x-0 mx-auto translate-x-[15px] absolute -bottom-2 z-30 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-lg"
+                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-9999 mx-auto flex h-7 w-7 translate-x-[15px] items-center justify-center rounded-full text-white shadow-lg"
                             data-hint-allow
                             type="button"
                             aria-label="إتمام الذكر"
@@ -1121,6 +1175,7 @@
                             x-on:click.stop="requestSingleThikrCompletion(activeIndex)"
                             x-on:pointerdown.stop
                             x-on:touchstart.stop
+                            x-on:touchend.stop
                         >
                             <x-icon
                                 class="h-4 w-4"
@@ -1234,7 +1289,7 @@
 
                 <div class="pointer-events-auto w-16">
                     <button
-                        class="athkar-origin-indicator athkar-origin-indicator--desktop"
+                        class="athkar-origin-indicator athkar-origin-indicator--desktop left-4"
                         type="button"
                         x-show="hasOrigin(activeIndex)"
                         x-transition.opacity.duration.300ms
