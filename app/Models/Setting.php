@@ -230,6 +230,11 @@ class Setting extends Model
             return trim($stored);
         }
 
+        return self::configuredAppVersion();
+    }
+
+    public static function configuredAppVersion(): string
+    {
         $fallback = (string) config('app.custom.app_version', '');
 
         if (trim($fallback) !== '') {

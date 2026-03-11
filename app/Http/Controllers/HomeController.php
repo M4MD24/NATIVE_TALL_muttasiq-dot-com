@@ -18,6 +18,10 @@ class HomeController extends Controller
      */
     public function __invoke(Request $request): View
     {
+        if (is_platform('mobile')) {
+            Setting::setAppVersion(Setting::configuredAppVersion());
+        }
+
         $settingsPayload = $this->resolveSettingsPayload();
 
         return view('home', [
@@ -82,6 +86,11 @@ class HomeController extends Controller
             if ($response->successful()) {
                 $settings = $response->json('settings');
                 $limits = $response->json('mainTextSizeLimits');
+                $remoteAppVersion = $response->json('appVersion');
+
+                if (is_string($remoteAppVersion) && trim($remoteAppVersion) !== '') {
+                    Setting::setAppVersion($remoteAppVersion);
+                }
 
                 if (is_array($settings) && is_array($limits)) {
                     return [

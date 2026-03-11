@@ -105,6 +105,67 @@ it('fetches athkar from the remote api on mobile', function () {
     });
 });
 
+it('persists app version from settings api on mobile launch', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'android',
+        'app.custom.app_version' => '1.0.0',
+        'app.custom.native_end_points.athkar' => 'athkar',
+        'app.custom.native_end_points.settings' => 'settings',
+        'app.custom.native_end_points.retries' => 2,
+    ]);
+
+    Setting::setAppVersion('0.9.0');
+
+    Http::fake([
+        route('api.athkar.index') => Http::response([
+            'athkar' => Thikr::defaultsPayload(),
+        ]),
+        route('api.settings.index') => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+            'appVersion' => '2.5.1',
+        ]),
+    ]);
+
+    $response = get('/');
+
+    $response->assertSuccessful()
+        ->assertSee('v2.5.1', false);
+
+    expect(Setting::appVersion())->toBe('2.5.1');
+});
+
+it('falls back to configured app version on mobile launch when settings api omits app version', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'android',
+        'app.custom.app_version' => '3.1.4',
+        'app.custom.native_end_points.athkar' => 'athkar',
+        'app.custom.native_end_points.settings' => 'settings',
+        'app.custom.native_end_points.retries' => 2,
+    ]);
+
+    Setting::setAppVersion('0.9.0');
+
+    Http::fake([
+        route('api.athkar.index') => Http::response([
+            'athkar' => Thikr::defaultsPayload(),
+        ]),
+        route('api.settings.index') => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+        ]),
+    ]);
+
+    $response = get('/');
+
+    $response->assertSuccessful()
+        ->assertSee('v3.1.4', false);
+
+    expect(Setting::appVersion())->toBe('3.1.4');
+});
+
 it('uses local athkar payload on non-mobile requests', function () {
     config([
         'nativephp-internal.running' => true,

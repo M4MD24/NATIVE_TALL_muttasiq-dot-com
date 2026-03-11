@@ -11,6 +11,9 @@ use function Pest\Laravel\getJson;
 
 it('returns current settings and main text size limits', function () {
     RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
+    config([
+        'app.custom.app_version' => '7.8.9',
+    ]);
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
@@ -39,6 +42,8 @@ it('returns current settings and main text size limits', function () {
 
     expect($limits[Setting::MINIMUM_MAIN_TEXT_SIZE])
         ->toHaveKeys(['min', 'max', 'default']);
+
+    expect($response->json('appVersion'))->toBe('7.8.9');
 });
 
 it('returns normalized settings from the database', function () {
