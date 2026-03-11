@@ -293,7 +293,7 @@
                 color 220ms ease;
         }
 
-        .athkar-chip--manager > span {
+        .athkar-chip--manager>span {
             position: relative;
             z-index: 1;
         }
@@ -952,7 +952,7 @@
         <div
             class="athkar-panel athkar-panel-actions flex flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap sm:gap-4 sm:px-4 sm:py-3">
             <button
-                class="athkar-chip athkar-chip--manager shadow-inner focus-visible:outline-primary-500 relative inline-flex cursor-pointer items-center justify-center px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3"
+                class="athkar-chip athkar-chip--manager focus-visible:outline-primary-500 relative inline-flex cursor-pointer items-center justify-center px-3 py-2 text-xs font-semibold shadow-inner transition focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4 sm:py-3"
                 data-athkar-open-manager
                 type="button"
                 x-on:click="$tippy.hide(); openGateAndManageAthkar()"
@@ -1095,7 +1095,7 @@
                 >
                     <div class="group relative h-11">
                         <button
-                            class="pointer-events-auto absolute left-1/2 top-0 z-20 flex size-[2.6rem] -translate-x-1/2 origin-top touch-manipulation transition-all duration-200"
+                            class="pointer-events-auto absolute left-1/2 top-0 z-20 flex size-[2.6rem] origin-top -translate-x-1/2 touch-manipulation transition-all duration-200"
                             data-hint-allow
                             type="button"
                             aria-label="العدد"
@@ -1164,7 +1164,7 @@
                         </button>
 
                         <button
-                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-9999 mx-auto flex h-7 w-7 translate-x-[15px] translate-y-[20px] items-center justify-center rounded-full text-white shadow-lg"
+                            class="bg-success-500/90 z-9999 absolute inset-x-0 -bottom-2 mx-auto flex h-7 w-7 translate-x-[15px] translate-y-[20px] items-center justify-center rounded-full text-white shadow-lg"
                             data-hint-allow
                             type="button"
                             aria-label="إتمام الذكر"
@@ -1186,7 +1186,7 @@
                         </button>
 
                         <div
-                            class="pointer-events-none absolute flex mx-auto inset-x-0 justify-center translate-y-[0.3rem] -translate-x-[3.2rem] top-1/2 z-30 -mt-[2px] select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
+                            class="pointer-events-none absolute inset-x-0 top-1/2 z-30 mx-auto -mt-[2px] flex -translate-x-[3.2rem] translate-y-[0.3rem] select-none justify-center whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
                             x-show="isHintOpen(activeIndex)"
                             x-transition.opacity.duration.200ms
                         >
@@ -1214,8 +1214,7 @@
                             x-bind:style="sharedCounterProgressStyle()"
                         ></div>
 
-                        <div
-                            class="bg-(--background) dark:bg-(--background-dark) absolute inset-[6px] rounded-full">
+                        <div class="bg-(--background) dark:bg-(--background-dark) absolute inset-[6px] rounded-full">
                         </div>
 
                         <div
@@ -1264,15 +1263,13 @@
 
                         <template x-if="requiredCount(activeIndex) > 1">
                             <button
-                                class="bg-success-500/90 absolute bottom-0 right-0 z-9999 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200"
+                                class="bg-success-500/90 z-9999 absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200"
                                 type="button"
                                 aria-label="إتمام الذكر"
                                 x-show="countAt(activeIndex) !== requiredCount(activeIndex)"
-                                x-bind:class="
-                                    completionHack.canHover && $store.bp.is('sm+')
-                                        ? 'pointer-events-none scale-95 opacity-0 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:scale-100 group-focus-within:opacity-100'
-                                        : 'pointer-events-auto scale-100 opacity-100'
-                                "
+                                x-bind:class="completionHack.canHover && $store.bp.is('sm+') ?
+                                    'pointer-events-none scale-95 opacity-0 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:scale-100 group-focus-within:opacity-100' :
+                                    'pointer-events-auto scale-100 opacity-100'"
                                 x-on:click.stop="$tippy.hide(); requestSingleThikrCompletion(activeIndex)"
                                 x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
                                 x-on:mouseleave="$tippy.hide()"
@@ -1335,7 +1332,10 @@
                         <template x-if="isSlideInRenderWindow(index)">
                             <div class="contents">
                                 <!-- Content -->
-                                <div class="pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4" x-bind:class="{ 'pointer-events-none!' : isHintOpen(activeIndex) }">
+                                <div
+                                    class="pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4"
+                                    x-bind:class="{ 'pointer-events-none!': isHintOpen(activeIndex) }"
+                                >
 
                                     <!-- Althikr -->
                                     <button
@@ -1507,7 +1507,7 @@
                                                 x-bind:class="isVisible && isItemComplete(index) && 'opacity-100!'"
                                             >تم بحمد الله</span>
                                             <span
-                                                class="rounded-sm rounded-bl-lg! shadow-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                class="rounded-bl-lg! rounded-sm border border-gray-300 bg-gray-100 px-2 py-1 text-[0.65rem] font-semibold text-gray-700 opacity-0 shadow-sm transition-opacity duration-300 sm:px-3 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                                 x-bind:class="isVisible && 'opacity-100!'"
                                                 x-text="activeTypeLabel(index)"
                                             ></span>

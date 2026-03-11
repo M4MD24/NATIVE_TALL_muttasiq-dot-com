@@ -1234,7 +1234,9 @@ document.addEventListener('alpine:init', () => {
             const activeText = activeSlide?.querySelector(
                 target === 'origin' ? '[data-athkar-origin-text]' : '[data-athkar-text]',
             );
-            const activePaddingClass = String(activeText?.dataset?.fittyOverflowPaddingClass ?? 'py-2').trim();
+            const activePaddingClass = String(
+                activeText?.dataset?.fittyOverflowPaddingClass ?? 'py-2',
+            ).trim();
 
             paddingClasses.forEach((className) => {
                 box.classList.toggle(className, className === activePaddingClass);
@@ -2542,7 +2544,11 @@ document.addEventListener('alpine:init', () => {
                     this.textScroll.element.dataset.athkarScrollTarget === 'origin'
                         ? 'origin'
                         : 'text';
-                this.rememberScrollOffset(this.activeIndex, target, this.textScroll.element.scrollTop);
+                this.rememberScrollOffset(
+                    this.activeIndex,
+                    target,
+                    this.textScroll.element.scrollTop,
+                );
             }
 
             this.textScroll.active = false;

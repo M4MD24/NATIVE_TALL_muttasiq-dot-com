@@ -357,6 +357,7 @@ const clearTouchOverflowState = (boxElement, paddingClass) => {
     boxElement.dataset.athkarTouchScroll = 'false';
     boxElement.dataset.athkarTouchOverflow = 'false';
     boxElement.dataset.athkarScrollTarget = '';
+    boxElement.scrollTop = 0;
     boxElement.classList.remove('athkar-text-box--touch-scroll');
     boxElement.classList.remove('athkar-text-box--origin-scroll');
 
@@ -398,6 +399,10 @@ const applyOverflowState = ({ textElement, boxElement, overflowState, overflowTa
         'athkar-text-box--origin-scroll',
         shouldEnableTouchScroll && overflowTarget === 'origin',
     );
+
+    if (!shouldEnableTouchScroll && previousTouchScroll === 'true') {
+        boxElement.scrollTop = 0;
+    }
 
     if (paddingClass) {
         boxElement.classList.toggle(paddingClass, shouldEnableTouchScroll);

@@ -118,7 +118,7 @@
         data-testid="copyright-version-panel"
         x-bind:class="isVisible && 'opacity-100!'"
     >
-        <p class="text-center leading-tight whitespace-normal">
+        <p class="whitespace-normal text-center leading-tight">
             جميع الحقوق محفوظة •
             متسق @ <span x-text="window.dayjs().calendar('hijri').format('YYYY')"></span> هـ
             • النسخة
