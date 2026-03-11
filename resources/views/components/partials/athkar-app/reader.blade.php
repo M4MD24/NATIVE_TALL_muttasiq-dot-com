@@ -1058,9 +1058,8 @@
                 aria-hidden="true"
             ></div>
             <div
-                class="pointer-events-none absolute inset-x-0 top-2 z-30 overflow-visible sm:hidden"
+                class="pointer-events-none absolute inset-x-0 top-2 z-30 h-10 overflow-visible sm:hidden"
                 data-athkar-mobile-top-ui
-                x-bind:class="isHintOpen(activeIndex) ? 'h-18' : 'h-10'"
             >
                 <div
                     class="pointer-events-auto absolute left-2 top-0"
@@ -1088,16 +1087,15 @@
                 </div>
 
                 <div
-                    class="pointer-events-auto absolute inset-x-0 top-0 overflow-visible"
+                    class="pointer-events-auto absolute inset-x-0 top-0 h-11 overflow-visible"
                     data-athkar-mobile-counter
                     x-bind:data-counter-pulse="sharedCounterPulseState()"
-                    x-bind:class="isHintOpen(activeIndex) ? 'h-18' : 'h-11'"
                     x-show="shouldShowSharedMobileCounter()"
                     x-transition.opacity.duration.250ms
                 >
-                    <div class="group relative">
+                    <div class="group relative h-11">
                         <button
-                            class="pointer-events-auto relative z-20 mx-auto flex size-[2.6rem] touch-manipulation transition-all"
+                            class="pointer-events-auto absolute left-1/2 top-0 z-20 flex size-[2.6rem] -translate-x-1/2 origin-top touch-manipulation transition-all duration-200"
                             data-hint-allow
                             type="button"
                             aria-label="العدد"
@@ -1166,7 +1164,7 @@
                         </button>
 
                         <button
-                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-[9999] mx-auto flex h-7 w-7 translate-x-[15px] items-center justify-center rounded-full text-white shadow-lg"
+                            class="bg-success-500/90 absolute inset-x-0 -bottom-2 z-9999 mx-auto flex h-7 w-7 translate-x-[15px] translate-y-[20px] items-center justify-center rounded-full text-white shadow-lg"
                             data-hint-allow
                             type="button"
                             aria-label="إتمام الذكر"
@@ -1188,7 +1186,7 @@
                         </button>
 
                         <div
-                            class="pointer-events-none absolute flex mx-auto inset-x-0 justify-center -translate-y-[0.3rem] -translate-x-[3.2rem] top-1/2 z-30 -mt-[2px] select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
+                            class="pointer-events-none absolute flex mx-auto inset-x-0 justify-center translate-y-[0.3rem] -translate-x-[3.2rem] top-1/2 z-30 -mt-[2px] select-none whitespace-nowrap text-[0.6rem] font-semibold text-gray-600 dark:text-gray-300"
                             x-show="isHintOpen(activeIndex)"
                             x-transition.opacity.duration.200ms
                         >
@@ -1266,7 +1264,7 @@
 
                         <template x-if="requiredCount(activeIndex) > 1">
                             <button
-                                class="bg-success-500/90 absolute bottom-0 right-0 z-[9999] flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200"
+                                class="bg-success-500/90 absolute bottom-0 right-0 z-9999 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200"
                                 type="button"
                                 aria-label="إتمام الذكر"
                                 x-show="countAt(activeIndex) !== requiredCount(activeIndex)"
@@ -1337,7 +1335,7 @@
                         <template x-if="isSlideInRenderWindow(index)">
                             <div class="contents">
                                 <!-- Content -->
-                                <div class="pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4">
+                                <div class="pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4" x-bind:class="{ 'pointer-events-none!' : isHintOpen(activeIndex) }">
 
                                     <!-- Althikr -->
                                     <button
