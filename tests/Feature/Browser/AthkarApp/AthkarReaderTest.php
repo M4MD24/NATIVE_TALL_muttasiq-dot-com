@@ -2353,6 +2353,163 @@ JS,
     );
 });
 
+it('keeps non-overflowing main text centered after hiding a scrolled origin on short mobile heights', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableTouchContext($page, 320, 604, 'base');
+    waitForScript($page, 'window.innerWidth <= 320', true);
+    waitForScript($page, 'window.innerHeight <= 604', true);
+    $page->script(mainMenuCommandScript('data.isTouchDevice = true;'));
+    waitForReaderVisible($page);
+
+    $originIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item) => String(item?.origin ?? "").trim().length > 0 || Boolean(item?.is_original))',
+        ),
+    );
+
+    expect($originIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(athkarReaderCommandScript(js_template(<<<'JS'
+data.setActiveIndex({{index}});
+const activeIndex = data.activeIndex;
+
+if (!data.activeList?.[activeIndex]) {
+  return;
+}
+
+data.activeList[activeIndex].text = 'أصبحت أثني عليك حمداً، وأشهد أن لا إله إلا الله.';
+data.activeList[activeIndex].origin = Array.from(
+  { length: 160 },
+  () => 'حدثنا عبد الله بن مسلمة عن مالك عن سمي عن أبي صالح عن أبي هريرة رضي الله عنه'
+).join(' ');
+data.hideOrigin();
+data.queueReaderTextFit();
+JS, ['index' => $originIndex])));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+  const text = slide?.querySelector('[data-athkar-text]');
+  const isOriginVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+
+  if (!box || !text || isOriginVisible) {
+    return false;
+  }
+
+  if (box.dataset.athkarTextOverflow !== 'false' || box.dataset.athkarOriginOverflow !== 'true') {
+    return false;
+  }
+
+  if (box.dataset.athkarTouchScroll !== 'false' || box.classList.contains('athkar-text-box--touch-scroll')) {
+    return false;
+  }
+
+  if (box.scrollTop !== 0) {
+    box.scrollTop = 0;
+    return false;
+  }
+
+  const boxRect = box.getBoundingClientRect();
+  const textRect = text.getBoundingClientRect();
+  const centerDelta = (textRect.top + textRect.height / 2) - (boxRect.top + boxRect.height / 2);
+  window.__athkarShortHeightCenterDelta = centerDelta;
+
+  return Math.abs(centerDelta) <= 22;
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+  const isOriginVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+
+  if (!box || !isOriginVisible) {
+    return false;
+  }
+
+  if (
+    box.dataset.athkarScrollTarget !== 'origin' ||
+    box.dataset.athkarOriginOverflow !== 'true' ||
+    !box.classList.contains('athkar-text-box--touch-scroll') ||
+    !box.classList.contains('athkar-text-box--origin-scroll')
+  ) {
+    return false;
+  }
+
+  const maxScroll = Math.max(0, box.scrollHeight - box.clientHeight);
+  if (maxScroll <= 12) {
+    return false;
+  }
+
+  box.scrollTop = Math.min(10, maxScroll);
+
+  return box.scrollTop >= 4;
+})()
+JS,
+        true,
+    );
+
+    $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
+
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const slide = document.querySelector('[data-athkar-slide][data-active="true"]');
+  const box = slide?.querySelector('[data-athkar-text-box]');
+  const text = slide?.querySelector('[data-athkar-text]');
+  const isOriginVisible = slide?.querySelector('.athkar-origin-text')?.classList.contains('is-origin-visible');
+
+  if (!box || !text || isOriginVisible) {
+    return false;
+  }
+
+  if (box.dataset.athkarScrollTarget !== 'text') {
+    return false;
+  }
+
+  if (box.dataset.athkarTextOverflow !== 'false' || box.dataset.athkarTouchScroll !== 'false') {
+    return false;
+  }
+
+  if (box.classList.contains('athkar-text-box--touch-scroll') || box.classList.contains('athkar-text-box--origin-scroll')) {
+    return false;
+  }
+
+  if (box.classList.contains('py-1') || box.classList.contains('py-2')) {
+    return false;
+  }
+
+  if (box.scrollTop !== 0) {
+    return false;
+  }
+
+  const baseline = Number(window.__athkarShortHeightCenterDelta ?? 0);
+  const boxRect = box.getBoundingClientRect();
+  const textRect = text.getBoundingClientRect();
+  const centerDelta = (textRect.top + textRect.height / 2) - (boxRect.top + boxRect.height / 2);
+
+  return Math.abs(centerDelta) <= 22 && Math.abs(centerDelta - baseline) <= 10;
+})()
+JS,
+        true,
+    );
+
+});
+
 it('tracks progress by letters and counters by counts while updating page position', function () {
     $page = visit('/');
 

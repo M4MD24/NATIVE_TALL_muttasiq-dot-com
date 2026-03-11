@@ -141,6 +141,7 @@ document.addEventListener('alpine:init', () => {
             mode: null,
             index: null,
         },
+        layerScrollOffsets: {},
         topUi: {
             progressOverride: null,
             pulseActive: false,
@@ -1149,6 +1150,120 @@ document.addEventListener('alpine:init', () => {
         activeTypeLabel(index) {
             return this.typeLabelFor(this.activeList?.[index]?.type);
         },
+        scrollLayerKey(index, target, mode = this.activeMode) {
+            if (!mode) {
+                return null;
+            }
+
+            const normalizedIndex = Number(index ?? -1);
+
+            if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
+                return null;
+            }
+
+            const normalizedTarget = target === 'origin' ? 'origin' : 'text';
+            const itemId = this.getModeList(mode)?.[normalizedIndex]?.id ?? normalizedIndex;
+
+            return `${mode}:${itemId}:${normalizedTarget}`;
+        },
+        rememberScrollOffset(index, target, scrollTop) {
+            const key = this.scrollLayerKey(index, target);
+
+            if (!key) {
+                return;
+            }
+
+            this.layerScrollOffsets[key] = Math.max(0, Number(scrollTop) || 0);
+        },
+        resolveRememberedScrollOffset(index, target) {
+            const key = this.scrollLayerKey(index, target);
+
+            if (!key) {
+                return 0;
+            }
+
+            return Math.max(0, Number(this.layerScrollOffsets?.[key]) || 0);
+        },
+        rememberVisibleTextBoxScroll(index = this.activeIndex) {
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = activeSlide?.querySelector('[data-athkar-text-box]');
+
+            if (!box) {
+                return;
+            }
+
+            const target = box.dataset.athkarScrollTarget === 'origin' ? 'origin' : 'text';
+            this.rememberScrollOffset(index, target, box.scrollTop);
+        },
+        resolveOverflowPaddingClasses(box) {
+            if (!box) {
+                return [];
+            }
+
+            const classes = new Set();
+            const targets = box.querySelectorAll?.('[data-fitty-target]');
+
+            targets?.forEach((node) => {
+                const value = String(node?.dataset?.fittyOverflowPaddingClass ?? 'py-2').trim();
+
+                if (value) {
+                    classes.add(value);
+                }
+            });
+
+            return Array.from(classes);
+        },
+        syncOverflowPaddingClass({ box, target, isOverflowing }) {
+            if (!box) {
+                return;
+            }
+
+            const paddingClasses = this.resolveOverflowPaddingClasses(box);
+
+            if (!paddingClasses.length) {
+                return;
+            }
+
+            if (!isOverflowing) {
+                paddingClasses.forEach((className) => box.classList.remove(className));
+
+                return;
+            }
+
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const activeText = activeSlide?.querySelector(
+                target === 'origin' ? '[data-athkar-origin-text]' : '[data-athkar-text]',
+            );
+            const activePaddingClass = String(activeText?.dataset?.fittyOverflowPaddingClass ?? 'py-2').trim();
+
+            paddingClasses.forEach((className) => {
+                box.classList.toggle(className, className === activePaddingClass);
+            });
+        },
+        applyVisibleTextBoxScrollState({ box, index, target, isOverflowing }) {
+            if (!box) {
+                return;
+            }
+
+            if (!isOverflowing) {
+                box.scrollTop = 0;
+                this.rememberScrollOffset(index, target, 0);
+                window.requestAnimationFrame(() => {
+                    if (document.contains(box) && box.dataset.athkarTouchScroll !== 'true') {
+                        box.scrollTop = 0;
+                    }
+                });
+
+                return;
+            }
+
+            const maxScrollTop = Math.max(0, box.scrollHeight - box.clientHeight);
+            const remembered = this.resolveRememberedScrollOffset(index, target);
+            const resolvedScrollTop = Math.min(maxScrollTop, remembered);
+
+            box.scrollTop = resolvedScrollTop;
+            this.rememberScrollOffset(index, target, resolvedScrollTop);
+        },
         hasOrigin(index) {
             const item = this.activeList?.[index];
             const normalizedOrigin = String(item?.origin ?? '').trim();
@@ -1162,6 +1277,8 @@ document.addEventListener('alpine:init', () => {
             if (!this.hasOrigin(index)) {
                 return;
             }
+
+            this.rememberVisibleTextBoxScroll(index);
 
             if (this.isOriginVisible(index)) {
                 this.hideOrigin();
@@ -1202,6 +1319,9 @@ document.addEventListener('alpine:init', () => {
             box.dataset.athkarTouchOverflow = isOverflowing ? 'true' : 'false';
             box.classList.toggle('athkar-text-box--touch-scroll', isOverflowing);
             box.classList.toggle('athkar-text-box--origin-scroll', isOverflowing && isOriginTarget);
+            this.syncOverflowPaddingClass({ box, target, isOverflowing });
+
+            this.applyVisibleTextBoxScrollState({ box, index, target, isOverflowing });
         },
         hideOrigin() {
             this.originToggle = {
@@ -2417,6 +2537,14 @@ document.addEventListener('alpine:init', () => {
             }
         },
         endTextScroll() {
+            if (this.textScroll.element) {
+                const target =
+                    this.textScroll.element.dataset.athkarScrollTarget === 'origin'
+                        ? 'origin'
+                        : 'text';
+                this.rememberScrollOffset(this.activeIndex, target, this.textScroll.element.scrollTop);
+            }
+
             this.textScroll.active = false;
             this.textScroll.source = null;
             this.textScroll.startY = 0;
