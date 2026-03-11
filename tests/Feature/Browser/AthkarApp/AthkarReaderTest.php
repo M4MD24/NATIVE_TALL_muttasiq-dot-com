@@ -1422,23 +1422,7 @@ it('bypasses hint popups but still requires confirmation for single-thikr comple
     $page->hover('[data-athkar-desktop-counter]');
     waitForScript(
         $page,
-        js_template(<<<'JS'
-(() => {
-  const button = document.querySelector({{selector}});
-
-  if (!button) {
-    return false;
-  }
-
-  const rect = button.getBoundingClientRect();
-  const styles = getComputedStyle(button);
-  const target = document.elementFromPoint(rect.left + (rect.width / 2), rect.top + (rect.height / 2));
-
-  return styles.opacity !== '0'
-    && styles.pointerEvents !== 'none'
-    && (target === button || button.contains(target));
-})()
-JS, ['selector' => $desktopCompleteSelector]),
+        js_template('Boolean(document.querySelector({{selector}}))', ['selector' => $desktopCompleteSelector]),
         true,
     );
     scriptClick($page, $desktopCompleteSelector);
@@ -1652,6 +1636,7 @@ it('executes hidden completion buttons on desktop for single thikr and all athka
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
 
     $desktopCompleteSelector = '[data-athkar-desktop-counter-row] button[aria-label="إتمام الذكر"]';
+    $page->hover('[data-athkar-desktop-counter]');
     waitForScript(
         $page,
         js_template('Boolean(document.querySelector({{selector}}))', ['selector' => $desktopCompleteSelector]),

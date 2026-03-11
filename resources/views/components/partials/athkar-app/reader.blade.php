@@ -1195,7 +1195,7 @@
             </div>
 
             <div
-                class="pointer-events-none absolute top-7 z-20 hidden items-center justify-between gap-4 sm:flex"
+                class="pointer-events-auto absolute top-7 z-40 hidden items-center justify-between gap-4 sm:flex"
                 data-athkar-desktop-counter-row
             >
                 <div class="w-16"></div>
@@ -1262,17 +1262,11 @@
 
                         <template x-if="requiredCount(activeIndex) > 1">
                             <button
-                                class="bg-success-500/90 pointer-events-none absolute -bottom-2 right-1 flex h-8 w-8 scale-95 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
+                                class="bg-success-500/90 absolute bottom-0 right-0 z-[9999] flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200 sm:pointer-events-auto sm:scale-100 sm:opacity-100"
                                 type="button"
                                 aria-label="إتمام الذكر"
                                 x-show="countAt(activeIndex) !== requiredCount(activeIndex)"
-                                x-bind:class="!completionHack.canHover && $store.bp.is('sm+') ?
-                                    'pointer-events-auto! scale-100! opacity-100!' : ''"
                                 x-on:click.stop="$tippy.hide(); requestSingleThikrCompletion(activeIndex)"
-                                x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
-                                x-on:mouseleave="$tippy.hide()"
-                                x-on:focus="$tippy('إتمام الذكر', 'right')"
-                                x-on:blur="$tippy.hide()"
                             >
                                 <x-icon
                                     class="h-4 w-4"
@@ -1320,7 +1314,7 @@
                     x-bind:key="itemKey(item, index)"
                 >
                     <article
-                        class="relative flex h-full min-h-0 w-full shrink-0 flex-col px-3.5 pb-4 pt-4 transition-opacity duration-700 sm:px-10 sm:pb-8 sm:pt-7"
+                        class="pointer-events-none relative flex h-full min-h-0 w-full shrink-0 flex-col px-3.5 pb-4 pt-4 transition-opacity duration-700 sm:px-10 sm:pb-8 sm:pt-7"
                         data-athkar-slide
                         x-bind:class="index === activeIndex ? 'opacity-100' : 'opacity-0'"
                         x-bind:data-active="index === activeIndex ? 'true' : 'false'"
@@ -1328,7 +1322,7 @@
                         <template x-if="isSlideInRenderWindow(index)">
                             <div class="contents">
                                 <!-- Content -->
-                                <div class="flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4">
+                                <div class="pointer-events-auto flex min-h-0 flex-1 flex-col gap-3 sm:gap-5 sm:pt-4">
 
                                     <!-- Althikr -->
                                     <button
