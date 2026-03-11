@@ -141,6 +141,12 @@ document.addEventListener('alpine:init', () => {
             mode: null,
             index: null,
         },
+        topUi: {
+            progressOverride: null,
+            pulseActive: false,
+            lingerTimer: null,
+            pulseTimer: null,
+        },
         textFit: {
             raf: null,
             settleTimer: null,
@@ -172,6 +178,8 @@ document.addEventListener('alpine:init', () => {
         transitionDistance: '1.5rem',
         isGateMenuTransition: true,
         pulseDurationMs: 520,
+        topUiCompletionLingerMs: 1000,
+        topUiPulseDurationMs: 260,
         originResyncDelayMs: 180,
         completionVisibleMs: 3000,
         textFitSettleMs: 96,
@@ -213,6 +221,8 @@ document.addEventListener('alpine:init', () => {
                 this.readerLeaveMs = 40;
                 this.slideDurationMs = 120;
                 this.pulseDurationMs = 80;
+                this.topUiCompletionLingerMs = 80;
+                this.topUiPulseDurationMs = 80;
                 this.originResyncDelayMs = 0;
                 this.completionVisibleMs = 250;
                 this.textFitSettleMs = 0;
@@ -485,6 +495,86 @@ document.addEventListener('alpine:init', () => {
             if (!keepMobileOpen) {
                 this.setMobileCounterOpen(false);
             }
+        },
+        shouldShowSharedMobileCounter() {
+            if (!this.activeMode) {
+                return false;
+            }
+
+            const required = this.requiredCount(this.activeIndex);
+            const count = this.countAt(this.activeIndex);
+
+            return (
+                required > 1 ||
+                count > required ||
+                this.topUi.progressOverride !== null ||
+                (this.countPulse.index === this.activeIndex && this.countPulse.hasChanges)
+            );
+        },
+        counterProgressPercent(index) {
+            const required = this.requiredCount(index);
+
+            if (required <= 0) {
+                return 0;
+            }
+
+            return Math.min(100, (this.countAt(index) / required) * 100);
+        },
+        sharedCounterProgressPercent() {
+            if (typeof this.topUi.progressOverride === 'number') {
+                return Math.min(Math.max(this.topUi.progressOverride, 0), 100);
+            }
+
+            return this.counterProgressPercent(this.activeIndex);
+        },
+        sharedCounterProgressStyle() {
+            return `--progress: ${this.sharedCounterProgressPercent()}%`;
+        },
+        sharedCounterPulseState() {
+            return this.topUi.pulseActive ? 'active' : 'inactive';
+        },
+        resetTopUiTransition() {
+            if (this.topUi.lingerTimer) {
+                clearTimeout(this.topUi.lingerTimer);
+                this.topUi.lingerTimer = null;
+            }
+
+            if (this.topUi.pulseTimer) {
+                clearTimeout(this.topUi.pulseTimer);
+                this.topUi.pulseTimer = null;
+            }
+
+            this.topUi.progressOverride = null;
+            this.topUi.pulseActive = false;
+        },
+        startTopUiCompletionTransition(completedIndex, nextIndex) {
+            if (!this.activeMode) {
+                return;
+            }
+
+            const completedCount = this.countAt(completedIndex);
+
+            this.resetTopUiTransition();
+            this.setActiveIndex({
+                index: nextIndex,
+                preserveTopUiTransition: true,
+            });
+
+            const nextCount = this.countAt(nextIndex);
+
+            this.topUi.progressOverride = 100;
+            this.triggerCountPulse(nextIndex, completedCount, nextCount);
+
+            this.topUi.lingerTimer = setTimeout(() => {
+                this.topUi.lingerTimer = null;
+                this.topUi.pulseActive = true;
+
+                this.topUi.pulseTimer = setTimeout(() => {
+                    this.topUi.pulseTimer = null;
+                    this.topUi.pulseActive = false;
+                    this.topUi.progressOverride = null;
+                }, this.topUiPulseDurationMs);
+            }, this.topUiCompletionLingerMs);
         },
         isHintOpen(index) {
             return this.hintIndex === index;
@@ -891,6 +981,7 @@ document.addEventListener('alpine:init', () => {
             this.isNoticeVisible = false;
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
+            this.resetTopUiTransition();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
             this.stopTextShimmer();
@@ -919,6 +1010,7 @@ document.addEventListener('alpine:init', () => {
             this.transitionMode = lastMode;
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
+            this.resetTopUiTransition();
             this.stopTextShimmer();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
@@ -1691,6 +1783,13 @@ document.addEventListener('alpine:init', () => {
             this.resetNavState();
         },
         setActiveIndex(index) {
+            let preserveTopUiTransition = false;
+
+            if (typeof index === 'object' && index !== null) {
+                preserveTopUiTransition = Boolean(index.preserveTopUiTransition);
+                index = index.index;
+            }
+
             if (!this.activeMode) {
                 return;
             }
@@ -1705,6 +1804,10 @@ document.addEventListener('alpine:init', () => {
 
             if (nextIndex === currentIndex) {
                 return;
+            }
+
+            if (!preserveTopUiTransition) {
+                this.resetTopUiTransition();
             }
 
             this.resetMaintenanceTapTracking();
@@ -2069,7 +2172,8 @@ document.addEventListener('alpine:init', () => {
         },
         advanceAfterCompletion(index) {
             if (index < this.activeList.length - 1) {
-                this.setActiveIndex(index + 1);
+                this.closeHint();
+                this.startTopUiCompletionTransition(index, index + 1);
 
                 return;
             }
