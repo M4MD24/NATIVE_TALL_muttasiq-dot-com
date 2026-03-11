@@ -1266,10 +1266,15 @@
 
                         <template x-if="requiredCount(activeIndex) > 1">
                             <button
-                                class="bg-success-500/90 absolute bottom-0 right-0 z-[9999] flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200 sm:pointer-events-auto sm:scale-100 sm:opacity-100"
+                                class="bg-success-500/90 absolute bottom-0 right-0 z-[9999] flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition-all duration-200"
                                 type="button"
                                 aria-label="إتمام الذكر"
                                 x-show="countAt(activeIndex) !== requiredCount(activeIndex)"
+                                x-bind:class="
+                                    completionHack.canHover && $store.bp.is('sm+')
+                                        ? 'pointer-events-none scale-95 opacity-0 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:scale-100 group-focus-within:opacity-100'
+                                        : 'pointer-events-auto scale-100 opacity-100'
+                                "
                                 x-on:click.stop="$tippy.hide(); requestSingleThikrCompletion(activeIndex)"
                                 x-on:mouseenter="$tippy('إتمام الذكر', 'right')"
                                 x-on:mouseleave="$tippy.hide()"
