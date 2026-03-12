@@ -19,40 +19,31 @@ This shared source code base is representing the web version primarily, the one 
 - Use Filament as the primary UI engine for notifications, modals, slideovers, forms, tables, admin panels, etc.
 - Keep the "control panel" as a Filament tabbed action, where settings, changelogs, and about tabs are built.
 - Place reusable cross-feature utilities in `Support`/`support` namespaces and folders, put inside their standradized main folders first of course.
+- The layout manager [resources/js/support/alpine/data/layout-manager.js] tracks action/modal events (`open-modal`, `close-modal`, etc.) and should stay in sync with Filament modal behavior.
 
 ## Preferences
 - Do not ever consider using reduced-motion CSS feature.
+- Do not restore reduced-motion suppression for Livewire (disabled in [resources/js/overrides/livewire-transition-consistency.js]).
 - We manually decide what animations/effects to disable when `enable_visual_enhancements` setting is diabled.
-
-
-
-
-
-- Do not restore reduced-motion suppression for Livewire (disabled in [`resources/js/overrides/livewire-transition-consistency.js`]).
-- Keep interaction transitions enabled by default unless a specific task explicitly requires changing this project preference.
 
 ## Documentation
 - When looking for docs, check first which versions are in `composer.json` and `package.json`.
 - When implementing a new development feature, and when it's very essential and uncommon (such as the existance of this instructions file), make sure it's documented in README.
 
 ## Development
-- The native apps need some modifications on the NativePHP engine. These are done via `muttasiq-patches` NativePHP plugin. It's supposedly located in [~/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches] directory.
-- Preferred container workflow is `lara-stacker`; project test scripts (`.scripts/testing/*.sh`) already auto-detect and run inside matching Docker app containers when available.
-- Expected local helper path for stack tooling is `~/Code/Scripts/CLI_LARAVEL_lara-stacker/` (includes `lara-stacker.sh` and `scripts/rewire.sh` used by the team setup flow).
-- Native engine patching is externalized to `goodm4ven/nativephp-muttasiq-patches`, enabled by `app/Providers/NativeServiceProvider.php`.
-- The patch plugin is build-time only and runs `php artisan nativephp:muttasiq:patches` as a NativePHP Android pre-compile hook.
-- Toggle local development of that plugin using `.scripts/composer-local-plugins-switch.sh`, which targets `~/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches` by default.
+- The native apps need some modifications on the NativePHP engine. These are done via `muttasiq-patches` NativePHP plugin. It's supposedly located in [~/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches] directory. Update its own README if you touch it.
+  - The patching is build-time only and externalized to `goodm4ven/nativephp-muttasiq-patches`, enabled by [app/Providers/NativeServiceProvider.php], and ran as Android pre-complile hook.
+  - Toggle local development of that plugin using [.scripts/composer-local-plugins-switch.sh], which targets [~/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches] by default.
+- Preferred container workflow is [`lara-stacker`](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker), expected to be located at [~/Code/Scripts/CLI_LARAVEL_lara-stacker/], and including scripts to import this project and to setup the local development environment.
 
 ## Testing
 - Do not write tests unless explicitely told to.
-- When told to write tests, please find first a related feature test and try to add to it, if it was simple enough.
+- When told to write tests, try to find first a related feature test and try to add to it, if it was suitable and simple enough to do.
 - Feature tests must be put inside either App or Browser folders, where Browser is for PestPHP browser testing.
 - PestPHP browser testing is buggy currently, and our setup is in a docker container, so make sure you're using [.scripts/testing] scripts that account for the setup.
 
 ## Debugging
-- Keep `resources/js/support/debugging/alpine-transition-debugger.js` available for transition investigation; enable by setting `window.__ALPINE_TRANSITION_DEBUG__ = true`.
-- `resources/js/support/alpine/data/layout-manager.js` tracks action/modal events (`open-modal`, `close-modal`, etc.) and should stay in sync with Filament modal behavior.
-- For browser test instability and Playwright leftovers, rely on `.scripts/testing/support/preflight.sh` and the `.scripts/testing/` wrappers instead of manual ad-hoc test commands.
+- For investigating AlpineJS transition failiures, try using [resources/js/support/debugging/alpine-transition-debugger.js].
 
 ## Finishing
 - When have modified CSS or JS files, use `npm run format:prettier` to format them.
