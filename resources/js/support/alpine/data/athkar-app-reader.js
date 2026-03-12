@@ -13,7 +13,7 @@ import {
 } from '../athkar-app-overrides';
 import { createShimmerController } from '../shimmer';
 
-const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
+const doesEnableVisualEnhancementsKey = 'does_enable_visual_enhancements';
 const skipGuidancePanelsSettingKey = 'does_skip_notice_panels';
 const progressStorageKey = 'athkar-progress-v1';
 
@@ -486,8 +486,8 @@ document.addEventListener('alpine:init', () => {
                     Number(this.settings.minimum_main_text_size ?? NaN) ||
                 Number(previousSettings.maximum_main_text_size ?? NaN) !==
                     Number(this.settings.maximum_main_text_size ?? NaN) ||
-                Boolean(previousSettings[doesEnableMainTextShimmeringKey]) !==
-                    Boolean(this.settings[doesEnableMainTextShimmeringKey]);
+                Boolean(previousSettings[doesEnableVisualEnhancementsKey]) !==
+                    Boolean(this.settings[doesEnableVisualEnhancementsKey]);
 
             if (isMaintenancePulse && !didTextFitSettingsChange) {
                 return;
@@ -1717,10 +1717,7 @@ document.addEventListener('alpine:init', () => {
             return this.settingValue(skipGuidancePanelsSettingKey, false);
         },
         shouldEnableVisualEnhancements() {
-            return this.settingValue(doesEnableMainTextShimmeringKey, true);
-        },
-        shouldEnableMainTextShimmering() {
-            return this.shouldEnableVisualEnhancements();
+            return this.settingValue(doesEnableVisualEnhancementsKey, true);
         },
         shouldExitReaderAfterForwardSwipe() {
             if (this.shouldPreventSwitching()) {
@@ -2576,7 +2573,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (!this.shouldEnableMainTextShimmering()) {
+            if (!this.shouldEnableVisualEnhancements()) {
                 this.textShimmerController?.stop();
 
                 return;

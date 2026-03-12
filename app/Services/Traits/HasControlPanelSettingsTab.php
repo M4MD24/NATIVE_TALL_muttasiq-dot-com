@@ -59,10 +59,10 @@ trait HasControlPanelSettingsTab
                             ->fillTrack([false, true, false])
                             ->pips(PipsMode::Steps, density: 1),
 
-                        Components\Checkbox::make(Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING)
-                            ->default((bool) ($generalDefinitions[Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING]['default'] ?? true))
+                        Components\Checkbox::make(Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)
+                            ->default((bool) ($generalDefinitions[Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS]['default'] ?? true))
                             ->extraFieldWrapperAttributes(['class' => 'relative z-20 mt-1 sm:mt-3 md:mt-0'])
-                            ->label($generalDefinitions[Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING]['label']),
+                            ->label($generalDefinitions[Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS]['label']),
 
                         Components\Checkbox::make(Setting::DOES_SKIP_GUIDANCE_PANELS)
                             ->default((bool) ($generalDefinitions[Setting::DOES_SKIP_GUIDANCE_PANELS]['default'] ?? false))

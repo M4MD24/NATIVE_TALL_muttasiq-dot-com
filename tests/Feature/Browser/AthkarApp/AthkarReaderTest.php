@@ -2253,7 +2253,7 @@ JS, ['expectsShimmer' => $expectsShimmer]),
     );
 });
 
-it('disables shimmer animation when the shimmer setting is turned off', function () {
+it('disables shimmer animation when visual enhancements are turned off', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -2262,11 +2262,11 @@ it('disables shimmer animation when the shimmer setting is turned off', function
     waitForReaderVisible($page);
 
     setAthkarSettings($page, [
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
     ]);
 
     waitForAthkarSettings($page, [
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
     ]);
 
     $page->script(athkarReaderCommandScript(<<<'JS'
@@ -2312,11 +2312,11 @@ it('disables the nav flow animation when visual enhancements are turned off', fu
     waitForReaderVisible($page);
 
     setAthkarSettings($page, [
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
     ]);
 
     waitForAthkarSettings($page, [
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
     ]);
 
     waitForScript(
@@ -2348,7 +2348,7 @@ it('disables shared counter pulse animation when visual enhancements are turned 
     $settings = [
         Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => true,
         Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
     ];
     setAthkarSettings($page, $settings);
     waitForAthkarSettings($page, $settings);

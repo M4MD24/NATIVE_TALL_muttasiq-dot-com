@@ -31,7 +31,7 @@ it('loads current settings into the form', function () {
         ['value' => 1],
     );
     Setting::query()->updateOrCreate(
-        ['name' => Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING],
+        ['name' => Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS],
         ['value' => 0],
     );
     Setting::query()->updateOrCreate(
@@ -45,7 +45,7 @@ it('loads current settings into the form', function () {
     livewire(ManageSettings::class)
         ->assertFormSet([
             Setting::DOES_SKIP_GUIDANCE_PANELS => true,
-            Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+            Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
             Setting::APP_VERSION => '2.5.1',
         ]);
 });
@@ -62,7 +62,7 @@ it('saves settings to the database', function () {
         ->fillForm([
             Setting::APP_VERSION => '3.0.0',
             Setting::DOES_SKIP_GUIDANCE_PANELS => true,
-            Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+            Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
             Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
             Setting::MINIMUM_MAIN_TEXT_SIZE => 18,
             Setting::MAXIMUM_MAIN_TEXT_SIZE => 22,
@@ -77,7 +77,7 @@ it('saves settings to the database', function () {
     expect(Setting::query()->where('name', Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR)->value('value'))
         ->toBe(0);
 
-    expect(Setting::query()->where('name', Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING)->value('value'))
+    expect(Setting::query()->where('name', Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)->value('value'))
         ->toBe(0);
 
     expect(Setting::query()->where('name', Setting::APP_VERSION)->value('value_text'))

@@ -12,11 +12,11 @@ test('athkar setting defaults are available for the home payload', function () {
     expect(array_key_exists(Setting::DOES_SKIP_GUIDANCE_PANELS, $defaults))->toBeTrue();
     expect(array_key_exists(Setting::MINIMUM_MAIN_TEXT_SIZE, $defaults))->toBeTrue();
     expect(array_key_exists(Setting::MAXIMUM_MAIN_TEXT_SIZE, $defaults))->toBeTrue();
-    expect(array_key_exists(Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING, $defaults))->toBeTrue();
+    expect(array_key_exists(Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS, $defaults))->toBeTrue();
     expect($defaults[Setting::DOES_SKIP_GUIDANCE_PANELS])->toBeFalse();
     expect($defaults[Setting::MINIMUM_MAIN_TEXT_SIZE])->toBe(Setting::MIN_MAIN_TEXT_SIZE_DEFAULT);
     expect($defaults[Setting::MAXIMUM_MAIN_TEXT_SIZE])->toBe(Setting::MAX_MAIN_TEXT_SIZE_DEFAULT);
-    expect($defaults[Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING])->toBeTrue();
+    expect($defaults[Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS])->toBeTrue();
 });
 
 test('it exposes main text size limits for frontend consumers', function () {

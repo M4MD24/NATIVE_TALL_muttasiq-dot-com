@@ -21,7 +21,7 @@ class Setting extends Model
 
     public const DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION = 'does_prevent_switching_athkar_until_completion';
 
-    public const DOES_ENABLE_MAIN_TEXT_SHIMMERING = 'does_enable_main_text_shimmering';
+    public const DOES_ENABLE_VISUAL_ENHANCEMENTS = 'does_enable_visual_enhancements';
 
     public const DOES_SKIP_GUIDANCE_PANELS = 'does_skip_notice_panels';
 
@@ -83,7 +83,7 @@ class Setting extends Model
                 'min' => self::MAX_MAIN_TEXT_SIZE_MIN,
                 'max' => self::MAX_MAIN_TEXT_SIZE_MAX,
             ],
-            self::DOES_ENABLE_MAIN_TEXT_SHIMMERING => [
+            self::DOES_ENABLE_VISUAL_ENHANCEMENTS => [
                 'default' => true,
                 'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحورية.',
                 'group' => self::GROUP_GENERAL,

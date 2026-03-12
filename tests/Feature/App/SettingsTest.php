@@ -31,7 +31,7 @@ it('does not persist settings changes globally', function () {
         Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO => false,
         Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
         Setting::DOES_SKIP_GUIDANCE_PANELS => true,
-        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+        Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS => false,
         Setting::MINIMUM_MAIN_TEXT_SIZE => 18,
         Setting::MAXIMUM_MAIN_TEXT_SIZE => 20,
     ];
