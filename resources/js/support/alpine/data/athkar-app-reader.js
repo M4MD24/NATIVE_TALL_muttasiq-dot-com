@@ -2427,14 +2427,14 @@ document.addEventListener('alpine:init', () => {
             this.textFit.raf = requestAnimationFrame(() => {
                 this.textFit.raf = requestAnimationFrame(() => {
                     this.textFit.raf = null;
-                    window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                    window.dispatchEvent(new CustomEvent('fitty-refit'));
                     this.$nextTick(() => this.setupTextShimmer());
                 });
             });
 
             this.textFit.settleTimer = setTimeout(() => {
                 this.textFit.settleTimer = null;
-                window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                window.dispatchEvent(new CustomEvent('fitty-refit'));
                 this.$nextTick(() => this.setupTextShimmer());
             }, this.textFitSettleMs);
         },

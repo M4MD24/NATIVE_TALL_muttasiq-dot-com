@@ -5,7 +5,7 @@ window.fitty = fitty;
 // IMPORTANT:
 // Fitty requires measurable layout dimensions. Do not pair fit targets with display:none
 // containers (e.g. raw x-show=false while hidden) if you need immediate refits.
-// Prefer opacity/visibility transitions for hidden states, then trigger `athkar-fitty-refit`.
+// Prefer opacity/visibility transitions for hidden states, then trigger `fitty-refit`.
 
 const athkarSettingsStorageKey = 'athkar-settings-v1';
 const minimumMainTextSizeKey = 'minimum_main_text_size';
@@ -24,6 +24,7 @@ const fallbackMainTextSizeLimits = Object.freeze({
 });
 const fittyTargetSelector = '[data-fitty-target]';
 const fittyBoxSelector = '[data-fitty-box]';
+const fittyRefitEventName = 'fitty-refit';
 const deferredRetryDelayMs = 64;
 const maxDeferredRetries = 2;
 const postFitRetryDelayMs = 72;
@@ -716,7 +717,7 @@ const isFittyTransitionSource = (source, boxElement) => {
     return Boolean(source.closest?.(fittyTargetSelector));
 };
 
-window.addEventListener('athkar-fitty-refit', (event) => {
+window.addEventListener(fittyRefitEventName, (event) => {
     const targets = Array.isArray(event?.detail?.targets) ? event.detail.targets : null;
     refitTargets(targets);
 });
@@ -787,6 +788,6 @@ if (document.fonts?.ready) {
     });
 }
 
-window.requestAthkarFittyRefit = refitTargets;
+window.requestFittyRefit = refitTargets;
 
-export { refitTargets as requestAthkarFittyRefit };
+export { refitTargets as requestFittyRefit };

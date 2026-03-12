@@ -2609,7 +2609,7 @@ JS,
     );
 
     $page->script(athkarReaderCommandScript('data.toggleOrigin(data.activeIndex);'));
-    $page->script('window.dispatchEvent(new CustomEvent("athkar-fitty-refit"));');
+    $page->script('window.dispatchEvent(new CustomEvent("fitty-refit"));');
 
     waitForScript(
         $page,
