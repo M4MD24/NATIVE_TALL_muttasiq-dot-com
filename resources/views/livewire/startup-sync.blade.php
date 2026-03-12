@@ -5,7 +5,7 @@
 >
     @teleport('body')
         <div
-            class="fixed inset-0 z-[999998] cursor-progress transition-opacity duration-200"
+            class="fixed inset-0 z-999998 cursor-progress transition-opacity duration-200"
             data-testid="startup-sync-shield"
             aria-hidden="true"
             x-cloak
