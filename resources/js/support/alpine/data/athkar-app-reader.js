@@ -11,7 +11,7 @@ import {
     writeAthkarSettingsToStorage,
     writeUserSettingOverride,
 } from '../athkar-app-overrides';
-import { createAthkarShimmerController } from '../athkar-shimmer';
+import { createShimmerController } from '../shimmer';
 
 const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
 const skipGuidancePanelsSettingKey = 'does_skip_notice_panels';
@@ -338,9 +338,20 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.setupTextFit();
-            this.textShimmerController = createAthkarShimmerController({
+            this.textShimmerController = createShimmerController({
                 resolveRoot: () => this.$el,
-                resolveIsOriginVisible: () => this.isOriginVisible(this.activeIndex),
+                resolveUseAlternateTarget: () => this.isOriginVisible(this.activeIndex),
+                selectors: {
+                    activeContainer: '[data-athkar-slide][data-active="true"]',
+                    primaryTarget: '[data-athkar-text]',
+                    alternateTarget: '[data-athkar-origin-text]',
+                    shimmerTarget: '[data-athkar-shimmer]',
+                },
+                classes: {
+                    muted: 'athkar-text--muted',
+                    shimmer: 'athkar-shimmer',
+                    shimmering: 'is-shimmering',
+                },
             });
             this.$watch('activeMode', () => {
                 this.resetMaintenanceTapTracking();
