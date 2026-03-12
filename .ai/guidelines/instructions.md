@@ -9,23 +9,26 @@ This shared source code base is representing the web version primarily, the one 
 ## Architecture
 - Add partials as components under [resources/views/components/partials], instead of adding plain `@include`s, in order to gain Livewire Blaze speed.
 - Know that app design colors are specified in [resources/css/app.css] (`@theme`) and [config/app.php] files. Those are even used by Filament in [app/Providers/FilamentServiceProvider.php].
-- Size primary texts with Fitty [resources/js/packages/fitty.js] using `[data-fitty-target]` / `[data-fitty-box]` and the existing `athkar-fitty-refit` refresh flow.
-
-
-
-- Keep main reader text shimmer on the shared helper (`resources/js/support/alpine/shimmer.js`), configured by `resources/js/support/alpine/data/athkar-app-reader.js`.
-- Use the Alpine breakpoint helper store `bp` from `resources/js/support/alpine/storage/breakpointer.js` (`current`, `is()`, `isTouch()`, `isTablet()`, `shouldUseSortHandles()`).
-- Keep lazy asset strategy: CSS through `@lazyCss(...)` (`app/Providers/LazyCssServiceProvider.php`) and lazy JS bundle scheduling in `resources/js/app.js` (idle import of `app-lazy.js`).
-- Reuse CSS variable helpers instead of custom parsing: JS helpers in `resources/js/support/css-variables.js`, PHP theme helpers in `app/Services/Functions/theme.php`.
-- Treat web as SPA-like shell with one main route (`routes/web.php`: `/`) and client-side view transitions in `resources/views/home.blade.php`.
-- Use `$livewireLock` (`resources/js/support/alpine/magic/livewire-lock.js`) for action locking where repeated taps/clicks could cause duplicate requests.
-- Use hash navigation via `x-hash-actions` (`resources/js/packages/alpine/hash-actions.js`) and `switch-view` events for native/web navigation consistency.
-- Use Filament as the primary UI engine for notifications, modals, slideovers, forms, tables, and admin panels (see `app/Livewire/ControlPanel.php`, `app/Livewire/AthkarManager.php`).
-- Keep control panel as a Filament tabbed action: settings, changelogs, and about tabs are built in `ControlPanel` with `HasControlPanelSettingsTab`, `HasControlPanelChangelogsTab`, and `HasControlPanelAboutTab`.
-- Place reusable cross-feature utilities in `Support` namespaces by layer (backend: `app/Services/Support/*`, `app/Console/Commands/Support/*`; frontend: `resources/js/support/*`, `resources/css/support/*`).
+- Size primary texts with Fitty [resources/js/packages/fitty.js] using `[data-fitty-target]` / `[data-fitty-box]` and `fitty-refit` refresh flow.
+- Use the Alpine breakpoint `bp` helpers in [resources/js/support/alpine/storage/breakpointer.js], including `current`, `is()`, `isTouch()`, `isTablet()`, `shouldUseSortHandles()`.
+- For heavy front-end assets, we have lazy asset strategy for CSS through `@lazyCss(...)` from [`app/Providers/LazyCssServiceProvider.php`] and for JS bundle scheduling in [resources/js/app.js] and idle [resources/js/app-lazy.js] imports.
+- Reuse CSS variable helpers instead of custom parsing: JS helpers are in [resources/js/support/css-variables.js], and PHP theme helpers are in [app/Services/Functions/theme.php].
+- The whole application is an SPA-like shell (`WebView` for native) with one main route ([routes/web.php]: `/`) and where client-side nested view transitions are in [resources/views/home.blade.php].
+- Use hash navigation via `x-hash-actions` (from [`resources/js/packages/alpine/hash-actions.js`]) and `switch-view` events for native/web navigation consistency.
+- Use `$livewireLock` (from [resources/js/support/alpine/magic/livewire-lock.js]) for action locking where repeated taps/clicks could cause duplicate requests.
+- Use Filament as the primary UI engine for notifications, modals, slideovers, forms, tables, admin panels, etc.
+- Keep the "control panel" as a Filament tabbed action, where settings, changelogs, and about tabs are built.
+- Place reusable cross-feature utilities in `Support`/`support` namespaces and folders, put inside their standradized main folders first of course.
 
 ## Preferences
-- Do not restore reduced-motion suppression for transitions: `resources/js/overrides/livewire-transition-consistency.js` intentionally removes Livewire-injected `prefers-reduced-motion` transition styles.
+- Do not ever consider using reduced-motion CSS feature.
+- We manually decide what animations/effects to disable when `` setting is diabled.
+
+
+
+
+
+- Do not restore reduced-motion suppression for Livewire (disabled in [`resources/js/overrides/livewire-transition-consistency.js`]).
 - Keep interaction transitions enabled by default unless a specific task explicitly requires changing this project preference.
 
 ## Documentation
