@@ -13,7 +13,7 @@ This shared source code base is representing the web version primarily, the one 
 - Use the Alpine breakpoint `bp` helpers in [resources/js/support/alpine/storage/breakpointer.js], including `current`, `is()`, `isTouch()`, `isTablet()`, `shouldUseSortHandles()`.
 - For heavy front-end assets, we have lazy asset strategy for CSS through `@lazyCss(...)` from [`app/Providers/LazyCssServiceProvider.php`] and for JS bundle scheduling in [resources/js/app.js] and idle [resources/js/app-lazy.js] imports.
 - Reuse CSS variable helpers instead of custom parsing: JS helpers are in [resources/js/support/css-variables.js], and PHP theme helpers are in [app/Services/Functions/theme.php].
-- The whole application is an SPA-like shell (`WebView` for native) with one main route ([routes/web.php]: `/`) and where client-side nested view transitions are in [resources/views/home.blade.php].
+- The whole application is an SPA-like shell with one main route ([routes/web.php]: `/`) and where client-side nested view transitions are in [resources/views/home.blade.php].
 - Use hash navigation via `x-hash-actions` (from [`resources/js/packages/alpine/hash-actions.js`]) and `switch-view` events for native/web navigation consistency.
 - Use `$livewireLock` (from [resources/js/support/alpine/magic/livewire-lock.js]) for action locking where repeated taps/clicks could cause duplicate requests.
 - Use Filament as the primary UI engine for notifications, modals, slideovers, forms, tables, admin panels, etc.
@@ -22,7 +22,7 @@ This shared source code base is representing the web version primarily, the one 
 
 ## Preferences
 - Do not ever consider using reduced-motion CSS feature.
-- We manually decide what animations/effects to disable when `` setting is diabled.
+- We manually decide what animations/effects to disable when `enable_visual_enhancements` setting is diabled.
 
 
 

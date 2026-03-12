@@ -13,7 +13,7 @@ import {
 } from '../athkar-app-overrides';
 import { createShimmerController } from '../shimmer';
 
-const doesEnableVisualEnhancementsKey = 'does_enable_visual_enhancements';
+const doesEnableVisualEnhancementsKey = 'enable_visual_enhancements';
 const skipGuidancePanelsSettingKey = 'does_skip_notice_panels';
 const progressStorageKey = 'athkar-progress-v1';
 

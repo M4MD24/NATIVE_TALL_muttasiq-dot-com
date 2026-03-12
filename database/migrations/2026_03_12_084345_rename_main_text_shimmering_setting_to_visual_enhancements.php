@@ -10,7 +10,7 @@ return new class extends Migration
 {
     private const LEGACY_SETTING_KEY = 'does_enable_main_text_shimmering';
 
-    private const CURRENT_SETTING_KEY = 'does_enable_visual_enhancements';
+    private const CURRENT_SETTING_KEY = 'enable_visual_enhancements';
 
     /**
      * Run the migrations.

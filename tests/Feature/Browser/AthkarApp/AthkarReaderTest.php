@@ -2372,6 +2372,34 @@ it('disables shared counter pulse animation when visual enhancements are turned 
     scriptClick($page, '[data-athkar-slide][data-active="true"] [data-athkar-tap]');
 
     $selector = $isMobile ? '[data-athkar-mobile-counter]' : '[data-athkar-desktop-counter]';
+    $nextIndex = $multiIndex + 1;
+
+    waitForScriptWithTimeout(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const counter = document.querySelector({{selector}});
+
+  if (!counter || !window.Alpine) {
+    return false;
+  }
+
+  const root = document.querySelector('[x-data^="athkarAppReader"]');
+  const data = window.Alpine.$data ? window.Alpine.$data(root) : (root?.__x?.$data ?? null);
+
+  return data?.activeIndex === {{nextIndex}}
+    && data?.topUi?.progressOverride === 100;
+})()
+JS,
+            [
+                'nextIndex' => $nextIndex,
+                'selector' => $selector,
+            ],
+        ),
+        true,
+        2000,
+    );
 
     waitForScriptWithTimeout(
         $page,
@@ -2388,8 +2416,9 @@ it('disables shared counter pulse animation when visual enhancements are turned 
   const root = document.querySelector('[x-data^="athkarAppReader"]');
   const data = window.Alpine.$data ? window.Alpine.$data(root) : (root?.__x?.$data ?? null);
   const repelStyles = getComputedStyle(repel);
+  window.__athkarSharedPulseSeen = window.__athkarSharedPulseSeen || data?.topUi?.pulseActive === true;
 
-  return data?.topUi?.pulseActive === true
+  return window.__athkarSharedPulseSeen === true
     && counter.dataset.counterPulse === 'inactive'
     && repelStyles.animationName === 'none';
 })()

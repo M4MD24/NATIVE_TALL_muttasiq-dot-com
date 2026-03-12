@@ -21,7 +21,7 @@ class Setting extends Model
 
     public const DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION = 'does_prevent_switching_athkar_until_completion';
 
-    public const DOES_ENABLE_VISUAL_ENHANCEMENTS = 'does_enable_visual_enhancements';
+    public const DOES_ENABLE_VISUAL_ENHANCEMENTS = 'enable_visual_enhancements';
 
     public const DOES_SKIP_GUIDANCE_PANELS = 'does_skip_notice_panels';
 
