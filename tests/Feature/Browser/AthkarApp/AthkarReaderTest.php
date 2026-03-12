@@ -1613,6 +1613,86 @@ JS,
     waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
 });
 
+it('hides the mobile single-count counter unless overcounting or manual passing is enabled', function () {
+    $page = visit('/');
+
+    resetBrowserState($page);
+    openAthkarReader($page, 'sabah', false);
+    enableMobileContext($page);
+    waitForReaderVisible($page);
+
+    $singleIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item, index) => Number(item.count ?? 1) === 1 && index < data.activeList.length - 1)',
+        ),
+    );
+
+    expect($singleIndex)->toBeGreaterThanOrEqual(0);
+
+    $settings = [
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => true,
+        Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO => true,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $page->script(
+        athkarReaderCommandScript(
+            "data.setActiveIndex({$singleIndex}); data.setCount({$singleIndex}, 0, { allowOvercount: true }); data.closeHint();",
+        ),
+    );
+
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $singleIndex);
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const counter = document.querySelector('[data-athkar-mobile-counter]');
+  return Boolean(counter) && getComputedStyle(counter).display === 'none';
+})()
+JS,
+        true,
+    );
+
+    $page->script(
+        athkarReaderCommandScript("data.setCount({$singleIndex}, 2, { allowOvercount: true });"),
+    );
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const counter = document.querySelector('[data-athkar-mobile-counter]');
+  return Boolean(counter) && getComputedStyle(counter).display !== 'none';
+})()
+JS,
+        true,
+    );
+
+    $manualPassingSettings = [
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => false,
+        Setting::DOES_CLICKING_SWITCH_ATHKAR_TOO => false,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+    ];
+    setAthkarSettings($page, $manualPassingSettings);
+    waitForAthkarSettings($page, $manualPassingSettings);
+
+    $page->script(
+        athkarReaderCommandScript("data.setCount({$singleIndex}, 0, { allowOvercount: true });"),
+    );
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $singleIndex);
+    waitForScript(
+        $page,
+        <<<'JS'
+(() => {
+  const counter = document.querySelector('[data-athkar-mobile-counter]');
+  return Boolean(counter) && getComputedStyle(counter).display !== 'none';
+})()
+JS,
+        true,
+    );
+});
+
 it('executes hidden completion buttons on desktop for single thikr and all athkar', function () {
     $page = visit('/');
 
@@ -2257,6 +2337,72 @@ JS,
         true,
     );
 });
+
+it('disables shared counter pulse animation when visual enhancements are turned off', function (bool $isMobile) {
+    $page = $isMobile ? visitMobile('/') : visit('/');
+
+    resetBrowserState($page, $isMobile);
+    openAthkarReader($page, 'sabah', $isMobile);
+    waitForReaderVisible($page);
+
+    $settings = [
+        Setting::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => true,
+        Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
+        Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING => false,
+    ];
+    setAthkarSettings($page, $settings);
+    waitForAthkarSettings($page, $settings);
+
+    $multiIndex = $page->script(
+        athkarReaderDataScript(
+            'data.activeList.findIndex((item, index) => Number(item.count ?? 1) > 1 && index < data.activeList.length - 1)',
+        ),
+    );
+
+    expect($multiIndex)->toBeGreaterThanOrEqual(0);
+
+    $page->script(
+        athkarReaderCommandScript(
+            "data.setActiveIndex({$multiIndex}); data.setCount({$multiIndex}, data.requiredCount({$multiIndex}) - 1, { allowOvercount: true });",
+        ),
+    );
+
+    waitForScript($page, athkarReaderDataScript('data.activeIndex'), $multiIndex);
+
+    scriptClick($page, '[data-athkar-slide][data-active="true"] [data-athkar-tap]');
+
+    $selector = $isMobile ? '[data-athkar-mobile-counter]' : '[data-athkar-desktop-counter]';
+
+    waitForScriptWithTimeout(
+        $page,
+        js_template(
+            <<<'JS'
+(() => {
+  const counter = document.querySelector({{selector}});
+  const repel = counter?.querySelector('.athkar-counter-repel');
+
+  if (!counter || !repel || !window.Alpine) {
+    return false;
+  }
+
+  const root = document.querySelector('[x-data^="athkarAppReader"]');
+  const data = window.Alpine.$data ? window.Alpine.$data(root) : (root?.__x?.$data ?? null);
+  const repelStyles = getComputedStyle(repel);
+
+  return data?.topUi?.pulseActive === true
+    && counter.dataset.counterPulse === 'inactive'
+    && repelStyles.animationName === 'none';
+})()
+JS,
+            ['selector' => $selector],
+        ),
+        true,
+        2200,
+    );
+})->with([
+    'desktop' => [false],
+    'mobile' => [true],
+]);
 
 it('keeps text scrollable after toggling origin on and back off', function () {
     $page = visit('/');
