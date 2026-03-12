@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\Thikr;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\EloquentSortable\EloquentModelSortedEvent;
 
@@ -27,16 +24,7 @@ class AthkarAppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->rateLimitAthkar();
-
         $this->clearAthkarCacheUponReorder();
-    }
-
-    private function rateLimitAthkar(): void
-    {
-        RateLimiter::for('athkar', function (Request $request): Limit {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
     }
 
     private function clearAthkarCacheUponReorder(): void
