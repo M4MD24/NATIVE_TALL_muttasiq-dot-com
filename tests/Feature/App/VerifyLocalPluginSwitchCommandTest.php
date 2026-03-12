@@ -28,7 +28,7 @@ function createComposerManifestFixture(array $repositories): string
     return $path;
 }
 
-it('warns when local plugin path override is enabled', function () {
+it('reports local plugin switch status for enabled and disabled composer repository configurations', function () {
     $manifestPath = createComposerManifestFixture([
         'nativephp-muttasiq-patches' => [
             'type' => 'path',
@@ -44,9 +44,7 @@ it('warns when local plugin path override is enabled', function () {
     } finally {
         @unlink($manifestPath);
     }
-});
 
-it('passes when local plugin path override is disabled', function () {
     $manifestPath = createComposerManifestFixture([]);
 
     try {
@@ -58,8 +56,8 @@ it('passes when local plugin path override is disabled', function () {
     }
 });
 
-it('fails when local plugin path override is enabled and confirmation is declined', function () {
-    $manifestPath = createComposerManifestFixture([
+it('honors confirmation flow when local plugin path override is enabled', function () {
+    $declinedManifestPath = createComposerManifestFixture([
         'nativephp-muttasiq-patches' => [
             'type' => 'path',
             'url' => '/tmp/local-native-plugin',
@@ -67,19 +65,17 @@ it('fails when local plugin path override is enabled and confirmation is decline
     ]);
 
     try {
-        artisan("app:verify-local-plugin-switch --composer-file={$manifestPath}")
+        artisan("app:verify-local-plugin-switch --composer-file={$declinedManifestPath}")
             ->expectsConfirmation(
                 'Local path plugin repository for goodm4ven/nativephp-muttasiq-patches is still enabled. Continue anyway?',
                 'no',
             )
             ->assertExitCode(1);
     } finally {
-        @unlink($manifestPath);
+        @unlink($declinedManifestPath);
     }
-});
 
-it('continues when local plugin path override is enabled and confirmation is accepted', function () {
-    $manifestPath = createComposerManifestFixture([
+    $acceptedManifestPath = createComposerManifestFixture([
         'nativephp-muttasiq-patches' => [
             'type' => 'path',
             'url' => '/tmp/local-native-plugin',
@@ -87,13 +83,13 @@ it('continues when local plugin path override is enabled and confirmation is acc
     ]);
 
     try {
-        artisan("app:verify-local-plugin-switch --composer-file={$manifestPath}")
+        artisan("app:verify-local-plugin-switch --composer-file={$acceptedManifestPath}")
             ->expectsConfirmation(
                 'Local path plugin repository for goodm4ven/nativephp-muttasiq-patches is still enabled. Continue anyway?',
                 'yes',
             )
             ->assertExitCode(0);
     } finally {
-        @unlink($manifestPath);
+        @unlink($acceptedManifestPath);
     }
 });

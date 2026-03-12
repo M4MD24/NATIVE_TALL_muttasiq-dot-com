@@ -18,15 +18,21 @@ afterEach(function () {
     CarbonImmutable::setTestNow();
 });
 
-it('applies web home metrics middleware to the home route', function () {
+it('wires home route/dashboard to web home metrics middleware and widget', function () {
     $homeRoute = app('router')->getRoutes()->getByName('home');
 
     expect($homeRoute)->not->toBeNull()
         ->and($homeRoute?->gatherMiddleware())->toContain(TrackWebHomeMetrics::class)
         ->and($homeRoute?->gatherMiddleware())->not->toContain('App\Http\Middleware\SampleWebHomeRouteForNightwatch');
+    $dashboard = app(Dashboard::class);
+    $providerSource = file_get_contents(app_path('Providers/FilamentServiceProvider.php'));
+
+    expect($dashboard->getWidgets())->toContain(WebHomeActivityChart::class)
+        ->and($providerSource)->not->toBeFalse()
+        ->and($providerSource)->toContain('Dashboard::class');
 });
 
-it('tracks home hits and approximate unique visitors for web requests', function () {
+it('tracks hits and unique visitors for web requests when metrics are enabled', function () {
     config([
         'app.custom.security.web_home_metrics.enabled' => true,
         'nativephp-internal.running' => false,
@@ -63,7 +69,7 @@ it('tracks home hits and approximate unique visitors for web requests', function
         ->and($series['unique_visitors'])->toBe([2]);
 });
 
-it('skips web home metrics tracking when disabled', function () {
+it('skips web home metrics tracking when disabled or when request platform is non-web', function () {
     config([
         'app.custom.security.web_home_metrics.enabled' => false,
         'nativephp-internal.running' => false,
@@ -79,9 +85,7 @@ it('skips web home metrics tracking when disabled', function () {
         'hits' => 0,
         'unique_visitors' => 0,
     ]);
-});
 
-it('skips web home metrics tracking for non-web platforms', function () {
     config([
         'app.custom.security.web_home_metrics.enabled' => true,
         'nativephp-internal.running' => true,
@@ -97,14 +101,4 @@ it('skips web home metrics tracking for non-web platforms', function () {
         'hits' => 0,
         'unique_visitors' => 0,
     ]);
-});
-
-it('renders the custom dashboard with the web home activity chart widget', function () {
-    $dashboard = app(Dashboard::class);
-
-    $providerSource = file_get_contents(app_path('Providers/FilamentServiceProvider.php'));
-
-    expect($dashboard->getWidgets())->toContain(WebHomeActivityChart::class)
-        ->and($providerSource)->not->toBeFalse()
-        ->and($providerSource)->toContain('Dashboard::class');
 });

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('submits a captured browser javascript error through the reporting modal', function () {
+it('submits captured browser errors through the reporting modal while ignoring known resize-observer noise', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -112,14 +112,6 @@ JS);
     );
 
     waitForScript($page, modalClosedScript());
-});
-
-it('ignores resize observer browser noise even with same-origin source details', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
-    waitForScript($page, 'Boolean(window.Livewire)', true);
-
     $page->script(<<<'JS'
 (() => {
   document.documentElement.dataset.disableJsErrorReporting = 'false';

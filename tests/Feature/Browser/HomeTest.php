@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('renders the main menu and shows hover captions', function () {
+it('renders the home shell, validates core controls, and persists color scheme behavior', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -35,44 +35,10 @@ it('renders the main menu and shows hover captions', function () {
 
         waitForScript($page, mainMenuDataScript('data.currentCaption'), $caption);
     }
-});
-
-it('shows settings and color scheme buttons by default', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
 
     $page
         ->assertVisible('[data-stack-item][x-data] [data-testid="control-panel-button"]')
         ->assertVisible('[data-testid="color-scheme-switch-button"]');
-});
-
-it('uses the dark app icon in settings after toggling dark mode', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
-    waitForScript($page, 'Boolean(window.Livewire)', true);
-
-    $page->script("window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', { isDarkModeOn: false });");
-
-    hashAction($page, '#toggle-color-scheme', false);
-    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme')?.isDarkModeOn)", true);
-
-    openControlPanelModal($page);
-
-    waitForScript($page, <<<'JS'
-(() => {
-  const icon = document.querySelector('.fi-modal-window img[alt="Muttasiq application icono"]');
-  const src = icon?.getAttribute('src');
-  return Boolean(src && src.includes('icon-dark.png'));
-})()
-JS, true);
-});
-
-it('uses optimized background layers and clears the guard class after toggling color scheme', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
 
     waitForScript($page, <<<'JS'
 (() => {
@@ -95,17 +61,73 @@ it('uses optimized background layers and clears the guard class after toggling c
 })()
 JS, true);
 
+    waitForScript($page, 'Boolean(window.Livewire)', true);
+    $page->script("window.Livewire.dispatchTo('color-scheme-switcher', 'color-scheme-toggled', { isDarkModeOn: false });");
+
     hashAction($page, '#toggle-color-scheme', false);
-
+    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme')?.isDarkModeOn)", true);
     waitForScriptWithTimeout($page, "document.documentElement.classList.contains('color-scheme-switching')", false, 2500);
-});
 
-it('cycles the copyright panel and keeps it visible while hovering on desktop', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
+    openControlPanelModal($page);
 
     waitForScript($page, <<<'JS'
+(() => {
+  const icon = document.querySelector('.fi-modal-window img[alt="Muttasiq application icono"]');
+  const src = icon?.getAttribute('src');
+  return Boolean(src && src.includes('icon-dark.png'));
+})()
+JS, true);
+
+    waitForScript($page, 'Boolean(window.Alpine && window.Alpine.store("colorScheme"))');
+    waitForScript($page, homeDataScript('data.lock !== null'), true);
+
+    $isDarkScript = 'window.Alpine.store("colorScheme").isDarkModeOn';
+
+    $page->script('window.Alpine.store("colorScheme").isDark = false;');
+    waitForScript($page, $isDarkScript, false);
+    waitForScript($page, 'JSON.parse(localStorage.getItem("colorScheme_darkMode"))', false);
+
+    $page->script('window.Alpine.store("colorScheme").toggle();');
+
+    waitForScript($page, $isDarkScript, true);
+
+    $page
+        ->assertScript($isDarkScript, true)
+        ->assertScript('JSON.parse(localStorage.getItem("colorScheme_darkMode"))', true);
+
+    $page->refresh();
+    waitForScript($page, 'Boolean(window.Alpine && window.Alpine.store("colorScheme"))');
+    waitForScript($page, homeDataScript('data.lock !== null'), true);
+
+    waitForScript($page, $isDarkScript, true);
+
+    $page
+        ->assertScript($isDarkScript, true)
+        ->assertScript('JSON.parse(localStorage.getItem("colorScheme_darkMode"))', true);
+
+    $page->script('window.Alpine.store("colorScheme").toggle();');
+
+    waitForScript($page, $isDarkScript, false);
+
+    $page
+        ->assertScript($isDarkScript, false)
+        ->assertScript('JSON.parse(localStorage.getItem("colorScheme_darkMode"))', false);
+
+    $page->refresh();
+    waitForScript($page, 'Boolean(window.Alpine && window.Alpine.store("colorScheme"))');
+    waitForScript($page, homeDataScript('data.lock !== null'), true);
+
+    waitForScript($page, $isDarkScript, false);
+
+    $page->assertScript($isDarkScript, false);
+});
+
+it('handles copyright panel visibility and opens updates tab from desktop and touch interactions', function () {
+    $desktopPage = visit('/');
+
+    resetBrowserState($desktopPage);
+
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -113,7 +135,7 @@ it('cycles the copyright panel and keeps it visible while hovering on desktop', 
 })()
 JS, true);
 
-    $prepared = (bool) $page->script(<<<'JS'
+    $prepared = (bool) $desktopPage->script(<<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -131,7 +153,7 @@ JS);
 
     expect($prepared)->toBeTrue();
 
-    waitForScript($page, <<<'JS'
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -139,7 +161,7 @@ JS);
 })()
 JS, true);
 
-    waitForScript($page, <<<'JS'
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -147,7 +169,7 @@ JS, true);
 })()
 JS, true);
 
-    $page->script(<<<'JS'
+    $desktopPage->script(<<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   window.__copyrightHoverAt = Date.now();
@@ -156,7 +178,7 @@ JS, true);
 })()
 JS);
 
-    waitForScript($page, <<<'JS'
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -164,7 +186,7 @@ JS);
 })()
 JS, true);
 
-    $page->script(<<<'JS'
+    $desktopPage->script(<<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   shell?.dispatchEvent(new Event('mouseleave', { bubbles: true }));
@@ -172,26 +194,19 @@ JS, true);
 })()
 JS);
 
-    waitForScript($page, <<<'JS'
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
   return Boolean(data?.isVisible === false);
 })()
 JS, true);
-});
 
-it('opens settings on the updates tab when requested', function () {
-    $page = visit('/');
+    waitForScript($desktopPage, 'Boolean(window.Livewire)', true);
+    $desktopPage->script('window.dispatchEvent(new CustomEvent("open-control-panel-modal", { detail: { tab: "updates" } }));');
 
-    resetBrowserState($page);
-
-    waitForScript($page, 'Boolean(window.Livewire)', true);
-
-    $page->script('window.dispatchEvent(new CustomEvent("open-control-panel-modal", { detail: { tab: "updates" } }));');
-
-    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
-    waitForScript($page, <<<'JS'
+    waitForScript($desktopPage, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($desktopPage, <<<'JS'
 (() => {
   const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
   if (!activeTab) {
@@ -201,16 +216,14 @@ it('opens settings on the updates tab when requested', function () {
   return label.includes('تحديثات');
 })()
 JS, true);
-});
 
-it('opens the updates tab from the version button on touch devices', function () {
-    $page = visit('/');
+    $mobilePage = visit('/');
 
-    resetBrowserState($page, true);
+    resetBrowserState($mobilePage, true);
 
-    waitForScript($page, 'Boolean(window.Livewire)', true);
+    waitForScript($mobilePage, 'Boolean(window.Livewire)', true);
 
-    $keptVisible = (bool) $page->script(<<<'JS'
+    $keptVisible = (bool) $mobilePage->script(<<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const data = shell && window.Alpine?.$data ? window.Alpine.$data(shell) : null;
@@ -232,10 +245,10 @@ JS);
 
     expect($keptVisible)->toBeTrue();
 
-    $page->click('[data-testid="copyright-version-button"]');
+    $mobilePage->click('[data-testid="copyright-version-button"]');
 
-    waitForScript($page, 'Boolean(document.querySelector(".fi-modal-window"))', true);
-    waitForScript($page, <<<'JS'
+    waitForScript($mobilePage, 'Boolean(document.querySelector(".fi-modal-window"))', true);
+    waitForScript($mobilePage, <<<'JS'
 (() => {
   const activeTab = document.querySelector('.fi-modal-window .fi-tabs .fi-tabs-item.fi-active .fi-tabs-item-label');
   if (!activeTab) {
@@ -245,17 +258,11 @@ JS);
   return label.includes('تحديثات');
 })()
 JS, true);
-});
 
-it('keeps the copyright panel within a narrow mobile viewport', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-
-    waitForScript($page, 'Boolean(document.querySelector(\'[data-testid="copyright-version-panel"]\'))', true);
+    waitForScript($mobilePage, 'Boolean(document.querySelector(\'[data-testid="copyright-version-panel"]\'))', true);
 
     /** @var array<string, float|int>|null $snapshot */
-    $snapshot = $page->script(<<<'JS'
+    $snapshot = $mobilePage->script(<<<'JS'
 (() => {
   const shell = document.querySelector('[data-testid="copyright-version-shell"]');
   const panel = document.querySelector('[data-testid="copyright-version-panel"]');
@@ -295,26 +302,20 @@ JS);
         ->toBeLessThanOrEqual((int) ($snapshot['clientWidth'] ?? 0) + 1);
 });
 
-it('adds the main menu hash on a fresh load', function () {
-    $page = visit('/');
+it('maintains quick stack layout and navigation resilience across reload, modal, and color-scheme flows', function () {
+    $desktopPage = visit('/');
 
-    resetBrowserState($page);
+    resetBrowserState($desktopPage);
 
-    waitForScript($page, 'window.location.hash', '#main-menu');
-    waitForScript($page, 'JSON.parse(localStorage.getItem("app-active-view"))', 'main-menu');
-});
-
-it('stacks only visible quick-stack items when respecting stack mode', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
+    waitForScript($desktopPage, 'window.location.hash', '#main-menu');
+    waitForScript($desktopPage, 'JSON.parse(localStorage.getItem("app-active-view"))', 'main-menu');
 
     $snapshot = null;
     $lastResult = null;
 
     for ($attempt = 1; $attempt <= 10; $attempt++) {
         /** @var array<string, mixed>|null $result */
-        $result = $page->script(<<<'JS'
+        $result = $desktopPage->script(<<<'JS'
 (() => {
   const bp = window.Alpine?.store?.('bp');
   const stackRoot = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
@@ -399,147 +400,34 @@ JS);
     expect((bool) ($snapshot['hasNullTransforms'] ?? true))->toBeFalse();
     expect((float) ($snapshot['maxOffset'] ?? 0.0))
         ->toBeLessThanOrEqual((float) ($snapshot['expectedMaxOffset'] ?? 0.0) + 0.15);
-});
 
-it('recomputes quick-stack positions when visibility changes during a layout pass', function () {
-    $page = visit('/');
+    $mobilePage = visit('/');
 
-    resetBrowserState($page, true);
+    resetBrowserState($mobilePage, true);
+    openAthkarGate($mobilePage, true);
 
-    $prepared = (bool) $page->script(<<<'JS'
-(() => {
-  const bp = window.Alpine?.store?.('bp');
-  const stackRoot = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
+    $mobilePage->refresh();
 
-  if (!bp || !stackRoot) {
-    return false;
-  }
+    waitForAlpineReady($mobilePage);
+    applyTestSpeedups($mobilePage);
+    enableMobileContext($mobilePage);
+    waitForGateVisible($mobilePage);
+    waitForScriptWithTimeout($mobilePage, quickStackLayoutReadyScript(), true, 3_000);
 
-  document.documentElement.style.setProperty('--breakpoint', 'base');
-  bp.current = 'base';
-  stackRoot.dataset.respectingStack = 'true';
-  window.dispatchEvent(new Event('resize'));
+    openAthkarReader($mobilePage, 'sabah', true);
 
-  const allItems = Array.from(document.querySelectorAll('[data-stack-item]'));
-  if (allItems.length < 4) {
-    return false;
-  }
+    $mobilePage->refresh();
 
-  const stackData = window.Alpine?.$data
-    ? window.Alpine.$data(stackRoot)
-    : (stackRoot.__x?.$data ?? null);
+    waitForAlpineReady($mobilePage);
+    applyTestSpeedups($mobilePage);
+    enableMobileContext($mobilePage);
+    waitForReaderVisible($mobilePage);
+    waitForScriptWithTimeout($mobilePage, quickStackLayoutReadyScript(), true, 3_000);
 
-  if (!stackData || typeof stackData.setRespectingStack !== 'function' || typeof stackData.updateLayout !== 'function') {
-    return false;
-  }
+    waitForScript($mobilePage, "Boolean(window.Alpine?.store?.('colorScheme'))", true);
+    waitForScript($mobilePage, "window.Alpine.store('colorScheme').isDarkModeOn", false);
 
-  stackData.setRespectingStack();
-  stackData.updateLayout();
-
-  allItems[1].hidden = true;
-
-  return true;
-})()
-JS);
-
-    expect($prepared)->toBeTrue();
-
-    $snapshot = null;
-    $lastResult = null;
-
-    for ($attempt = 1; $attempt <= 10; $attempt++) {
-        /** @var array<string, mixed>|null $result */
-        $result = $page->script(<<<'JS'
-(() => {
-  const visibleItems = Array.from(document.querySelectorAll('[data-stack-item]')).filter((item) => {
-    const styles = getComputedStyle(item);
-    return !item.hidden && styles.display !== 'none' && styles.visibility !== 'hidden';
-  });
-
-  if (visibleItems.length < 2) {
-    return { ready: false, reason: 'not-enough-visible-items', visibleCount: visibleItems.length };
-  }
-
-  const transforms = visibleItems.map((item) => {
-    const value = String(item.style.transform ?? '');
-    const match = value.match(/translateX\((-?\d+(?:\.\d+)?)rem\)/);
-
-    return match ? Number(match[1]) : null;
-  });
-
-  if (transforms.some((value) => value === null)) {
-    return { ready: false, reason: 'missing-transform' };
-  }
-
-  const maxOffset = Math.max(...transforms.map((value) => Math.abs(value)));
-  const expectedMaxOffset = (visibleItems.length - 1) * 1.2;
-
-  return {
-    ready: true,
-    visibleCount: visibleItems.length,
-    maxOffset,
-    expectedMaxOffset,
-  };
-})()
-JS);
-
-        $lastResult = $result;
-
-        if (is_array($result) && ($result['ready'] ?? false) === true) {
-            $snapshot = $result;
-
-            break;
-        }
-
-        usleep(testRetrySleepMicroseconds());
-    }
-
-    expect($snapshot)->toBeArray('Last snapshot payload: '.var_export($lastResult, true));
-    expect((bool) ($snapshot['ready'] ?? false))->toBeTrue();
-    expect((float) ($snapshot['maxOffset'] ?? 0.0))
-        ->toBeLessThanOrEqual((float) ($snapshot['expectedMaxOffset'] ?? 0.0) + 0.15);
-});
-
-it('repositions the quick stack after restoring the athkar gate on mobile reload', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-    openAthkarGate($page, true);
-
-    $page->refresh();
-
-    waitForAlpineReady($page);
-    applyTestSpeedups($page);
-    enableMobileContext($page);
-    waitForGateVisible($page);
-    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
-});
-
-it('repositions the quick stack after restoring the athkar reader on mobile reload', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-    openAthkarReader($page, 'sabah', true);
-
-    $page->refresh();
-
-    waitForAlpineReady($page);
-    applyTestSpeedups($page);
-    enableMobileContext($page);
-    waitForReaderVisible($page);
-    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
-});
-
-it('rate limits repeated taps on the active quick stack action while keeping it expanded', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-
-    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
-    waitForScript($page, "Boolean(window.Alpine?.store?.('colorScheme'))", true);
-    waitForScript($page, "window.Alpine.store('colorScheme').isDarkModeOn", false);
-
-    $snapshot = $page->script(<<<'JS'
+    $tapSnapshot = $mobilePage->script(<<<'JS'
 (() => {
   const button = document.querySelector('[data-testid="color-scheme-switch-button"]');
   const root = document.querySelector('[x-ref="stack"]')?.parentElement ?? null;
@@ -567,24 +455,17 @@ it('rate limits repeated taps on the active quick stack action while keeping it 
 })()
 JS);
 
-    expect($snapshot)->toBeArray();
-    expect($snapshot['isDarkModeOn'] ?? null)->toBeTrue();
-    expect($snapshot['isQuickStackOpen'] ?? null)->toBeTrue();
-    expect($snapshot['isInteractionLocked'] ?? null)->toBeTrue();
+    expect($tapSnapshot)->toBeArray();
+    expect($tapSnapshot['isDarkModeOn'] ?? null)->toBeTrue();
+    expect($tapSnapshot['isQuickStackOpen'] ?? null)->toBeTrue();
+    expect($tapSnapshot['isInteractionLocked'] ?? null)->toBeTrue();
 
-    waitForScriptWithTimeout($page, quickStackDataScript('data.isInteractionLocked'), false, 1_500);
-    waitForScript($page, quickStackDataScript('data.isQuickStackOpen'), true);
-    waitForScript($page, "window.Alpine.store('colorScheme').isDarkModeOn", true);
-});
+    waitForScriptWithTimeout($mobilePage, quickStackDataScript('data.isInteractionLocked'), false, 1_500);
+    waitForScript($mobilePage, quickStackDataScript('data.isQuickStackOpen'), true);
+    waitForScript($mobilePage, "window.Alpine.store('colorScheme').isDarkModeOn", true);
 
-it('repositions the quick stack after opening and closing the control panel on mobile', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-    openAthkarGate($page, true);
-
-    openControlPanelModal($page);
-    $closed = (bool) $page->script(<<<'JS'
+    openControlPanelModal($mobilePage);
+    $closed = (bool) $mobilePage->script(<<<'JS'
 (() => {
   const closeButton = document.querySelector('.fi-modal-window [aria-label="Close"], .fi-modal-window [aria-label="إغلاق"], .fi-modal-close-btn');
   closeButton?.click();
@@ -592,23 +473,16 @@ it('repositions the quick stack after opening and closing the control panel on m
 })()
 JS);
     expect($closed)->toBeTrue();
-    waitForScriptWithTimeout($page, modalClosedScript(), true, 3_000);
+    waitForScriptWithTimeout($mobilePage, modalClosedScript(), true, 3_000);
+    waitForScriptWithTimeout($mobilePage, quickStackLayoutReadyScript(), true, 3_000);
 
-    waitForScriptWithTimeout($page, quickStackLayoutReadyScript(), true, 3_000);
-});
+    openAthkarGate($mobilePage, true);
+    hashAction($mobilePage, '#toggle-color-scheme', false);
 
-it('can return to the main menu after toggle-color-scheme resets the hash', function () {
-    $page = visit('/');
+    waitForScript($mobilePage, 'window.location.hash === "" || window.location.hash === "#"', true);
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-gate');
 
-    resetBrowserState($page, true);
-    openAthkarGate($page, true);
-
-    hashAction($page, '#toggle-color-scheme', false);
-
-    waitForScript($page, 'window.location.hash === "" || window.location.hash === "#"', true);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-
-    $clicked = (bool) $page->script(<<<'JS'
+    $clicked = (bool) $mobilePage->script(<<<'JS'
 (() => {
   const button = document.querySelector("div[data-stack-item][x-show*=\"!views['main-menu']\"] button");
   if (!button) {
@@ -624,6 +498,6 @@ JS);
 
     expect($clicked)->toBeTrue();
 
-    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
-    waitForScript($page, 'window.location.hash', '#main-menu');
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($mobilePage, 'window.location.hash', '#main-menu');
 });

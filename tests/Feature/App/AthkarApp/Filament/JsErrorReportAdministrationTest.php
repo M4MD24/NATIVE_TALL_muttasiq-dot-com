@@ -11,17 +11,13 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
-it('allows the configured admin to access js error reports page', function () {
+it('enforces js error reports page access for admin and non-admin users', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
     actingAs($admin);
 
     get(route('filament.admin.resources.balaghat-akhtaa.index'))->assertSuccessful();
-});
-
-it('forbids non-admin users from js error reports page', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
 
     $user = User::factory()->create(['email' => 'member@example.test']);
     actingAs($user);
@@ -29,7 +25,7 @@ it('forbids non-admin users from js error reports page', function () {
     get(route('filament.admin.resources.balaghat-akhtaa.index'))->assertForbidden();
 });
 
-it('separates unresolved and resolved reports using tabs on the same page', function () {
+it('separates unresolved/resolved reports by tabs and toggles resolution state from table actions', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -51,14 +47,6 @@ it('separates unresolved and resolved reports using tabs on the same page', func
         ->set('activeTab', 'resolved')
         ->assertCanSeeTableRecords([$resolved])
         ->assertCanNotSeeTableRecords([$unresolved]);
-});
-
-it('marks a report as resolved from the table action', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
-    actingAs($admin);
-    Filament::setCurrentPanel('admin');
 
     $report = JsErrorReport::factory()->create([
         'resolved_at' => null,
@@ -68,24 +56,15 @@ it('marks a report as resolved from the table action', function () {
         ->callTableAction('markResolved', $report);
 
     expect($report->fresh()->resolved_at)->not->toBeNull();
-});
-
-it('marks a report back to unresolved from the table action', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
-    actingAs($admin);
-    Filament::setCurrentPanel('admin');
-
-    $report = JsErrorReport::factory()->create([
+    $resolvedReport = JsErrorReport::factory()->create([
         'resolved_at' => now(),
     ]);
 
     livewire(ListJsErrorReports::class)
         ->set('activeTab', 'resolved')
-        ->callTableAction('markUnresolved', $report);
+        ->callTableAction('markUnresolved', $resolvedReport);
 
-    expect($report->fresh()->resolved_at)->toBeNull();
+    expect($resolvedReport->fresh()->resolved_at)->toBeNull();
 });
 
 it('deletes nonsense reports from the table action', function () {

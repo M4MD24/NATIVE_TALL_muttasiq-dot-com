@@ -56,7 +56,7 @@ function buttonsStackClasses(string $content): string
     return $classMatches[1];
 }
 
-it('uses local athkar payload on mobile launch and defers remote sync', function () {
+it('uses local athkar payload and runtime-specific shell/layout classes without remote sync', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
@@ -96,38 +96,8 @@ it('uses local athkar payload on mobile launch and defers remote sync', function
         ->toContain('startup-sync-resolved');
 
     Http::assertNothingSent();
-});
+    $response->assertDontSee('data-testid="native-startup-loader"', false);
 
-it('does not render native startup loader markup during normal mobile launch', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'android',
-    ]);
-
-    $response = get('/');
-
-    $response->assertSuccessful()
-        ->assertDontSee('data-testid="native-startup-loader"', false);
-});
-
-it('resets app version to configured value on mobile launch before deferred sync', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'android',
-        'app.custom.app_version' => '3.1.4',
-    ]);
-
-    Setting::setAppVersion('0.9.0');
-
-    $response = get('/');
-
-    $response->assertSuccessful()
-        ->assertSee('v3.1.4', false);
-
-    expect(Setting::appVersion())->toBe('3.1.4');
-});
-
-it('uses local athkar payload on non-mobile requests', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'desktop',
@@ -159,67 +129,52 @@ it('uses local athkar payload on non-mobile requests', function () {
         ->not->toContain('bottom-7');
 
     Http::assertNothingSent();
-});
-
-it('applies ios top margins to stack and main and keeps defaults for android', function () {
     config([
-        'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'ios',
     ]);
 
     $iosResponse = get('/');
-
     $iosResponse->assertSuccessful();
 
-    $iosContent = $iosResponse->getContent();
-    $iosMainClasses = homeMainClasses($iosContent);
-    $iosStackClasses = buttonsStackClasses($iosContent);
-
-    expect($iosMainClasses)
+    expect(homeMainClasses($iosResponse->getContent()))
         ->toContain('mt-22')
         ->not->toContain('mt-16');
-
-    expect($iosStackClasses)->toContain('mt-8');
+    expect(buttonsStackClasses($iosResponse->getContent()))->toContain('mt-8');
 
     config([
         'nativephp-internal.platform' => 'android',
     ]);
 
     $androidResponse = get('/');
-
     $androidResponse->assertSuccessful();
 
-    $androidContent = $androidResponse->getContent();
-    $androidMainClasses = homeMainClasses($androidContent);
-    $androidStackClasses = buttonsStackClasses($androidContent);
-
-    expect($androidMainClasses)
+    expect(homeMainClasses($androidResponse->getContent()))
         ->toContain('mt-16')
         ->not->toContain('mt-22');
-
-    expect($androidStackClasses)->not->toContain('mt-8');
+    expect(buttonsStackClasses($androidResponse->getContent()))->not->toContain('mt-8');
 });
 
-it('renders the shared origin-indicator icon class without pixel offset hacks', function () {
+it('renders expected icon and markup contracts while resetting app version to configured runtime value', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'android',
+        'app.custom.app_version' => '3.1.4',
+    ]);
+
+    Setting::setAppVersion('0.9.0');
+
     $response = get('/');
 
     $response->assertSuccessful()
+        ->assertSee('v3.1.4', false)
         ->assertSee('athkar-origin-indicator__icon', false);
+
+    expect(Setting::appVersion())->toBe('3.1.4');
 
     $content = $response->getContent();
 
     expect(substr_count($content, 'athkar-origin-indicator__icon'))->toBeGreaterThanOrEqual(2)
-        ->and($content)->not->toContain('-left-px -top-px');
-});
-
-it('anchors stack action button icons to prevent mobile webkit misalignment', function () {
-    $response = get('/');
-
-    $response->assertSuccessful();
-
-    $content = $response->getContent();
-
-    expect($content)
-        ->toContain('relative grid h-10 w-10 rotate-45 place-items-center overflow-hidden')
-        ->toContain('absolute top-1/2 left-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 -rotate-45 shrink-0');
+        ->and($content)->not->toContain('-left-px -top-px')
+        ->and($content)->toContain('relative grid h-10 w-10 rotate-45 place-items-center overflow-hidden')
+        ->and($content)->toContain('absolute top-1/2 left-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 -rotate-45 shrink-0');
 });

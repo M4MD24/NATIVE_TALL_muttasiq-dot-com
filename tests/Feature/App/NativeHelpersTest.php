@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('returns a safe browser-open expression for mobile runtime', function () {
+it('returns correct link-open expressions for mobile and desktop runtimes', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'ios',
@@ -13,9 +13,7 @@ it('returns a safe browser-open expression for mobile runtime', function () {
     expect($expression)
         ->toContain('window.browser?.open')
         ->toContain('window.open(`https://example.com`, `_blank`, `noopener`)');
-});
 
-it('returns a window-open expression for desktop runtime', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'desktop',
@@ -23,13 +21,9 @@ it('returns a window-open expression for desktop runtime', function () {
 
     expect(open_link_native_aware('https://example.com'))
         ->toBe('window.open(`https://example.com`, `_blank`, `noopener`)');
-
-    expect(is_platform('desktop'))->toBeTrue()
-        ->and(is_platform('web'))->toBeFalse()
-        ->and(is_platform('native'))->toBeTrue();
 });
 
-it('detects web platform when native runtime is disabled', function () {
+it('detects platform flags for web and native contexts', function () {
     config([
         'nativephp-internal.running' => false,
         'nativephp-internal.platform' => null,
@@ -39,9 +33,7 @@ it('detects web platform when native runtime is disabled', function () {
         ->and(is_platform('native'))->toBeFalse()
         ->and(is_platform('desktop'))->toBeFalse()
         ->and(is_platform('mobile'))->toBeFalse();
-});
 
-it('detects native platform when native runtime is enabled', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',

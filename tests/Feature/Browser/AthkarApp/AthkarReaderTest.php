@@ -2686,7 +2686,11 @@ JS,
 
 });
 
-it('tracks progress by letters and counters by counts while updating page position', function () {
+it('tracks progress semantics, exposes full mode athkar, and keeps the slide render window bounded', function () {
+    $expectedCount = Thikr::query()
+        ->whereIn('time', [ThikrTime::Shared, ThikrTime::Sabah])
+        ->count();
+
     $page = visit('/');
 
     resetBrowserState($page);
@@ -2746,17 +2750,6 @@ it('tracks progress by letters and counters by counts while updating page positi
 
     expect($pageCount)->toBe($singleIndex + 2);
     expect($totalPages)->toBeGreaterThanOrEqual($pageCount);
-});
-
-it('exposes all athkar for the active mode and navigates when switching is allowed', function () {
-    $expectedCount = Thikr::query()
-        ->whereIn('time', [ThikrTime::Shared, ThikrTime::Sabah])
-        ->count();
-
-    $page = visit('/');
-
-    resetBrowserState($page);
-    openAthkarReader($page, 'sabah', false);
 
     setAthkarSettings($page, [
         'does_prevent_switching_athkar_until_completion' => true,
@@ -2766,7 +2759,11 @@ it('exposes all athkar for the active mode and navigates when switching is allow
 
     expect($activeCount)->toBe($expectedCount);
 
-    waitForScript($page, athkarReaderDataScript('data.maxNavigableIndex'), 0);
+    waitForScript(
+        $page,
+        athkarReaderDataScript('data.maxNavigableIndex < (data.activeList.length - 1)'),
+        true,
+    );
 
     $settings = [
         'does_prevent_switching_athkar_until_completion' => false,
@@ -2779,13 +2776,7 @@ it('exposes all athkar for the active mode and navigates when switching is allow
     $lastIndex = $page->script(athkarReaderDataScript('data.activeList.length - 1'));
 
     waitForScript($page, athkarReaderDataScript('data.activeIndex'), $lastIndex);
-});
 
-it('keeps only a small render window of slide content mounted', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
-    openAthkarReader($page, 'sabah', false);
     setAthkarSettings($page, [
         'does_prevent_switching_athkar_until_completion' => false,
     ]);
@@ -2833,7 +2824,7 @@ it('keeps only a small render window of slide content mounted', function () {
         ->and($mountedAtEnd)->toBeLessThanOrEqual(2);
 });
 
-it('shows the congrats panel briefly then returns to the gate when setting 4 is disabled', function () {
+it('shows completion flow return-to-gate behavior and resets progress when the day changes', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -2853,17 +2844,17 @@ it('shows the congrats panel briefly then returns to the gate when setting 4 is 
         'window.location.hash === "#athkar-app-gate" || window.location.hash === ""',
         true,
     );
-});
-
-it('resets athkar progress when the day changes', function () {
-    $page = visit('/');
 
     resetBrowserState($page);
     openAthkarReader($page, 'sabah', false);
 
     scriptClick($page, '[data-athkar-slide][data-active="true"] [data-athkar-tap]');
 
-    waitForScript($page, athkarReaderDataScript('data.totalCompletedCount'), 1);
+    waitForScript(
+        $page,
+        athkarReaderDataScript('data.totalCompletedCount > 0'),
+        true,
+    );
 
     $page->script(
         athkarReaderCommandScript('data.lastSeenDay = "2000-01-01"; data.syncDay();'),

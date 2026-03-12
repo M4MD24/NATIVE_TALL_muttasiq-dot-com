@@ -6,11 +6,9 @@ use Illuminate\Support\Facades\Log;
 
 use function Pest\Laravel\get;
 
-it('returns a 404 response for unmatched web routes', function () {
+it('returns 404 for unmatched routes and logs repeated production web hits at threshold', function () {
     get('/route-does-not-exist')->assertNotFound();
-});
 
-it('logs repeated unmatched route hits once threshold is reached for an ip address', function () {
     config([
         'app.env' => 'production',
         'nativephp-internal.running' => false,
@@ -34,7 +32,7 @@ it('logs repeated unmatched route hits once threshold is reached for an ip addre
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])->get('/missing-three')->assertNotFound();
 });
 
-it('does not log unmatched route hits outside production', function () {
+it('skips unmatched-route alert logging outside production or on non-web runtimes', function () {
     config([
         'app.env' => 'local',
         'nativephp-internal.running' => false,
@@ -49,9 +47,7 @@ it('does not log unmatched route hits outside production', function () {
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.11'])->get('/ignored-local')->assertNotFound();
 
     Log::shouldNotHaveReceived('warning');
-});
 
-it('does not log unmatched route hits for non-web platforms', function () {
     config([
         'app.env' => 'production',
         'nativephp-internal.running' => true,

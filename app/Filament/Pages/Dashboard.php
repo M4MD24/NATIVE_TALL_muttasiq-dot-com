@@ -11,7 +11,7 @@ use Filament\Widgets\Widget;
 
 class Dashboard extends BaseDashboard
 {
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar-square';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
     protected static ?string $navigationLabel = 'إحصائيات';
 

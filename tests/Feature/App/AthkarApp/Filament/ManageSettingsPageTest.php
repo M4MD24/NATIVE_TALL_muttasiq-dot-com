@@ -11,7 +11,7 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
-it('allows the admin to access the manage settings page', function () {
+it('allows the admin to access manage settings and loads the current settings form state', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -19,12 +19,6 @@ it('allows the admin to access the manage settings page', function () {
     actingAs($admin);
 
     get(route('filament.admin.pages.iedadat-iftiradiyya'))->assertSuccessful();
-});
-
-it('loads current settings into the form', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
@@ -50,7 +44,7 @@ it('loads current settings into the form', function () {
         ]);
 });
 
-it('saves settings to the database', function () {
+it('saves settings and normalizes inverted min/max text-size values', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -88,15 +82,6 @@ it('saves settings to the database', function () {
 
     expect((int) Setting::query()->where('name', Setting::MAXIMUM_MAIN_TEXT_SIZE)->value('value'))
         ->toBe(22);
-});
-
-it('normalizes min/max text size when saving with inverted values', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
-
-    actingAs($admin);
-    Filament::setCurrentPanel('admin');
 
     livewire(ManageSettings::class)
         ->fillForm([

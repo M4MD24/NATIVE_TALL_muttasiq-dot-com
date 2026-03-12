@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\RateLimiter;
 
 use function Pest\Laravel\getJson;
 
-it('returns current settings and main text size limits', function () {
+it('returns normalized settings payload with limits/version and migrates legacy visual-enhancement key', function () {
     RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
     config([
         'app.custom.app_version' => '7.8.9',
@@ -44,10 +44,6 @@ it('returns current settings and main text size limits', function () {
         ->toHaveKeys(['min', 'max', 'default']);
 
     expect($response->json('appVersion'))->toBe('7.8.9');
-});
-
-it('returns normalized settings from the database', function () {
-    RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::MINIMUM_MAIN_TEXT_SIZE],
@@ -65,10 +61,6 @@ it('returns normalized settings from the database', function () {
 
     expect($response->json('settings.'.Setting::MINIMUM_MAIN_TEXT_SIZE))->toBe(18);
     expect($response->json('settings.'.Setting::MAXIMUM_MAIN_TEXT_SIZE))->toBe(20);
-});
-
-it('returns persisted visual enhancements setting from the database', function () {
-    RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS],
@@ -80,9 +72,7 @@ it('returns persisted visual enhancements setting from the database', function (
     $response->assertSuccessful();
 
     expect($response->json('settings.'.Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS))->toBeFalse();
-});
 
-it('migrates the legacy visual enhancements setting key', function () {
     Setting::query()->where('name', Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)->delete();
 
     Setting::query()->updateOrCreate(

@@ -6,7 +6,7 @@ use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
-it('syncs app version from settings api on mobile startup', function () {
+it('syncs startup settings from relative and absolute endpoints and updates app version when provided', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
@@ -36,39 +36,7 @@ it('syncs app version from settings api on mobile startup', function () {
     Http::assertSent(function (HttpRequest $request) use ($expectedSettingsUrl): bool {
         return $request->url() === $expectedSettingsUrl;
     });
-});
 
-it('keeps existing app version when startup settings api omits app version', function () {
-    config([
-        'nativephp-internal.running' => true,
-        'nativephp-internal.platform' => 'android',
-        'app.url' => 'http://muttasiq.dev.localhost',
-        'app.custom.native_end_points.settings' => 'settings',
-    ]);
-
-    Setting::setAppVersion('3.1.4');
-
-    $expectedSettingsUrl = rtrim((string) config('app.url'), '/').route('api.settings.index', [], false);
-
-    Http::fake([
-        $expectedSettingsUrl => Http::response([
-            'settings' => Setting::normalizeSettings(Setting::defaults()),
-            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-        ]),
-    ]);
-
-    Livewire::test(StartupSync::class)
-        ->assertDispatched('app-version-updated', version: '3.1.4')
-        ->assertDispatched('startup-sync-finished');
-
-    expect(Setting::appVersion())->toBe('3.1.4');
-
-    Http::assertSent(function (HttpRequest $request) use ($expectedSettingsUrl): bool {
-        return $request->url() === $expectedSettingsUrl;
-    });
-});
-
-it('uses configured absolute endpoint for startup settings sync', function () {
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',
@@ -97,7 +65,35 @@ it('uses configured absolute endpoint for startup settings sync', function () {
     });
 });
 
-it('skips startup settings sync when app url is non-http and endpoint is relative', function () {
+it('keeps current app version when omitted by API and skips sync for unsafe relative endpoints', function () {
+    config([
+        'nativephp-internal.running' => true,
+        'nativephp-internal.platform' => 'android',
+        'app.url' => 'http://muttasiq.dev.localhost',
+        'app.custom.native_end_points.settings' => 'settings',
+    ]);
+
+    Setting::setAppVersion('3.1.4');
+
+    $expectedSettingsUrl = rtrim((string) config('app.url'), '/').route('api.settings.index', [], false);
+
+    Http::fake([
+        $expectedSettingsUrl => Http::response([
+            'settings' => Setting::normalizeSettings(Setting::defaults()),
+            'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
+        ]),
+    ]);
+
+    Livewire::test(StartupSync::class)
+        ->assertDispatched('app-version-updated', version: '3.1.4')
+        ->assertDispatched('startup-sync-finished');
+
+    expect(Setting::appVersion())->toBe('3.1.4');
+
+    Http::assertSent(function (HttpRequest $request) use ($expectedSettingsUrl): bool {
+        return $request->url() === $expectedSettingsUrl;
+    });
+
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'android',

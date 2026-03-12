@@ -32,7 +32,7 @@ function validJsErrorReportPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('stores js error reports through the api endpoint', function () {
+it('stores sanitized js error reports and clips oversized stack traces', function () {
     RateLimiter::for('js-error-reports', fn (Request $request): Limit => Limit::none());
 
     $response = postJson(route('api.js-error-reports.store'), validJsErrorReportPayload([
@@ -52,10 +52,6 @@ it('stores js error reports through the api endpoint', function () {
         ->and($report->screen_breakpoint)->toBe('md')
         ->and($report->errors)->toBeArray()
         ->and($report->errors[0]['message'])->toBe('Unexpected error');
-});
-
-it('clips long stack traces while keeping head and tail', function () {
-    RateLimiter::for('js-error-reports', fn (Request $request): Limit => Limit::none());
 
     $longStack = str_repeat('A', 12000).str_repeat('B', 12000).str_repeat('C', 12000);
     $response = postJson(route('api.js-error-reports.store'), validJsErrorReportPayload([
@@ -79,16 +75,14 @@ it('clips long stack traces while keeping head and tail', function () {
         ->and($stack)->toContain(str_repeat('C', 50));
 });
 
-it('validates malformed js error report payloads', function () {
+it('rejects malformed payloads and enforces rate limits', function () {
     RateLimiter::for('js-error-reports', fn (Request $request): Limit => Limit::none());
 
     postJson(route('api.js-error-reports.store'), [
         'user_note' => 'قصير',
         'errors' => [],
     ])->assertUnprocessable();
-});
 
-it('rate limits js error report submissions', function () {
     RateLimiter::for('js-error-reports', fn (Request $request): Limit => Limit::perMinute(2)->by('test-key'));
 
     postJson(route('api.js-error-reports.store'), validJsErrorReportPayload())->assertCreated();

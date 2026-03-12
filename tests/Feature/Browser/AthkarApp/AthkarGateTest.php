@@ -4,50 +4,48 @@ declare(strict_types=1);
 
 use App\Models\Setting;
 
-it('navigates to the athkar gate and persists the active view', function () {
-    $page = visit('/');
+it('navigates to the athkar gate, persists restored state, and handles native back to main menu then exit', function () {
+    $desktopPage = visit('/');
 
-    resetBrowserState($page);
-    openAthkarGate($page, false);
+    resetBrowserState($desktopPage);
+    openAthkarGate($desktopPage, false);
 
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-    waitForScript($page, 'JSON.parse(localStorage.getItem("app-active-view"))', 'athkar-app-gate');
-    waitForGateVisible($page);
+    waitForScript($desktopPage, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($desktopPage, 'JSON.parse(localStorage.getItem("app-active-view"))', 'athkar-app-gate');
+    waitForGateVisible($desktopPage);
 
-    $page->refresh();
+    $desktopPage->refresh();
 
-    waitForAlpineReady($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-    waitForGateVisible($page);
+    waitForAlpineReady($desktopPage);
+    waitForScript($desktopPage, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForGateVisible($desktopPage);
+
+    $mobilePage = visit('/');
+
+    resetBrowserState($mobilePage, true);
+    openAthkarGate($mobilePage, true);
+
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($mobilePage, 'window.location.hash', '#athkar-app-gate');
+
+    $mobilePage->refresh();
+
+    waitForAlpineReady($mobilePage);
+    enableMobileContext($mobilePage);
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($mobilePage, 'window.location.hash', '#athkar-app-gate');
+
+    expect($mobilePage->script('window.__nativeBackAction()'))->toBeTrue();
+
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($mobilePage, 'window.location.hash', '#main-menu');
+
+    expect($mobilePage->script('window.__nativeBackAction()'))->toBe('exit');
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($mobilePage, 'window.location.hash', '#main-menu');
 });
 
-it('native back returns a restored gate view to the main menu before exiting', function () {
-    $page = visit('/');
-
-    resetBrowserState($page, true);
-    openAthkarGate($page, true);
-
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-    waitForScript($page, 'window.location.hash', '#athkar-app-gate');
-
-    $page->refresh();
-
-    waitForAlpineReady($page);
-    enableMobileContext($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-    waitForScript($page, 'window.location.hash', '#athkar-app-gate');
-
-    expect($page->script('window.__nativeBackAction()'))->toBeTrue();
-
-    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
-    waitForScript($page, 'window.location.hash', '#main-menu');
-
-    expect($page->script('window.__nativeBackAction()'))->toBe('exit');
-    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
-    waitForScript($page, 'window.location.hash', '#main-menu');
-});
-
-it('shows the athkar notice and mode hash when selecting a mode', function () {
+it('handles athkar notice selection, confirmation/swipe transitions, and restored mobile back flow', function () {
     $page = visit('/');
 
     resetBrowserState($page);
@@ -59,32 +57,11 @@ it('shows the athkar notice and mode hash when selecting a mode', function () {
 
     waitForScript($page, 'window.location.hash', '#athkar-app-sabah');
     waitForNoticeVisible($page);
-});
-
-it('confirms the athkar notice via the CTA button on desktop', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
-    openAthkarGate($page, false);
-    $settings = [Setting::DOES_SKIP_GUIDANCE_PANELS => false];
-    setAthkarSettings($page, $settings);
-    waitForAthkarSettings($page, $settings);
-    openAthkarNotice($page, 'sabah', false);
-    waitForNoticeVisible($page);
 
     confirmAthkarNotice($page);
-
     waitForReaderVisible($page);
-});
 
-it('swipes the notice forward and back on desktop', function () {
-    $page = visit('/');
-
-    resetBrowserState($page);
     openAthkarGate($page, false);
-    $settings = [Setting::DOES_SKIP_GUIDANCE_PANELS => false];
-    setAthkarSettings($page, $settings);
-    waitForAthkarSettings($page, $settings);
     openAthkarNotice($page, 'sabah', false);
     waitForNoticeVisible($page);
 
@@ -100,46 +77,44 @@ it('swipes the notice forward and back on desktop', function () {
     swipeNotice($page, 'forward', 'mouse');
 
     waitForReaderVisible($page);
-});
 
-it('native back exits from the main menu after bypassing a restored notice into the reader', function () {
-    $page = visit('/');
+    $mobilePage = visit('/');
 
-    resetBrowserState($page, true);
-    openAthkarReader($page, 'sabah', true);
+    resetBrowserState($mobilePage, true);
+    openAthkarReader($mobilePage, 'sabah', true);
 
-    $settings = [
+    $mobileSettings = [
         Setting::DOES_SKIP_GUIDANCE_PANELS => false,
         Setting::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => false,
     ];
-    setAthkarSettings($page, $settings);
-    waitForAthkarSettings($page, $settings);
+    setAthkarSettings($mobilePage, $mobileSettings);
+    waitForAthkarSettings($mobilePage, $mobileSettings);
 
-    waitForReaderVisible($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForReaderVisible($mobilePage);
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-sabah');
 
-    $page->refresh();
+    $mobilePage->refresh();
 
-    waitForAlpineReady($page);
-    enableMobileContext($page);
-    waitForNoticeVisible($page);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForAlpineReady($mobilePage);
+    enableMobileContext($mobilePage);
+    waitForNoticeVisible($mobilePage);
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-sabah');
 
-    swipeNotice($page, 'forward', 'touch');
+    swipeNotice($mobilePage, 'forward', 'touch');
 
-    waitForReaderVisible($page);
-    waitForScript($page, athkarReaderDataScript('data.isNoticeVisible'), false);
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-sabah');
+    waitForReaderVisible($mobilePage);
+    waitForScript($mobilePage, athkarReaderDataScript('data.isNoticeVisible'), false);
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-sabah');
 
-    expect($page->script('window.__nativeBackAction()'))->toBeTrue();
-    waitForScript($page, homeDataScript('data.activeView'), 'athkar-app-gate');
-    waitForScript($page, 'window.location.hash', '#athkar-app-gate');
+    expect($mobilePage->script('window.__nativeBackAction()'))->toBeTrue();
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'athkar-app-gate');
+    waitForScript($mobilePage, 'window.location.hash', '#athkar-app-gate');
 
-    expect($page->script('window.__nativeBackAction()'))->toBeTrue();
-    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
-    waitForScript($page, 'window.location.hash', '#main-menu');
+    expect($mobilePage->script('window.__nativeBackAction()'))->toBeTrue();
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($mobilePage, 'window.location.hash', '#main-menu');
 
-    expect($page->script('window.__nativeBackAction()'))->toBe('exit');
-    waitForScript($page, homeDataScript('data.activeView'), 'main-menu');
-    waitForScript($page, 'window.location.hash', '#main-menu');
+    expect($mobilePage->script('window.__nativeBackAction()'))->toBe('exit');
+    waitForScript($mobilePage, homeDataScript('data.activeView'), 'main-menu');
+    waitForScript($mobilePage, 'window.location.hash', '#main-menu');
 });
