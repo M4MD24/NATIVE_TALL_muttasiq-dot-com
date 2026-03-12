@@ -3,7 +3,8 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/.." && pwd)"
-output_file="${project_root}/native-log-android.txt"
+output_dir="${project_root}/storage/logs"
+output_file="${output_dir}/log-android.txt"
 
 read_env_var() {
     local key="$1"
@@ -85,6 +86,7 @@ append_run_as_tail() {
 }
 
 {
+    mkdir -p "${output_dir}"
     printf 'native-log-android generated at: %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
     printf 'working directory: %s\n' "${project_root}"
 } >"${output_file}"

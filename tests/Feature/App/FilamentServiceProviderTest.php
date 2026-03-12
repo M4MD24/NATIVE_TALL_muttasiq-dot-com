@@ -7,7 +7,7 @@ use Filament\Support\Colors\Color;
 
 use function Pest\Laravel\get;
 
-it('builds filament background css variables from configured background colors', function () {
+it('builds configured filament css variables, applies sensible fallbacks, and renders them in the layout', function () {
     config()->set('app.custom.filament.background_colors', [
         'shell' => [
             'light' => '#111111',
@@ -42,9 +42,7 @@ it('builds filament background css variables from configured background colors',
         'fi-surface-muted-bg-light' => '#777777',
         'fi-surface-muted-bg-dark' => '#888888',
     ]);
-});
 
-it('falls back to surface colors when raised colors are not configured', function () {
     config()->set('app.custom.filament.background_colors', [
         'shell' => [
             'light' => '#aaaaaa',
@@ -71,9 +69,7 @@ it('falls back to surface colors when raised colors are not configured', functio
 
     expect($variables['fi-surface-raised-bg-light'])->toBe('#cccccc');
     expect($variables['fi-surface-raised-bg-dark'])->toBe('#dddddd');
-});
 
-it('builds dark primary css variables from the configured filament override', function () {
     config()->set('app.custom.filament.color_overrides.primary.dark', '#5ea9bd');
 
     $provider = new FilamentServiceProvider(app());
@@ -89,9 +85,7 @@ it('builds dark primary css variables from the configured filament override', fu
         'fi-primary-dark-950',
     ]);
     expect($variables['fi-primary-dark-500'])->toBe(Color::convertToOklch((string) $expectedPalette[500]));
-});
 
-it('renders registered filament css variables in the app layout', function () {
     config()->set('app.custom.filament.background_colors', [
         'shell' => [
             'light' => '#121212',

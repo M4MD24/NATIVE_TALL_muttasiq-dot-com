@@ -24,6 +24,19 @@ return [
             'settings' => env('NATIVE_SETTINGS_ENDPOINT', 'https://muttasiq.com/api/settings'),
         ],
 
+        'security' => [
+            'unmatched_routes' => [
+                'window_seconds' => (int) env('UNMATCHED_ROUTE_WINDOW_SECONDS', 900),
+                'alert_threshold' => (int) env('UNMATCHED_ROUTE_ALERT_THRESHOLD', 25),
+                'alert_repeat_every' => (int) env('UNMATCHED_ROUTE_ALERT_REPEAT_EVERY', 25),
+            ],
+            'web_home_metrics' => [
+                'enabled' => (bool) env('WEB_HOME_METRICS_ENABLED', env('APP_ENV') === 'production'),
+                'chart_days' => (int) env('WEB_HOME_METRICS_CHART_DAYS', 14),
+                'retention_days' => (int) env('WEB_HOME_METRICS_RETENTION_DAYS', 35),
+            ],
+        ],
+
         'colors' => [
             'gray' => \Filament\Support\Colors\Color::Slate,
             'primary' => [

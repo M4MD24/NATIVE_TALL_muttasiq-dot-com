@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\ManageSettings;
 use App\Http\Middleware\BlockFilamentInNativeRuntime;
 use App\Services\Overrides\Pages\Login;
 use Filament\Http\Middleware\Authenticate;
@@ -43,8 +45,10 @@ class FilamentServiceProvider extends PanelProvider
             ->font('Readex Pro')
             ->viteTheme('resources/css/core/filament/panels.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([])
+            ->pages([
+                Dashboard::class,
+                ManageSettings::class,
+            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([])
             ->middleware([

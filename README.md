@@ -192,11 +192,12 @@ https://muttasiq.com
 ### Rules
 
 0. Focus on the main [missions](#المهام) detailed in [discussions](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/discussions) and assigned in the [project](https://github.com/users/GoodM4ven/projects/5/views/1) view. So unless it's a bug fix, **do not work on any new feature without having an [issue](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/issues) and being assigned to**.
-1. Use and maintain the root-directory bash scripts to run and watch all available platform applications.
+1. Use and maintain the bash scripts found in [./.scripts] directory, providing utilities to run and watch all available platform applications, etc.
 2. Since any change to the `main` branch is going to **directly update the web app**, **PRs are NOT going to be directed to `main` branch, please, but rather to `dev` branch instead.**
 3. Use the `composer green` command before you do the PR in the first place. It will do the standard code formatting, linting, and testing altogether. Please trace what it does in [composer.json](./composer.json).
    - The process runs [PestPHP browser tests](https://pestphp.com/docs/browser-testing) in `--compact` mode only (not `--parallel`) due to current bugs in the [Playwright](https://playwright.dev) and PestPHP integration, including direct mobile emulation support—this **may make tests slower locally**, though they work reliably (this limitation does not apply to CI, I think, since it’s ephemeral).
-4. Ensure the [Python](https://python.org) patching [scripts](https://github.com/GoodM4ven/NATIVE_TALL_muttasiq-dot-com/tree/main/.scripts/native/mobile/android/patches) that override the original NativePHP package **do not conflict with one another and correctly patch the files of the NativePHP version specified in [`composer.json`](./composer.json)**.
+4. We have [`muttasiq-patches` NativePHP plugin](https://github.com/GoodM4ven/NATIVE_PLUGIN_muttasiq-patches) that overrides the original NativePHP engine a bit. Make sure you account for what it does in mind, where (the PR you're going to do there) its modifications **do not conflict with one another when patching the same file and correctly patch the files they're targetting from the NativePHP version specified in [`composer.json`](./composer.json)** over here.
+    - Keep in mind that there is a Bash switching script for when you have the package locally and test its changes locally before the PR. [Check it out](./.scripts/composer-local-plugins-switch.sh). 
 
 ### Setup
 
@@ -266,9 +267,9 @@ Copyright (C) 2026 Muttasiq Contributors.
 
 ### Contributors
 
-- [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
-- [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
-- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد), [@AbdelfettahSi](https://t.me/AbdelfettahSi) (أبو خديجة عبد الفتاح), [@almuhanad1](https://t.me/almuhanad1) (المهند النهمي).
+- Main: [GoodM4ven](https://github.com/GoodM4ven) (أبو عبد الله الحاسوبي)
+- Support: [M4MD24](https://github.com/M4MD24) (أبو عثمان الهواري)
+- Telegram Supporters: [@yahya_0beid](https://t.me/yahya_0beid) (يحيى العبيدي), [@Al_Fawzawi](https://t.me/Al_Fawzawi) (أبو عوف الفوزوي), [@Selamah_Aldimashqq](https://t.me/Selamah_Aldimashqq) (سلمة الدمشقي), [@hamedAbuAbdlah](https://t.me/hamedAbuAbdlah) (أبو عبد الله حامد), [@AbdelfettahSi](https://t.me/AbdelfettahSi) (أبو خديجة عبد الفتاح), [@almuhanad1](https://t.me/almuhanad1) (المهند النهمي), [@TheHidden9](https://t.me/TheHidden9) (عبد الله).
 
 ### Assets
 

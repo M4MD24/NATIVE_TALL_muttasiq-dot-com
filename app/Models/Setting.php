@@ -15,7 +15,15 @@ class Setting extends Model
 
     public const GROUP_ATHKAR = 'athkar';
 
-    public const DOES_ENABLE_MAIN_TEXT_SHIMMERING = 'does_enable_main_text_shimmering';
+    public const DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR = 'does_automatically_switch_completed_athkar';
+
+    public const DOES_CLICKING_SWITCH_ATHKAR_TOO = 'does_clicking_switch_athkar_too';
+
+    public const DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION = 'does_prevent_switching_athkar_until_completion';
+
+    public const DOES_ENABLE_VISUAL_ENHANCEMENTS = 'enable_visual_enhancements';
+
+    public const DOES_SKIP_GUIDANCE_PANELS = 'does_skip_notice_panels';
 
     public const MINIMUM_MAIN_TEXT_SIZE = 'minimum_main_text_size';
 
@@ -39,20 +47,20 @@ class Setting extends Model
     public static function definitions(): array
     {
         return [
-            'does_automatically_switch_completed_athkar' => [
+            self::DOES_AUTOMATICALLY_SWITCH_COMPLETED_ATHKAR => [
                 'default' => true,
                 'label' => '1. الانتقال التلقائي عند اكتمال عدد الذكر.',
                 'group' => self::GROUP_ATHKAR,
                 'type' => 'boolean',
             ],
-            'does_clicking_switch_athkar_too' => [
+            self::DOES_CLICKING_SWITCH_ATHKAR_TOO => [
                 'default' => true,
                 'label' => '2. الضغط والنقر يقوم بالانتقال أيضا للذكر التالي، وليس مجرد السحب فحسب.',
                 'help' => 'ولكن إن قمت بالعودة للأذكار التامة، أو كان الخيار الأذكار (1) معطلا، فالضغط يقوم بزيادة العدّ.',
                 'group' => self::GROUP_ATHKAR,
                 'type' => 'boolean',
             ],
-            'does_prevent_switching_athkar_until_completion' => [
+            self::DOES_PREVENT_SWITCHING_ATHKAR_UNTIL_COMPLETION => [
                 'default' => true,
                 'label' => '3. المنع من الانتقال بين الأذكار حتى إنهائها أولًا.',
                 'help' => 'وكذلك يقوم بالسماح بإعادة استعراض أذكار الصباح والمساء حتى عند إتمامها.',
@@ -75,15 +83,15 @@ class Setting extends Model
                 'min' => self::MAX_MAIN_TEXT_SIZE_MIN,
                 'max' => self::MAX_MAIN_TEXT_SIZE_MAX,
             ],
-            self::DOES_ENABLE_MAIN_TEXT_SHIMMERING => [
+            self::DOES_ENABLE_VISUAL_ENHANCEMENTS => [
                 'default' => true,
-                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحويرة.',
+                'label' => '2. تحسين التأثيرات البصرية وتجميل النصوص المحورية.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],
-            'does_skip_notice_panels' => [
+            self::DOES_SKIP_GUIDANCE_PANELS => [
                 'default' => false,
-                'label' => '3. تجاوز رسائل التعريف أو التهنئة وما شابه.',
+                'label' => '3. تجاوز رسائل التعريف والتهنئة والتلميحات المساعدة.',
                 'group' => self::GROUP_GENERAL,
                 'type' => 'boolean',
             ],
@@ -222,6 +230,11 @@ class Setting extends Model
             return trim($stored);
         }
 
+        return self::configuredAppVersion();
+    }
+
+    public static function configuredAppVersion(): string
+    {
         $fallback = (string) config('app.custom.app_version', '');
 
         if (trim($fallback) !== '') {

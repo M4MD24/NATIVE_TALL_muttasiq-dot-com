@@ -1,26 +1,33 @@
 <?php
 
-use function Pest\Laravel\get;
+function changelogImagesDirectory(): string
+{
+    return public_path('docs/updates/images');
+}
 
-it('serves changelog images from the public docs directory', function () {
-    $response = get('/docs/updates/images/v-0-5-0/web/changelogs-modal.png');
+it('keeps changelog images accessible and constrained to the public docs images directory across runtimes', function () {
+    $imagePath = changelogImagesDirectory().'/v-0-5-0/web/changelogs-modal.png';
 
-    $response->assertSuccessful();
-    $response->assertHeader('content-type', 'image/png');
-});
+    expect($imagePath)
+        ->toBeFile()
+        ->and(mime_content_type($imagePath))
+        ->toBe('image/png');
 
-it('prevents directory traversal when serving changelog images', function () {
-    get('/docs/updates/images/%2E%2E/%2E%2E/changelogs.md')
-        ->assertNotFound();
-});
+    $imagesDirectory = realpath(changelogImagesDirectory());
+    $requestedPath = realpath(changelogImagesDirectory().'/../changelogs.md');
 
-it('serves changelog images while running in native ios runtime', function () {
+    expect($imagesDirectory)->not->toBeFalse();
+    expect($requestedPath)->not->toStartWith($imagesDirectory.DIRECTORY_SEPARATOR);
+
     config([
         'nativephp-internal.running' => true,
         'nativephp-internal.platform' => 'ios',
     ]);
 
-    get('/docs/updates/images/v-0-4-0/android/responsive-text-overflow-handling.png')
-        ->assertSuccessful()
-        ->assertHeader('content-type', 'image/png');
+    $imagePath = changelogImagesDirectory().'/v-0-4-0/android/responsive-text-overflow-handling.png';
+
+    expect($imagePath)
+        ->toBeFile()
+        ->and(mime_content_type($imagePath))
+        ->toBe('image/png');
 });

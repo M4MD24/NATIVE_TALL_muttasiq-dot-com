@@ -25,7 +25,21 @@ const parseTime = (value, fallback) => {
     return parsed;
 };
 
-export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisible } = {}) => {
+export const createShimmerController = ({
+    resolveRoot,
+    resolveUseAlternateTarget,
+    selectors = {},
+    classes = {},
+} = {}) => {
+    const activeContainerSelector =
+        selectors.activeContainer ?? '[data-shimmer-slide][data-active="true"]';
+    const primaryTargetSelector = selectors.primaryTarget ?? '[data-shimmer-text]';
+    const alternateTargetSelector = selectors.alternateTarget ?? '[data-shimmer-alt-text]';
+    const shimmerTargetSelector = selectors.shimmerTarget ?? '[data-shimmer-target]';
+    const mutedClass = classes.muted ?? 'is-muted';
+    const shimmerClass = classes.shimmer ?? 'shimmer';
+    const shimmeringClass = classes.shimmering ?? 'is-shimmering';
+
     const state = {
         target: null,
         timer: null,
@@ -53,12 +67,12 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
         clearTimers();
 
         if (state.target) {
-            state.target.classList.remove('is-shimmering');
+            state.target.classList.remove(shimmeringClass);
         }
 
         const root = resolveRoot?.();
-        root?.querySelectorAll('[data-athkar-shimmer].is-shimmering')?.forEach((node) => {
-            node.classList.remove('is-shimmering');
+        root?.querySelectorAll(`${shimmerTargetSelector}.${shimmeringClass}`)?.forEach((node) => {
+            node.classList.remove(shimmeringClass);
         });
 
         state.target = null;
@@ -85,7 +99,7 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
                 return;
             }
 
-            target.classList.add('is-shimmering');
+            target.classList.add(shimmeringClass);
             state.runTimer = setTimeout(() => {
                 if (
                     state.generation !== generation ||
@@ -95,7 +109,7 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
                     return;
                 }
 
-                target.classList.remove('is-shimmering');
+                target.classList.remove(shimmeringClass);
                 state.timer = setTimeout(run, pause);
             }, duration);
         };
@@ -110,24 +124,26 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
 
     const setup = (text = null, { immediate = false } = {}) => {
         const root = resolveRoot?.();
-        const activeSlide = root?.querySelector('[data-athkar-slide][data-active="true"]');
-        const isOriginVisible = Boolean(resolveIsOriginVisible?.());
+        const activeContainer = root?.querySelector(activeContainerSelector);
+        const useAlternateTarget = Boolean(resolveUseAlternateTarget?.());
         const target =
             text ??
-            activeSlide?.querySelector(
-                isOriginVisible ? '[data-athkar-origin-text]' : '[data-athkar-text]',
+            activeContainer?.querySelector(
+                useAlternateTarget ? alternateTargetSelector : primaryTargetSelector,
             );
 
-        if (!target || target.classList.contains('athkar-text--muted')) {
+        if (!target || target.classList.contains(mutedClass)) {
             stop();
             return;
         }
 
-        activeSlide?.querySelectorAll('[data-athkar-shimmer].is-shimmering')?.forEach((node) => {
-            if (node !== target) {
-                node.classList.remove('is-shimmering');
-            }
-        });
+        activeContainer
+            ?.querySelectorAll(`${shimmerTargetSelector}.${shimmeringClass}`)
+            ?.forEach((node) => {
+                if (node !== target) {
+                    node.classList.remove(shimmeringClass);
+                }
+            });
 
         if (state.target === target) {
             if (immediate) {
@@ -144,7 +160,7 @@ export const createAthkarShimmerController = ({ resolveRoot, resolveIsOriginVisi
 
         stop();
         state.target = target;
-        target.classList.add('athkar-shimmer');
+        target.classList.add(shimmerClass);
 
         const duration = parseTime(target.dataset.shimmerDuration, defaultDurationMs);
         const delay = parseTime(target.dataset.shimmerDelay, defaultDelayMs);

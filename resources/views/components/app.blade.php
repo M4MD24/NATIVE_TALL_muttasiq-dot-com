@@ -41,10 +41,12 @@
     @stack('head-scripts')
 </head>
 
+@php($shouldRunStartupSync = is_platform('mobile'))
+
 <body
     class="{{ twMerge([
         'mobile-platform' => is_platform('mobile'),
-        'nativephp-safe-area font-arabic-sans relative h-full min-h-dvh antialiased transition-[opacity,color,background-color,border-color,text-decoration-color,fill,stroke] ease-in will-change-[opacity,color,background-color,border-color,text-decoration-color,fill,stroke]',
+        'nativephp-safe-area font-arabic-sans relative h-full min-h-dvh antialiased transition-[color,background-color,border-color,text-decoration-color,fill,stroke] ease-in will-change-[color,background-color,border-color,text-decoration-color,fill,stroke]',
         'test-fast-ui' => config('app.browser_test_fast_mode'),
     ]) }}"
     x-bind:class="{
@@ -55,9 +57,10 @@
     x-bind:style="{
         backgroundColor: $store.colorScheme.bodyBackgroundColor,
         transitionDuration: (fastTransitionDurationInMs + 'ms'),
-        opacity: (isBodyVisible ? 1 : 0),
     }"
-    x-data="layoutManager()"
+    x-data="layoutManager({
+        shouldRunStartupSync: @js($shouldRunStartupSync),
+    })"
 >
     <x-partials.blinker />
 

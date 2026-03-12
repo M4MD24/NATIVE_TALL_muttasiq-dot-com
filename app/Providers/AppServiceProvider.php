@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -36,9 +33,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::useScriptTagAttributes(['defer' => true]);
 
         $this->configureNativeIosUrlGeneration();
-
-        $this->rateLimitSettings();
-        $this->rateLimitJsErrorReports();
 
         Blaze::optimize()->in(resource_path('views/components'));
     }
@@ -95,31 +89,5 @@ class AppServiceProvider extends ServiceProvider
 
         URL::forceRootUrl('php://127.0.0.1');
         URL::forceScheme('php');
-
-        if (! app()->bound('livewire')) {
-            return;
-        }
-
-        $livewirePrefix = ltrim((string) app('livewire')->getUriPrefix(), '/');
-        config([
-            'livewire.asset_url' => '/'.$livewirePrefix.'/livewire.js',
-        ]);
-    }
-
-    private function rateLimitSettings(): void
-    {
-        RateLimiter::for('settings', function (Request $request): Limit {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
-    }
-
-    private function rateLimitJsErrorReports(): void
-    {
-        RateLimiter::for('js-error-reports', function (Request $request): Limit {
-            $clientFingerprint = trim((string) $request->input('context.user_agent', ''));
-            $throttleKey = hash('sha256', $request->ip().'|'.$clientFingerprint);
-
-            return Limit::perMinute(12)->by($throttleKey);
-        });
     }
 }

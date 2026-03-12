@@ -9,7 +9,7 @@ use App\Services\Enums\ThikrType;
 
 use function Pest\Livewire\livewire;
 
-it('loads default athkar cards for the manager', function () {
+it('loads default athkar cards and keeps origin badge semantics correct', function () {
     $defaultText = 'manager-default-'.uniqid();
 
     $thikr = Thikr::factory()->create([
@@ -26,16 +26,27 @@ it('loads default athkar cards for the manager', function () {
         ->and(collect($cards)->contains(fn (array $card): bool => array_key_exists('is_aayah', $card)))->toBeTrue()
         ->and(collect($cards)->contains(fn (array $card): bool => $card['type'] === ThikrType::Repentance->value))->toBeTrue()
         ->and(collect($cards)->contains(fn (array $card): bool => $card['is_original'] === true))->toBeTrue();
+
+    $withOrigin = Thikr::factory()->create([
+        'origin' => 'مرجع',
+    ]);
+
+    $withoutOrigin = Thikr::factory()->create([
+        'origin' => null,
+    ]);
+
+    $resolvedCards = collect(livewire(AthkarManager::class)->instance()->resolvedAthkarCards());
+
+    expect($resolvedCards->firstWhere('id', $withOrigin->id)['is_original'])->toBeTrue()
+        ->and($resolvedCards->firstWhere('id', $withoutOrigin->id)['is_original'])->toBeFalse();
 });
 
-it('opens athkar manager in slide-over mode on non-mobile breakpoints', function () {
+it('opens athkar manager in slide-over mode on desktop and modal mode on mobile', function () {
     livewire(AthkarManager::class)
         ->call('openManageAthkar', false)
         ->assertSet('isManageAthkarMobile', false)
         ->assertSet('mountedActions.0.name', 'manageAthkar');
-});
 
-it('opens athkar manager in modal mode on mobile breakpoints', function () {
     livewire(AthkarManager::class)
         ->call('openManageAthkar', true)
         ->assertSet('isManageAthkarMobile', true)
@@ -90,7 +101,7 @@ it('renders explicit sortable config and dedicated drag handle markup for manage
         ->and($rendered)->not->toContain('wire:click.preserve-scroll="openEditAthkar(');
 });
 
-it('mounts the edit action when opening a card from the manager', function () {
+it('mounts edit action and configures manage action presentation by breakpoint', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false);
 
@@ -109,9 +120,7 @@ it('mounts the edit action when opening a card from the manager', function () {
         ->all();
 
     expect($mountedActionNames)->toContain('editAthkar');
-});
 
-it('configures manage action as slide-over on desktop and sized modal on mobile', function () {
     $desktopComponent = livewire(AthkarManager::class)
         ->set('isManageAthkarMobile', false)
         ->instance();
@@ -352,7 +361,7 @@ it('syncs athkar overrides only once from the client bridge', function () {
         ->assertSet('athkarOverrides', $component->athkarOverrides);
 });
 
-it('creates a browser-only custom thikr via manager create action', function () {
+it('creates, edits, validates, and deletes athkar cards through manager actions', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false)
         ->call('mountAction', 'createAthkar')
@@ -398,9 +407,7 @@ it('reorders a card when order is changed from manager edit form', function () {
 
     expect((int) $afterCards[0]['id'])->toBe($expectedSecondId)
         ->and((int) $afterCards[1]['id'])->toBe($movedId);
-});
 
-it('validates order and count in manager create action form', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false)
         ->call('mountAction', 'createAthkar')
@@ -426,9 +433,7 @@ it('validates order and count in manager create action form', function () {
 
     expect($hasOrderError)->toBeTrue()
         ->and($hasCountError)->toBeTrue();
-});
 
-it('validates order and count in manager edit action form', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false);
 
@@ -455,9 +460,7 @@ it('validates order and count in manager edit action form', function () {
 
     expect($hasOrderError)->toBeTrue()
         ->and($hasCountError)->toBeTrue();
-});
 
-it('deletes a thikr via confirmation action override', function () {
     $component = livewire(AthkarManager::class)
         ->call('openManageAthkar', false);
 
@@ -479,7 +482,7 @@ it('deletes a thikr via confirmation action override', function () {
         ->and($deletedOverride['is_deleted'])->toBeTrue();
 });
 
-it('normalizes enum objects when syncing overrides', function () {
+it('normalizes enum and legacy payloads when syncing overrides', function () {
     $component = livewire(AthkarManager::class);
     $cardId = (int) collect($component->instance()->resolvedAthkarCards())
         ->pluck('id')
@@ -507,17 +510,10 @@ it('normalizes enum objects when syncing overrides', function () {
     expect($override)->not->toBeNull()
         ->and($override['time'])->toBe(ThikrTime::Sabah->value)
         ->and($override['type'])->toBe(ThikrType::Repentance->value);
-});
 
-it('normalizes legacy is_quran override payloads to is_aayah state', function () {
-    $component = livewire(AthkarManager::class);
-    $cardId = (int) collect($component->instance()->resolvedAthkarCards())
-        ->pluck('id')
-        ->first();
+    $legacyComponent = livewire(AthkarManager::class);
 
-    expect($cardId)->toBeGreaterThan(0);
-
-    $component->call('syncAthkarOverrides', [
+    $legacyComponent->call('syncAthkarOverrides', [
         [
             'thikr_id' => $cardId,
             'text' => Thikr::AAYAH_OPENING_MARK.'نص آية'.Thikr::AAYAH_CLOSING_MARK,
@@ -525,27 +521,11 @@ it('normalizes legacy is_quran override payloads to is_aayah state', function ()
         ],
     ]);
 
-    $override = collect($component->instance()->athkarOverrides)->firstWhere('thikr_id', $cardId);
-    $card = collect($component->instance()->resolvedAthkarCards())->firstWhere('id', $cardId);
+    $override = collect($legacyComponent->instance()->athkarOverrides)->firstWhere('thikr_id', $cardId);
+    $card = collect($legacyComponent->instance()->resolvedAthkarCards())->firstWhere('id', $cardId);
 
     expect($override)->not->toBeNull()
         ->and($override['is_aayah'])->toBeTrue()
         ->and($card)->not->toBeNull()
         ->and($card['is_aayah'])->toBeTrue();
-});
-
-it('shows the origin badge only when origin is available', function () {
-    $withOrigin = Thikr::factory()->create([
-        'origin' => 'مرجع',
-    ]);
-
-    $withoutOrigin = Thikr::factory()->create([
-        'origin' => null,
-    ]);
-
-    $component = livewire(AthkarManager::class)->instance();
-    $cards = collect($component->resolvedAthkarCards());
-
-    expect($cards->firstWhere('id', $withOrigin->id)['is_original'])->toBeTrue()
-        ->and($cards->firstWhere('id', $withoutOrigin->id)['is_original'])->toBeFalse();
 });

@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\RateLimiter;
 
 use function Pest\Laravel\getJson;
 
-it('returns current settings and main text size limits', function () {
+it('returns normalized settings payload with limits/version and migrates legacy visual-enhancement key', function () {
     RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
+    config([
+        'app.custom.app_version' => '7.8.9',
+    ]);
 
     Setting::query()->updateOrCreate(
-        ['name' => 'does_skip_notice_panels'],
+        ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
         ['value' => 1],
     );
 
@@ -25,24 +28,22 @@ it('returns current settings and main text size limits', function () {
 
     expect($settings)
         ->toBeArray()
-        ->toHaveKey('does_skip_notice_panels', true)
-        ->toHaveKey(Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING, true)
-        ->toHaveKey('minimum_main_text_size')
-        ->toHaveKey('maximum_main_text_size');
+        ->toHaveKey(Setting::DOES_SKIP_GUIDANCE_PANELS, true)
+        ->toHaveKey(Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS, true)
+        ->toHaveKey(Setting::MINIMUM_MAIN_TEXT_SIZE)
+        ->toHaveKey(Setting::MAXIMUM_MAIN_TEXT_SIZE);
 
     $limits = $response->json('mainTextSizeLimits');
 
     expect($limits)
         ->toBeArray()
-        ->toHaveKey('minimum_main_text_size')
-        ->toHaveKey('maximum_main_text_size');
+        ->toHaveKey(Setting::MINIMUM_MAIN_TEXT_SIZE)
+        ->toHaveKey(Setting::MAXIMUM_MAIN_TEXT_SIZE);
 
-    expect($limits['minimum_main_text_size'])
+    expect($limits[Setting::MINIMUM_MAIN_TEXT_SIZE])
         ->toHaveKeys(['min', 'max', 'default']);
-});
 
-it('returns normalized settings from the database', function () {
-    RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
+    expect($response->json('appVersion'))->toBe('7.8.9');
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::MINIMUM_MAIN_TEXT_SIZE],
@@ -58,15 +59,11 @@ it('returns normalized settings from the database', function () {
 
     $response->assertSuccessful();
 
-    expect($response->json('settings.minimum_main_text_size'))->toBe(18);
-    expect($response->json('settings.maximum_main_text_size'))->toBe(20);
-});
-
-it('returns persisted shimmer setting from the database', function () {
-    RateLimiter::for('settings', fn (Request $request): Limit => Limit::none());
+    expect($response->json('settings.'.Setting::MINIMUM_MAIN_TEXT_SIZE))->toBe(18);
+    expect($response->json('settings.'.Setting::MAXIMUM_MAIN_TEXT_SIZE))->toBe(20);
 
     Setting::query()->updateOrCreate(
-        ['name' => Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING],
+        ['name' => Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS],
         ['value' => 0],
     );
 
@@ -74,7 +71,23 @@ it('returns persisted shimmer setting from the database', function () {
 
     $response->assertSuccessful();
 
-    expect($response->json('settings.'.Setting::DOES_ENABLE_MAIN_TEXT_SHIMMERING))->toBeFalse();
+    expect($response->json('settings.'.Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS))->toBeFalse();
+
+    Setting::query()->where('name', Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)->delete();
+
+    Setting::query()->updateOrCreate(
+        ['name' => 'does_enable_main_text_shimmering'],
+        ['value' => 0],
+    );
+
+    $migration = require database_path(
+        'migrations/2026_03_12_084345_rename_main_text_shimmering_setting_to_visual_enhancements.php',
+    );
+    $migration->up();
+
+    expect(Setting::query()->where('name', 'does_enable_main_text_shimmering')->exists())->toBeFalse();
+    expect((int) Setting::query()->where('name', Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)->value('value'))
+        ->toBe(0);
 });
 
 it('rate limits the settings endpoint', function () {

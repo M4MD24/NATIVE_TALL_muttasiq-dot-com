@@ -1,6 +1,9 @@
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('layoutManager', () => ({
+    window.Alpine.data('layoutManager', (options = {}) => ({
         isFastUiMode: window.__APP_BROWSER_TEST_FAST_UI === true,
+        shouldRunStartupSync: options.shouldRunStartupSync === true,
+        isStartupSyncPending: false,
+        startupSyncFallbackTimeoutId: null,
         isFontReady: false,
         isLayoutSetUp: false,
         isBodyVisible: false,
@@ -11,7 +14,36 @@ document.addEventListener('alpine:init', () => {
         isActionOpen: false,
         isScrollingDisabled: false,
 
+        completeStartupSync() {
+            if (!this.isStartupSyncPending) {
+                return;
+            }
+
+            this.isStartupSyncPending = false;
+
+            if (this.startupSyncFallbackTimeoutId !== null) {
+                window.clearTimeout(this.startupSyncFallbackTimeoutId);
+                this.startupSyncFallbackTimeoutId = null;
+            }
+
+            window.__startupSyncResolved = true;
+            window.dispatchEvent(new CustomEvent('startup-sync-resolved'));
+        },
+
         init() {
+            this.isStartupSyncPending = this.shouldRunStartupSync;
+            window.__startupSyncResolved = !this.isStartupSyncPending;
+
+            if (this.isStartupSyncPending) {
+                window.addEventListener('startup-sync-finished', () => this.completeStartupSync(), {
+                    once: true,
+                });
+
+                this.startupSyncFallbackTimeoutId = window.setTimeout(() => {
+                    this.completeStartupSync();
+                }, 3500);
+            }
+
             if (this.isFastUiMode) {
                 this.defaultTransitionDurationInMs = 0;
                 this.fastTransitionDurationInMs = 0;
@@ -20,10 +52,15 @@ document.addEventListener('alpine:init', () => {
                 this.isLayoutSetUp = true;
                 this.isBlinkerShown = false;
                 this.isBodyVisible = true;
+            } else {
+                this.isBlinkerShown = false;
+                this.isBodyVisible = true;
             }
 
             // ? Keep track of Filament action events
             window.addEventListener('open-modal', () => (this.isActionOpen = true));
+            window.addEventListener('x-modal-opened', () => (this.isActionOpen = true));
+            window.addEventListener('close-modal', () => (this.isActionOpen = false));
             window.addEventListener('close-modal-quietly', () => (this.isActionOpen = false));
 
             // // ? Auto-scroll to the top instantly upon load
@@ -34,14 +71,9 @@ document.addEventListener('alpine:init', () => {
             // ? Wait for font loading
             this.$store.fontManager.ready(() => (this.isFontReady = true));
 
-            // ? Mark layout ready when both have finished
+            // ? Keep layout state in sync with font readiness
             window.Alpine.effect(() => {
                 this.isLayoutSetUp = this.isFontReady;
-
-                if (this.isLayoutSetUp) {
-                    this.isBlinkerShown = false;
-                    this.isBodyVisible = true;
-                }
             });
         },
 

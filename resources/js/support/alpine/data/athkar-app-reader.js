@@ -11,9 +11,10 @@ import {
     writeAthkarSettingsToStorage,
     writeUserSettingOverride,
 } from '../athkar-app-overrides';
-import { createAthkarShimmerController } from '../athkar-shimmer';
+import { createShimmerController } from '../shimmer';
 
-const doesEnableMainTextShimmeringKey = 'does_enable_main_text_shimmering';
+const doesEnableVisualEnhancementsKey = 'enable_visual_enhancements';
+const skipGuidancePanelsSettingKey = 'does_skip_notice_panels';
 const progressStorageKey = 'athkar-progress-v1';
 
 const defaultProgressState = () => ({
@@ -140,6 +141,13 @@ document.addEventListener('alpine:init', () => {
             mode: null,
             index: null,
         },
+        layerScrollOffsets: {},
+        topUi: {
+            progressOverride: null,
+            pulseActive: false,
+            lingerTimer: null,
+            pulseTimer: null,
+        },
         textFit: {
             raf: null,
             settleTimer: null,
@@ -171,6 +179,8 @@ document.addEventListener('alpine:init', () => {
         transitionDistance: '1.5rem',
         isGateMenuTransition: true,
         pulseDurationMs: 520,
+        topUiCompletionLingerMs: 1000,
+        topUiPulseDurationMs: 360,
         originResyncDelayMs: 180,
         completionVisibleMs: 3000,
         textFitSettleMs: 96,
@@ -212,6 +222,8 @@ document.addEventListener('alpine:init', () => {
                 this.readerLeaveMs = 40;
                 this.slideDurationMs = 120;
                 this.pulseDurationMs = 80;
+                this.topUiCompletionLingerMs = 80;
+                this.topUiPulseDurationMs = 120;
                 this.originResyncDelayMs = 0;
                 this.completionVisibleMs = 250;
                 this.textFitSettleMs = 0;
@@ -326,13 +338,26 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.setupTextFit();
-            this.textShimmerController = createAthkarShimmerController({
+            this.textShimmerController = createShimmerController({
                 resolveRoot: () => this.$el,
-                resolveIsOriginVisible: () => this.isOriginVisible(this.activeIndex),
+                resolveUseAlternateTarget: () => this.isOriginVisible(this.activeIndex),
+                selectors: {
+                    activeContainer: '[data-athkar-slide][data-active="true"]',
+                    primaryTarget: '[data-athkar-text]',
+                    alternateTarget: '[data-athkar-origin-text]',
+                    shimmerTarget: '[data-athkar-shimmer]',
+                },
+                classes: {
+                    muted: 'athkar-text--muted',
+                    shimmer: 'athkar-shimmer',
+                    shimmering: 'is-shimmering',
+                },
             });
             this.$watch('activeMode', () => {
                 this.resetMaintenanceTapTracking();
                 this.resetRapidTapMode();
+                this.closeHint();
+                this.resetSwipeState();
                 this.hideOrigin();
                 this.queueTextFit();
             });
@@ -347,6 +372,8 @@ document.addEventListener('alpine:init', () => {
                 () => this.views?.['athkar-app-gate']?.isReaderVisible,
                 (isVisible) => {
                     if (isVisible) {
+                        this.closeHint();
+                        this.resetSwipeState();
                         this.queueReaderTextFit();
                     }
                 },
@@ -426,7 +453,7 @@ document.addEventListener('alpine:init', () => {
                     this.activeList[this.maxNavigableIndex]?.id ?? null;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.closeHint();
 
                 if (this.isNoticeVisible) {
@@ -450,7 +477,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            if (!this.shouldEnableMainTextShimmering()) {
+            if (!this.shouldEnableVisualEnhancements()) {
                 this.stopTextShimmer();
             }
 
@@ -459,8 +486,8 @@ document.addEventListener('alpine:init', () => {
                     Number(this.settings.minimum_main_text_size ?? NaN) ||
                 Number(previousSettings.maximum_main_text_size ?? NaN) !==
                     Number(this.settings.maximum_main_text_size ?? NaN) ||
-                Boolean(previousSettings[doesEnableMainTextShimmeringKey]) !==
-                    Boolean(this.settings[doesEnableMainTextShimmeringKey]);
+                Boolean(previousSettings[doesEnableVisualEnhancementsKey]) !==
+                    Boolean(this.settings[doesEnableVisualEnhancementsKey]);
 
             if (isMaintenancePulse && !didTextFitSettingsChange) {
                 return;
@@ -470,7 +497,7 @@ document.addEventListener('alpine:init', () => {
             this.queueReaderTextFit();
         },
         toggleHint(index) {
-            if (this.shouldSkipNoticePanels() && !this.isMobileViewport()) {
+            if (this.shouldSkipGuidancePanels() && !this.isMobileViewport()) {
                 this.closeHint();
                 return;
             }
@@ -484,6 +511,95 @@ document.addEventListener('alpine:init', () => {
             if (!keepMobileOpen) {
                 this.setMobileCounterOpen(false);
             }
+        },
+        resetSwipeState() {
+            this.swipe.active = false;
+            this.swipe.ignoreClick = false;
+            this.swipe.startedOnTap = false;
+            this.swipe.startedInScrollableText = false;
+            this.swipe.pointerId = null;
+            this.swipe.pointerType = null;
+            this.swipe.source = null;
+        },
+        shouldShowSharedMobileCounter() {
+            if (!this.activeMode) {
+                return false;
+            }
+
+            const required = this.requiredCount(this.activeIndex);
+            const count = this.countAt(this.activeIndex);
+
+            return (
+                required > 1 ||
+                count > required ||
+                this.topUi.progressOverride !== null ||
+                (this.countPulse.index === this.activeIndex && this.countPulse.hasChanges)
+            );
+        },
+        counterProgressPercent(index) {
+            const required = this.requiredCount(index);
+
+            if (required <= 0) {
+                return 0;
+            }
+
+            return Math.min(100, (this.countAt(index) / required) * 100);
+        },
+        sharedCounterProgressPercent() {
+            if (typeof this.topUi.progressOverride === 'number') {
+                return Math.min(Math.max(this.topUi.progressOverride, 0), 100);
+            }
+
+            return this.counterProgressPercent(this.activeIndex);
+        },
+        sharedCounterProgressStyle() {
+            return `--progress: ${this.sharedCounterProgressPercent()}%`;
+        },
+        sharedCounterPulseState() {
+            return this.topUi.pulseActive ? 'active' : 'inactive';
+        },
+        resetTopUiTransition() {
+            if (this.topUi.lingerTimer) {
+                clearTimeout(this.topUi.lingerTimer);
+                this.topUi.lingerTimer = null;
+            }
+
+            if (this.topUi.pulseTimer) {
+                clearTimeout(this.topUi.pulseTimer);
+                this.topUi.pulseTimer = null;
+            }
+
+            this.topUi.progressOverride = null;
+            this.topUi.pulseActive = false;
+        },
+        startTopUiCompletionTransition(completedIndex, nextIndex) {
+            if (!this.activeMode) {
+                return;
+            }
+
+            const completedCount = this.countAt(completedIndex);
+
+            this.resetTopUiTransition();
+            this.setActiveIndex({
+                index: nextIndex,
+                preserveTopUiTransition: true,
+            });
+
+            const nextCount = this.countAt(nextIndex);
+
+            this.topUi.progressOverride = 100;
+            this.triggerCountPulse(nextIndex, completedCount, nextCount);
+
+            this.topUi.lingerTimer = setTimeout(() => {
+                this.topUi.lingerTimer = null;
+                this.topUi.pulseActive = true;
+
+                this.topUi.pulseTimer = setTimeout(() => {
+                    this.topUi.pulseTimer = null;
+                    this.topUi.pulseActive = false;
+                    this.topUi.progressOverride = null;
+                }, this.topUiPulseDurationMs);
+            }, this.topUiCompletionLingerMs);
         },
         isHintOpen(index) {
             return this.hintIndex === index;
@@ -777,6 +893,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.resetNavState();
+            this.closeHint();
+            this.resetSwipeState();
 
             return true;
         },
@@ -787,7 +905,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.confirmNotice();
                 return;
             }
@@ -821,7 +939,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.confirmNotice();
                 return;
             }
@@ -840,6 +958,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.isNoticeVisible = false;
+            this.closeHint();
+            this.resetSwipeState();
 
             if (this.views?.['athkar-app-gate']) {
                 this.views['athkar-app-gate'].isReaderVisible = true;
@@ -890,6 +1010,9 @@ document.addEventListener('alpine:init', () => {
             this.isNoticeVisible = false;
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
+            this.resetTopUiTransition();
+            this.closeHint();
+            this.resetSwipeState();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
             this.stopTextShimmer();
@@ -918,6 +1041,9 @@ document.addEventListener('alpine:init', () => {
             this.transitionMode = lastMode;
             this.resetMaintenanceTapTracking();
             this.resetRapidTapMode();
+            this.resetTopUiTransition();
+            this.closeHint();
+            this.resetSwipeState();
             this.stopTextShimmer();
             this.hideCompletionHack({ force: true });
             this.resetNavState();
@@ -1035,6 +1161,122 @@ document.addEventListener('alpine:init', () => {
         activeTypeLabel(index) {
             return this.typeLabelFor(this.activeList?.[index]?.type);
         },
+        scrollLayerKey(index, target, mode = this.activeMode) {
+            if (!mode) {
+                return null;
+            }
+
+            const normalizedIndex = Number(index ?? -1);
+
+            if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
+                return null;
+            }
+
+            const normalizedTarget = target === 'origin' ? 'origin' : 'text';
+            const itemId = this.getModeList(mode)?.[normalizedIndex]?.id ?? normalizedIndex;
+
+            return `${mode}:${itemId}:${normalizedTarget}`;
+        },
+        rememberScrollOffset(index, target, scrollTop) {
+            const key = this.scrollLayerKey(index, target);
+
+            if (!key) {
+                return;
+            }
+
+            this.layerScrollOffsets[key] = Math.max(0, Number(scrollTop) || 0);
+        },
+        resolveRememberedScrollOffset(index, target) {
+            const key = this.scrollLayerKey(index, target);
+
+            if (!key) {
+                return 0;
+            }
+
+            return Math.max(0, Number(this.layerScrollOffsets?.[key]) || 0);
+        },
+        rememberVisibleTextBoxScroll(index = this.activeIndex) {
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const box = activeSlide?.querySelector('[data-athkar-text-box]');
+
+            if (!box) {
+                return;
+            }
+
+            const target = box.dataset.athkarScrollTarget === 'origin' ? 'origin' : 'text';
+            this.rememberScrollOffset(index, target, box.scrollTop);
+        },
+        resolveOverflowPaddingClasses(box) {
+            if (!box) {
+                return [];
+            }
+
+            const classes = new Set();
+            const targets = box.querySelectorAll?.('[data-fitty-target]');
+
+            targets?.forEach((node) => {
+                const value = String(node?.dataset?.fittyOverflowPaddingClass ?? 'py-2').trim();
+
+                if (value) {
+                    classes.add(value);
+                }
+            });
+
+            return Array.from(classes);
+        },
+        syncOverflowPaddingClass({ box, target, isOverflowing }) {
+            if (!box) {
+                return;
+            }
+
+            const paddingClasses = this.resolveOverflowPaddingClasses(box);
+
+            if (!paddingClasses.length) {
+                return;
+            }
+
+            if (!isOverflowing) {
+                paddingClasses.forEach((className) => box.classList.remove(className));
+
+                return;
+            }
+
+            const activeSlide = this.$el?.querySelector('[data-athkar-slide][data-active="true"]');
+            const activeText = activeSlide?.querySelector(
+                target === 'origin' ? '[data-athkar-origin-text]' : '[data-athkar-text]',
+            );
+            const activePaddingClass = String(
+                activeText?.dataset?.fittyOverflowPaddingClass ?? 'py-2',
+            ).trim();
+
+            paddingClasses.forEach((className) => {
+                box.classList.toggle(className, className === activePaddingClass);
+            });
+        },
+        applyVisibleTextBoxScrollState({ box, index, target, isOverflowing }) {
+            if (!box) {
+                return;
+            }
+
+            if (!isOverflowing) {
+                box.scrollTop = 0;
+                this.rememberScrollOffset(index, target, 0);
+                window.requestAnimationFrame(() => {
+                    if (document.contains(box) && box.dataset.athkarTouchScroll !== 'true') {
+                        box.scrollTop = 0;
+                    }
+                });
+
+                return;
+            }
+
+            const maxScrollTop = Math.max(0, box.scrollHeight - box.clientHeight);
+            const remembered = this.resolveRememberedScrollOffset(index, target);
+            const resolvedScrollTop = Math.min(maxScrollTop, remembered);
+
+            box.scrollTop = resolvedScrollTop;
+            this.rememberScrollOffset(index, target, resolvedScrollTop);
+        },
         hasOrigin(index) {
             const item = this.activeList?.[index];
             const normalizedOrigin = String(item?.origin ?? '').trim();
@@ -1048,6 +1290,8 @@ document.addEventListener('alpine:init', () => {
             if (!this.hasOrigin(index)) {
                 return;
             }
+
+            this.rememberVisibleTextBoxScroll(index);
 
             if (this.isOriginVisible(index)) {
                 this.hideOrigin();
@@ -1088,6 +1332,9 @@ document.addEventListener('alpine:init', () => {
             box.dataset.athkarTouchOverflow = isOverflowing ? 'true' : 'false';
             box.classList.toggle('athkar-text-box--touch-scroll', isOverflowing);
             box.classList.toggle('athkar-text-box--origin-scroll', isOverflowing && isOriginTarget);
+            this.syncOverflowPaddingClass({ box, target, isOverflowing });
+
+            this.applyVisibleTextBoxScrollState({ box, index, target, isOverflowing });
         },
         hideOrigin() {
             this.originToggle = {
@@ -1103,12 +1350,6 @@ document.addEventListener('alpine:init', () => {
             const normalizedIndex = Number(index ?? -1);
 
             if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
-                return;
-            }
-
-            if (this.shouldSkipNoticePanels()) {
-                this.closeHint();
-                this.completeThikr(normalizedIndex);
                 return;
             }
 
@@ -1472,11 +1713,11 @@ document.addEventListener('alpine:init', () => {
         shouldPreventSwitching() {
             return this.settingValue('does_prevent_switching_athkar_until_completion', true);
         },
-        shouldSkipNoticePanels() {
-            return this.settingValue('does_skip_notice_panels', false);
+        shouldSkipGuidancePanels() {
+            return this.settingValue(skipGuidancePanelsSettingKey, false);
         },
-        shouldEnableMainTextShimmering() {
-            return this.settingValue(doesEnableMainTextShimmeringKey, true);
+        shouldEnableVisualEnhancements() {
+            return this.settingValue(doesEnableVisualEnhancementsKey, true);
         },
         shouldExitReaderAfterForwardSwipe() {
             if (this.shouldPreventSwitching()) {
@@ -1693,6 +1934,13 @@ document.addEventListener('alpine:init', () => {
             this.resetNavState();
         },
         setActiveIndex(index) {
+            let preserveTopUiTransition = false;
+
+            if (typeof index === 'object' && index !== null) {
+                preserveTopUiTransition = Boolean(index.preserveTopUiTransition);
+                index = index.index;
+            }
+
             if (!this.activeMode) {
                 return;
             }
@@ -1707,6 +1955,10 @@ document.addEventListener('alpine:init', () => {
 
             if (nextIndex === currentIndex) {
                 return;
+            }
+
+            if (!preserveTopUiTransition) {
+                this.resetTopUiTransition();
             }
 
             this.resetMaintenanceTapTracking();
@@ -1727,7 +1979,7 @@ document.addEventListener('alpine:init', () => {
 
             if (this.activeIndex <= 0) {
                 if (!this.isNoticeVisible && this.views?.['athkar-app-gate']?.isReaderVisible) {
-                    if (this.shouldSkipNoticePanels()) {
+                    if (this.shouldSkipGuidancePanels()) {
                         this.closeMode();
                         return;
                     }
@@ -2071,7 +2323,8 @@ document.addEventListener('alpine:init', () => {
         },
         advanceAfterCompletion(index) {
             if (index < this.activeList.length - 1) {
-                this.setActiveIndex(index + 1);
+                this.closeHint();
+                this.startTopUiCompletionTransition(index, index + 1);
 
                 return;
             }
@@ -2092,7 +2345,7 @@ document.addEventListener('alpine:init', () => {
                 [mode]: this.todayKey(),
             };
 
-            if (this.shouldSkipNoticePanels()) {
+            if (this.shouldSkipGuidancePanels()) {
                 this.isNoticeVisible = false;
                 this.isCompletionVisible = false;
 
@@ -2171,14 +2424,14 @@ document.addEventListener('alpine:init', () => {
             this.textFit.raf = requestAnimationFrame(() => {
                 this.textFit.raf = requestAnimationFrame(() => {
                     this.textFit.raf = null;
-                    window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                    window.dispatchEvent(new CustomEvent('fitty-refit'));
                     this.$nextTick(() => this.setupTextShimmer());
                 });
             });
 
             this.textFit.settleTimer = setTimeout(() => {
                 this.textFit.settleTimer = null;
-                window.dispatchEvent(new CustomEvent('athkar-fitty-refit'));
+                window.dispatchEvent(new CustomEvent('fitty-refit'));
                 this.$nextTick(() => this.setupTextShimmer());
             }, this.textFitSettleMs);
         },
@@ -2294,6 +2547,18 @@ document.addEventListener('alpine:init', () => {
             }
         },
         endTextScroll() {
+            if (this.textScroll.element) {
+                const target =
+                    this.textScroll.element.dataset.athkarScrollTarget === 'origin'
+                        ? 'origin'
+                        : 'text';
+                this.rememberScrollOffset(
+                    this.activeIndex,
+                    target,
+                    this.textScroll.element.scrollTop,
+                );
+            }
+
             this.textScroll.active = false;
             this.textScroll.source = null;
             this.textScroll.startY = 0;
@@ -2308,7 +2573,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            if (!this.shouldEnableMainTextShimmering()) {
+            if (!this.shouldEnableVisualEnhancements()) {
                 this.textShimmerController?.stop();
 
                 return;

@@ -15,7 +15,7 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
-it('allows the configured admin to access athkar resource pages', function () {
+it('enforces athkar admin route access for admin users, non-admin users, and native runtime', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -30,35 +30,26 @@ it('allows the configured admin to access athkar resource pages', function () {
         ->assertSee('النوع')
         ->assertSee('الأصل');
     get(route('filament.admin.resources.athkar.edit', ['record' => $thikr]))->assertSuccessful();
-});
-
-it('forbids non-admin users from athkar resource pages', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
     $user = User::factory()->create(['email' => 'member@example.test']);
-    $thikr = Thikr::factory()->create();
 
     actingAs($user);
 
     get(route('filament.admin.resources.athkar.index'))->assertForbidden();
     get(route('filament.admin.resources.athkar.create'))->assertForbidden();
     get(route('filament.admin.resources.athkar.edit', ['record' => $thikr]))->assertForbidden();
-});
 
-it('disables filament admin routes entirely in native runtime', function () {
     config([
         'app.custom.user.email' => 'admin@example.test',
         'nativephp-internal.running' => true,
     ]);
 
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
     actingAs($admin);
 
     get(route('filament.admin.auth.login'))->assertNotFound();
     get(route('filament.admin.resources.athkar.index'))->assertNotFound();
 });
 
-it('reorders athkar inline when updating table order column', function () {
+it('applies create/edit/reorder semantics for athkar ordering through model and Filament forms', function () {
     Thikr::query()->delete();
 
     $first = Thikr::factory()->create();
@@ -80,9 +71,7 @@ it('reorders athkar inline when updating table order column', function () {
     expect($third->fresh()->order)->toBe(1)
         ->and($first->fresh()->order)->toBe(2)
         ->and($second->fresh()->order)->toBe(3);
-});
 
-it('creates athkar from form and applies order using moveToOrder semantics', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -120,14 +109,6 @@ it('creates athkar from form and applies order using moveToOrder semantics', fun
                 ->pluck('id')
                 ->all(),
         )->toBe([$created->id, $first->id, $second->id]);
-});
-
-it('edits athkar from form and applies order using moveToOrder semantics', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
-    actingAs($admin);
-    Filament::setCurrentPanel('admin');
 
     Thikr::query()->delete();
 
@@ -149,7 +130,7 @@ it('edits athkar from form and applies order using moveToOrder semantics', funct
         ->and($second->fresh()->order)->toBe(3);
 });
 
-it('validates order and count fields in the thikr form', function () {
+it('validates thikr form constraints and filters the admin table by type', function () {
     config(['app.custom.user.email' => 'admin@example.test']);
 
     $admin = User::factory()->create(['email' => 'admin@example.test']);
@@ -171,14 +152,6 @@ it('validates order and count fields in the thikr form', function () {
             'order' => 'min',
             'count' => 'min',
         ]);
-});
-
-it('filters athkar admin table by type', function () {
-    config(['app.custom.user.email' => 'admin@example.test']);
-
-    $admin = User::factory()->create(['email' => 'admin@example.test']);
-    actingAs($admin);
-    Filament::setCurrentPanel('admin');
 
     Thikr::query()->delete();
 

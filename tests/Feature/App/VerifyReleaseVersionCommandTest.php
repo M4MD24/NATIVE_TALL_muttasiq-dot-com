@@ -2,7 +2,7 @@
 
 use function Pest\Laravel\artisan;
 
-it('warns when native version values look unchanged', function () {
+it('warns for unchanged native release values and passes when values are bumped', function () {
     config([
         'nativephp.version' => 'DEBUG',
         'nativephp.version_code' => 1,
@@ -11,9 +11,7 @@ it('warns when native version values look unchanged', function () {
     artisan('app:verify-release-version --skip-prompt')
         ->expectsOutputToContain('Release version reminder')
         ->assertExitCode(0);
-});
 
-it('passes when native version values look bumped', function () {
     config([
         'nativephp.version' => '2.0.0',
         'nativephp.version_code' => 5,

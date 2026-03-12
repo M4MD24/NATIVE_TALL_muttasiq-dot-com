@@ -9,28 +9,31 @@ if (! function_exists('is_platform')) {
     {
         $platform = strtolower($platform);
 
-        if (config('nativephp-internal.running')) {
-            $nativePlatform = strtolower((string) config('nativephp-internal.platform', ''));
+        $nativeRuntime = (bool) config('nativephp-internal.running', false);
+        $nativePlatform = strtolower((string) config('nativephp-internal.platform', ''));
 
-            if ($nativePlatform !== '') {
-                return match ($platform) {
-                    'android' => $nativePlatform === 'android',
-                    'ios' => $nativePlatform === 'ios',
-                    'mobile' => in_array($nativePlatform, ['android', 'ios'], true),
-                    'desktop' => ! in_array($nativePlatform, ['android', 'ios'], true),
-                    default => throw new InvalidArgumentException('Unrecognized platform.'),
-                };
+        if ($nativeRuntime && $nativePlatform === '') {
+            if (System::isAndroid()) {
+                $nativePlatform = 'android';
+            } elseif (System::isIos()) {
+                $nativePlatform = 'ios';
             }
         }
 
-        $isAndroid = System::isAndroid();
-        $isIos = System::isIos();
+        $isAndroid = $nativePlatform === 'android';
+        $isIos = $nativePlatform === 'ios';
+        $isMobile = $isAndroid || $isIos;
+        $isNative = $nativeRuntime || $isMobile;
+        $isWeb = ! $isNative;
+        $isDesktop = $isNative && ! $isMobile;
 
         return match ($platform) {
             'android' => $isAndroid,
             'ios' => $isIos,
-            'mobile' => $isAndroid || $isIos,
-            'desktop' => ! $isAndroid && ! $isIos,
+            'mobile' => $isMobile,
+            'native' => $isNative,
+            'web' => $isWeb,
+            'desktop' => $isDesktop,
             default => throw new InvalidArgumentException('Unrecognized platform.'),
         };
     }

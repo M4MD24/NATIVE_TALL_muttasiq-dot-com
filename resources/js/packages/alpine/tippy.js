@@ -4,6 +4,7 @@ const tippyInstances = new WeakMap();
 const tooltipSuppressionUntil = {
     timestamp: 0,
 };
+const readerRootSelector = '[data-athkar-app-reader-root]';
 
 const suppressTooltipsFor = (durationInMs = 400) => {
     const duration = Number.isFinite(durationInMs) ? Math.max(0, durationInMs) : 400;
@@ -11,6 +12,56 @@ const suppressTooltipsFor = (durationInMs = 400) => {
 };
 
 const areTooltipsSuppressed = () => tooltipSuppressionUntil.timestamp > Date.now();
+
+const normalizeTooltipOptions = (direction = 'top', durationInMs = 2000, options = {}) => {
+    if (direction && typeof direction === 'object' && !Array.isArray(direction)) {
+        return {
+            placement: direction.placement ?? direction.direction ?? 'top',
+            durationInMs: direction.durationInMs ?? direction.duration ?? 2000,
+            showWhenGuidancePanelsSkipped: Boolean(direction.showWhenGuidancePanelsSkipped),
+        };
+    }
+
+    const normalizedOptions =
+        options && typeof options === 'object' && !Array.isArray(options) ? options : {};
+
+    return {
+        placement: direction,
+        durationInMs,
+        showWhenGuidancePanelsSkipped: Boolean(normalizedOptions.showWhenGuidancePanelsSkipped),
+    };
+};
+
+const hideTooltipInstance = (instance) => {
+    if (!instance) {
+        return null;
+    }
+
+    instance._clearHideTimer?.();
+    instance.hide();
+
+    return null;
+};
+
+const resolveReaderState = (el) => {
+    const readerRoot = el.closest(readerRootSelector);
+
+    if (!readerRoot || !window.Alpine?.$data) {
+        return null;
+    }
+
+    return window.Alpine.$data(readerRoot);
+};
+
+const areGuidancePanelsSkipped = (el) => {
+    const readerState = resolveReaderState(el);
+
+    if (!readerState || typeof readerState.shouldSkipGuidancePanels !== 'function') {
+        return false;
+    }
+
+    return Boolean(readerState.shouldSkipGuidancePanels());
+};
 
 const hideAllTooltips = ({ duration = 0, suppressMs = 0 } = {}) => {
     hideAll({ duration });
@@ -21,52 +72,67 @@ const hideAllTooltips = ({ duration = 0, suppressMs = 0 } = {}) => {
 };
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.magic('tippy', (el) => (message, direction = 'top', durationInMs = 2000) => {
-        const existing = tippyInstances.get(el);
-        let instance = existing;
+    window.Alpine.magic('tippy', (el) => {
+        const showTooltip = (message, direction = 'top', durationInMs = 2000, options = {}) => {
+            const {
+                placement,
+                durationInMs: resolvedDuration,
+                showWhenGuidancePanelsSkipped,
+            } = normalizeTooltipOptions(direction, durationInMs, options);
 
-        if (!instance || instance.state.isDestroyed) {
-            instance = Tippy(el, {
-                content: message,
-                placement: direction,
-                trigger: 'manual',
-                theme: window.Alpine.store('colorScheme').isDark ? 'light' : '',
-            });
+            const existing = tippyInstances.get(el);
+            let instance = existing;
 
-            instance._hideTimer = null;
-            instance._clearHideTimer = () => {
-                if (instance._hideTimer) {
-                    clearTimeout(instance._hideTimer);
-                    instance._hideTimer = null;
-                }
-            };
+            if (!instance || instance.state.isDestroyed) {
+                instance = Tippy(el, {
+                    content: message,
+                    placement,
+                    trigger: 'manual',
+                    theme: window.Alpine.store('colorScheme').isDark ? 'light' : '',
+                });
 
-            tippyInstances.set(el, instance);
-        } else {
-            instance.setContent(message);
-            instance.setProps({
-                placement: direction,
-                theme: window.Alpine.store('colorScheme').isDark ? 'light' : '',
-            });
-        }
+                instance._hideTimer = null;
+                instance._clearHideTimer = () => {
+                    if (instance._hideTimer) {
+                        clearTimeout(instance._hideTimer);
+                        instance._hideTimer = null;
+                    }
+                };
 
-        instance._clearHideTimer?.();
+                tippyInstances.set(el, instance);
+            } else {
+                instance.setContent(message);
+                instance.setProps({
+                    placement,
+                    theme: window.Alpine.store('colorScheme').isDark ? 'light' : '',
+                });
+            }
 
-        if (areTooltipsSuppressed()) {
-            instance.hide();
+            instance._clearHideTimer?.();
+
+            if (
+                areTooltipsSuppressed() ||
+                (!showWhenGuidancePanelsSkipped && areGuidancePanelsSkipped(el))
+            ) {
+                instance.hide();
+
+                return instance;
+            }
+
+            if (!instance.state.isShown) {
+                instance.show();
+            }
+
+            if (Number.isFinite(resolvedDuration) && resolvedDuration > 0) {
+                instance._hideTimer = setTimeout(() => instance.hide(), resolvedDuration);
+            }
 
             return instance;
-        }
+        };
 
-        if (!instance.state.isShown) {
-            instance.show();
-        }
+        showTooltip.hide = () => hideTooltipInstance(tippyInstances.get(el));
 
-        if (Number.isFinite(durationInMs) && durationInMs > 0) {
-            instance._hideTimer = setTimeout(() => instance.hide(), durationInMs);
-        }
-
-        return instance;
+        return showTooltip;
     });
 
     const modalLifecycleEvents = [

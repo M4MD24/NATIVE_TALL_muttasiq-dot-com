@@ -10,11 +10,9 @@ use Illuminate\Support\Facades\RateLimiter;
 
 use function Pest\Laravel\getJson;
 
-it('uses a local api route uri for athkar', function () {
+it('uses the expected local athkar route and returns ordered fresh cached payloads', function () {
     expect(route('api.athkar.index', [], false))->toBe('/api/athkar');
-});
 
-it('returns cached athkar in order', function () {
     RateLimiter::for('athkar', fn (Request $request): Limit => Limit::none());
 
     Thikr::factory()->count(3)->create();
@@ -30,20 +28,6 @@ it('returns cached athkar in order', function () {
         ->all();
 
     expect($response->json('athkar'))->toBe($expected);
-});
-
-it('rate limits the athkar endpoint', function () {
-    RateLimiter::for('athkar', fn (Request $request): Limit => Limit::perMinute(2)->by('test'));
-
-    Thikr::factory()->create();
-
-    getJson(route('api.athkar.index'))->assertSuccessful();
-    getJson(route('api.athkar.index'))->assertSuccessful();
-    getJson(route('api.athkar.index'))->assertTooManyRequests();
-});
-
-it('refreshes cached athkar after updating and reordering defaults', function () {
-    RateLimiter::for('athkar', fn (Request $request): Limit => Limit::none());
 
     $first = Thikr::factory()->create(['text' => 'First', 'count' => 1, 'is_aayah' => false]);
     $second = Thikr::factory()->create(['text' => 'Second', 'count' => 1, 'is_aayah' => false]);
@@ -69,7 +53,7 @@ it('refreshes cached athkar after updating and reordering defaults', function ()
         ->toBe('First (edited)');
 });
 
-it('normalizes aayah text when toggling whether it is an aayah', function () {
+it('normalizes aayah text and computes original-flag semantics from origin values', function () {
     $thikr = Thikr::factory()->create([
         'is_aayah' => true,
         'text' => 'الحمد لله',
@@ -83,9 +67,7 @@ it('normalizes aayah text when toggling whether it is an aayah', function () {
     ]);
 
     expect($thikr->fresh()->text)->toBe('الحمد لله');
-});
 
-it('marks thikr as original when origin text is available', function () {
     $original = Thikr::factory()->create([
         'origin' => 'مصدر تجريبي',
         'type' => ThikrType::Supplication,
@@ -98,4 +80,14 @@ it('marks thikr as original when origin text is available', function () {
 
     expect($original->fresh()->is_original)->toBeTrue()
         ->and($nonOriginal->fresh()->is_original)->toBeFalse();
+});
+
+it('rate limits the athkar endpoint', function () {
+    RateLimiter::for('athkar', fn (Request $request): Limit => Limit::perMinute(2)->by('test'));
+
+    Thikr::factory()->create();
+
+    getJson(route('api.athkar.index'))->assertSuccessful();
+    getJson(route('api.athkar.index'))->assertSuccessful();
+    getJson(route('api.athkar.index'))->assertTooManyRequests();
 });

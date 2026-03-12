@@ -1,6 +1,8 @@
 const athkarSettingsStorageKey = 'athkar-settings-v1';
 const athkarSettingsUserOverridesStorageKey = 'athkar-settings-user-overrides-v1';
 const athkarOverridesStorageKey = 'athkar-overrides-v1';
+const visualEnhancementsSettingKey = 'enable_visual_enhancements';
+const legacyVisualEnhancementsSettingKey = 'does_enable_main_text_shimmering';
 const minimumMainTextSizeKey = 'minimum_main_text_size';
 const maximumMainTextSizeKey = 'maximum_main_text_size';
 const fallbackMainTextSizeLimits = Object.freeze({
@@ -176,6 +178,43 @@ const resolveAthkarSettingsDefaults = () => {
     return defaults;
 };
 
+const migrateLegacyVisualEnhancementsSettingKey = (settings) => {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+        return {
+            settings: {},
+            wasMigrated: false,
+        };
+    }
+
+    const normalized = { ...settings };
+    const hasLegacyKey = Object.prototype.hasOwnProperty.call(
+        normalized,
+        legacyVisualEnhancementsSettingKey,
+    );
+    const hasCurrentKey = Object.prototype.hasOwnProperty.call(
+        normalized,
+        visualEnhancementsSettingKey,
+    );
+
+    if (hasLegacyKey && !hasCurrentKey) {
+        normalized[visualEnhancementsSettingKey] = normalized[legacyVisualEnhancementsSettingKey];
+    }
+
+    if (!hasLegacyKey) {
+        return {
+            settings: normalized,
+            wasMigrated: false,
+        };
+    }
+
+    delete normalized[legacyVisualEnhancementsSettingKey];
+
+    return {
+        settings: normalized,
+        wasMigrated: true,
+    };
+};
+
 const readAthkarSettingsFromStorage = (defaults = resolveAthkarSettingsDefaults()) => {
     if (typeof localStorage === 'undefined') {
         return normalizeAthkarSettings({}, defaults);
@@ -188,7 +227,13 @@ const readAthkarSettingsFromStorage = (defaults = resolveAthkarSettingsDefaults(
             return normalizeAthkarSettings({}, defaults);
         }
 
-        return normalizeAthkarSettings(JSON.parse(raw), defaults);
+        const migrated = migrateLegacyVisualEnhancementsSettingKey(JSON.parse(raw));
+
+        if (migrated.wasMigrated) {
+            localStorage.setItem(athkarSettingsStorageKey, JSON.stringify(migrated.settings));
+        }
+
+        return normalizeAthkarSettings(migrated.settings, defaults);
     } catch (_) {
         return normalizeAthkarSettings({}, defaults);
     }
@@ -222,13 +267,20 @@ const readUserSettingsOverrides = () => {
             return {};
         }
 
-        const parsed = JSON.parse(raw);
+        const migrated = migrateLegacyVisualEnhancementsSettingKey(JSON.parse(raw));
 
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        if (Object.keys(migrated.settings).length === 0) {
             return {};
         }
 
-        return parsed;
+        if (migrated.wasMigrated) {
+            localStorage.setItem(
+                athkarSettingsUserOverridesStorageKey,
+                JSON.stringify(migrated.settings),
+            );
+        }
+
+        return migrated.settings;
     } catch (_) {
         return {};
     }
@@ -252,7 +304,14 @@ const writeUserSettingsOverrides = (overrides) => {
 
 const writeUserSettingOverride = (key, value) => {
     const overrides = readUserSettingsOverrides();
-    overrides[key] = value;
+    const normalizedKey =
+        key === legacyVisualEnhancementsSettingKey ? visualEnhancementsSettingKey : key;
+    overrides[normalizedKey] = value;
+
+    if (normalizedKey === visualEnhancementsSettingKey) {
+        delete overrides[legacyVisualEnhancementsSettingKey];
+    }
+
     writeUserSettingsOverrides(overrides);
 };
 

@@ -277,6 +277,17 @@ document.addEventListener('alpine:init', () => {
         return viewName || fallbackView || 'main-menu';
     };
 
+    const getParentView = (view) => {
+        const viewIndex = getViewIndex();
+        const targetView = normalizeViewName(view);
+
+        if (!viewIndex || !targetView || !viewIndex.viewSet.has(targetView)) {
+            return null;
+        }
+
+        return viewIndex.parentMap[targetView] ?? null;
+    };
+
     const navigateView = (target, { force = false } = {}) => {
         const viewIndex = getViewIndex();
         const targetView = normalizeViewName(target);
@@ -374,16 +385,25 @@ document.addEventListener('alpine:init', () => {
         }
 
         const currentView = normalizeViewName(currentHash);
-
         if (
             !currentView ||
             currentView === viewIndex.rootView ||
             !viewIndex.viewSet.has(currentView)
         ) {
-            return false;
+            return currentView === viewIndex.rootView ? 'exit' : false;
         }
 
-        window.history.back();
+        const parentView = getParentView(currentView);
+
+        if (!parentView) {
+            return 'exit';
+        }
+
+        applyHash(`#${parentView}`, {
+            rememberInHistory: false,
+            rememberInState: true,
+        });
+
         return true;
     };
 
@@ -478,6 +498,14 @@ document.addEventListener('alpine:init', () => {
 
         window.addEventListener('hashchange', onHashChange);
         waitForHistoryReady(() => {
+            // const currentHash = normalizeHash(window.location.hash || '#');
+            // const hasRestoredHistory = window.history.state?.__hashActionRemember === true;
+
+            // if (currentHash !== '#' && isViewHash(currentHash) && hasRestoredHistory) {
+            //     dispatchSwitchView(normalizeViewName(currentHash), { restoring: true });
+            //     return;
+            // }
+
             const defaultHash = normalizeHash(el.dataset?.hashDefault);
             const restoreHash = normalizeHash(el.dataset?.hashRestore || '');
 
