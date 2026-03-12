@@ -197,8 +197,7 @@ const migrateLegacyVisualEnhancementsSettingKey = (settings) => {
     );
 
     if (hasLegacyKey && !hasCurrentKey) {
-        normalized[visualEnhancementsSettingKey] =
-            normalized[legacyVisualEnhancementsSettingKey];
+        normalized[visualEnhancementsSettingKey] = normalized[legacyVisualEnhancementsSettingKey];
     }
 
     if (!hasLegacyKey) {
