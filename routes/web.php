@@ -3,12 +3,19 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HomeController;
+use App\Http\Middleware\LogRepeatedUnmatchedRouteHits;
+use App\Http\Middleware\TrackWebHomeMetrics;
 // use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 // use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-Route::get('/', HomeController::class)->name('home');
+Route::get('/', HomeController::class)
+    ->middleware(TrackWebHomeMetrics::class)
+    ->name('home');
+
+Route::fallback(fn () => abort(404))
+    ->middleware(LogRepeatedUnmatchedRouteHits::class);
 
 // if (config('nativephp-internal.running') && is_platform('ios')) {
 //     Route::get('/docs/updates/images/{path}', function (string $path): BinaryFileResponse {
