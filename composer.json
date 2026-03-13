@@ -94,9 +94,19 @@
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ],
         "optimize": [
-            "@php artisan optimize:clear --ansi",
+            "@optimize:without-cache",
             "Composer\\Config::disableProcessTimeout",
             "@php artisan migrate"
+        ],
+        "optimize:without-cache": [
+            "@php artisan clear-compiled --ansi",
+            "@php artisan config:clear --ansi",
+            "@php artisan event:clear --ansi",
+            "@php artisan route:clear --ansi",
+            "@php artisan view:clear --ansi"
+        ],
+        "cachlear": [
+            "@php artisan cache:clear --ansi"
         ],
         "dev": [
             "@optimize",
