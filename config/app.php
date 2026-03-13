@@ -32,6 +32,7 @@ return [
             ],
             'web_home_metrics' => [
                 'enabled' => (bool) env('WEB_HOME_METRICS_ENABLED', env('APP_ENV') === 'production'),
+                'cache_store' => env('WEB_HOME_METRICS_CACHE_STORE', 'database'),
                 'chart_days' => (int) env('WEB_HOME_METRICS_CHART_DAYS', 14),
                 'retention_days' => (int) env('WEB_HOME_METRICS_RETENTION_DAYS', 35),
             ],

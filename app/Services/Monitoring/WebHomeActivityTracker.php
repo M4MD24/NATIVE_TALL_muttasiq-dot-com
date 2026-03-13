@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Monitoring;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -14,19 +15,22 @@ class WebHomeActivityTracker
     public function track(Request $request): void
     {
         $now = CarbonImmutable::now();
+        $cache = $this->cache();
 
         $this->incrementWithTtl(
+            cache: $cache,
             key: $this->dailyHitsKey($now),
             ttlSeconds: $this->dailyCounterTtlSeconds($now),
         );
         $this->incrementWithTtl(
+            cache: $cache,
             key: $this->hourlyHitsKey($now),
             ttlSeconds: $this->hourlyCounterTtlSeconds($now),
         );
 
         $fingerprint = $this->fingerprint($request);
 
-        $isNewDailyVisitor = Cache::add(
+        $isNewDailyVisitor = $cache->add(
             $this->dailySeenKey($now, $fingerprint),
             true,
             now()->addDays($this->retentionDays()),
@@ -34,12 +38,13 @@ class WebHomeActivityTracker
 
         if ($isNewDailyVisitor) {
             $this->incrementWithTtl(
+                cache: $cache,
                 key: $this->dailyUniqueKey($now),
                 ttlSeconds: $this->dailyCounterTtlSeconds($now),
             );
         }
 
-        $isNewHourlyVisitor = Cache::add(
+        $isNewHourlyVisitor = $cache->add(
             $this->hourlySeenKey($now, $fingerprint),
             true,
             now()->addDays(2),
@@ -47,6 +52,7 @@ class WebHomeActivityTracker
 
         if ($isNewHourlyVisitor) {
             $this->incrementWithTtl(
+                cache: $cache,
                 key: $this->hourlyUniqueKey($now),
                 ttlSeconds: $this->hourlyCounterTtlSeconds($now),
             );
@@ -60,6 +66,7 @@ class WebHomeActivityTracker
     {
         $days = max(1, $days);
         $endDate = CarbonImmutable::today();
+        $cache = $this->cache();
 
         $labels = [];
         $hits = [];
@@ -68,8 +75,8 @@ class WebHomeActivityTracker
         for ($offset = $days - 1; $offset >= 0; $offset--) {
             $date = $endDate->subDays($offset);
             $labels[] = $date->format('M d');
-            $hits[] = (int) Cache::get($this->dailyHitsKey($date), 0);
-            $uniqueVisitors[] = (int) Cache::get($this->dailyUniqueKey($date), 0);
+            $hits[] = (int) $cache->get($this->dailyHitsKey($date), 0);
+            $uniqueVisitors[] = (int) $cache->get($this->dailyUniqueKey($date), 0);
         }
 
         return [
@@ -85,10 +92,11 @@ class WebHomeActivityTracker
     public function todaySummary(): array
     {
         $today = CarbonImmutable::today();
+        $cache = $this->cache();
 
         return [
-            'hits' => (int) Cache::get($this->dailyHitsKey($today), 0),
-            'unique_visitors' => (int) Cache::get($this->dailyUniqueKey($today), 0),
+            'hits' => (int) $cache->get($this->dailyHitsKey($today), 0),
+            'unique_visitors' => (int) $cache->get($this->dailyUniqueKey($today), 0),
         ];
     }
 
@@ -100,11 +108,12 @@ class WebHomeActivityTracker
         $currentHour = CarbonImmutable::now()->startOfHour();
         $hits = 0;
         $uniqueVisitors = 0;
+        $cache = $this->cache();
 
         for ($offset = 0; $offset < 24; $offset++) {
             $hour = $currentHour->subHours($offset);
-            $hits += (int) Cache::get($this->hourlyHitsKey($hour), 0);
-            $uniqueVisitors += (int) Cache::get($this->hourlyUniqueKey($hour), 0);
+            $hits += (int) $cache->get($this->hourlyHitsKey($hour), 0);
+            $uniqueVisitors += (int) $cache->get($this->hourlyUniqueKey($hour), 0);
         }
 
         return [
@@ -133,11 +142,21 @@ class WebHomeActivityTracker
         return max(60, $timestamp->endOfHour()->addDays(2)->diffInSeconds($timestamp));
     }
 
-    private function incrementWithTtl(string $key, int $ttlSeconds): int
+    private function cache(): Repository
     {
-        Cache::add($key, 0, $ttlSeconds);
+        $store = config('app.custom.security.web_home_metrics.cache_store', 'database');
+        if (! is_string($store) || $store === '') {
+            return Cache::store();
+        }
 
-        return (int) Cache::increment($key);
+        return Cache::store($store);
+    }
+
+    private function incrementWithTtl(Repository $cache, string $key, int $ttlSeconds): int
+    {
+        $cache->add($key, 0, $ttlSeconds);
+
+        return (int) $cache->increment($key);
     }
 
     private function fingerprint(Request $request): string
