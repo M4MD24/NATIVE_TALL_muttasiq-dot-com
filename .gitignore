@@ -16,10 +16,14 @@
 
 # Custom
 /.codex
+/.claude
+/.agents
 /credentials
 /build
 /public/css
 /public/fonts
 /public/js
+.mcp.json
 AGENTS.md
+boost.json
 CLAUDE.md
