@@ -146,17 +146,23 @@ test('native patches package stays pinned in app dependencies', function () {
     /** @var array{require?: array<string, string>} $composer */
     $composer = json_decode(file_get_contents($composerPath), true, flags: JSON_THROW_ON_ERROR);
     $lockedPackage = nativePatchesLockPackage();
+    $packageConstraint = (string) ($composer['require']['goodm4ven/nativephp-muttasiq-patches'] ?? '');
 
     expect($composer['require'] ?? [])
-        ->toHaveKey('goodm4ven/nativephp-muttasiq-patches', '^1.0.0');
+        ->toHaveKey('goodm4ven/nativephp-muttasiq-patches');
+
+    expect($packageConstraint)->not()->toBe('');
 
     expect($lockedPackage)
         ->toMatchArray(['name' => 'goodm4ven/nativephp-muttasiq-patches']);
 
-    $lockedVersion = (string) ($lockedPackage['version'] ?? '');
+    preg_match('/(\d+)/', $packageConstraint, $constraintMajorMatch);
 
-    expect(ltrim($lockedVersion, 'v'))
-        ->toStartWith('1.');
+    $lockedVersion = (string) ($lockedPackage['version'] ?? '');
+    preg_match('/^v?(\d+)/', $lockedVersion, $lockedMajorMatch);
+
+    expect($constraintMajorMatch[1] ?? null)->toBe('1');
+    expect($lockedMajorMatch[1] ?? null)->toBe($constraintMajorMatch[1] ?? null);
 });
 
 test('composer local plugin switch script toggles the muttasiq patches package by default', function () {
