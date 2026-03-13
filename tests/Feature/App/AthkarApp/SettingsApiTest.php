@@ -14,6 +14,7 @@ it('returns normalized settings payload with limits/version and migrates legacy 
     config([
         'app.custom.app_version' => '7.8.9',
     ]);
+    Setting::setAppVersion('1.1.4');
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::DOES_SKIP_GUIDANCE_PANELS],
@@ -43,7 +44,7 @@ it('returns normalized settings payload with limits/version and migrates legacy 
     expect($limits[Setting::MINIMUM_MAIN_TEXT_SIZE])
         ->toHaveKeys(['min', 'max', 'default']);
 
-    expect($response->json('appVersion'))->toBe('7.8.9');
+    expect($response->json('appVersion'))->toBe('1.1.4');
 
     Setting::query()->updateOrCreate(
         ['name' => Setting::MINIMUM_MAIN_TEXT_SIZE],
@@ -88,6 +89,14 @@ it('returns normalized settings payload with limits/version and migrates legacy 
     expect(Setting::query()->where('name', 'does_enable_main_text_shimmering')->exists())->toBeFalse();
     expect((int) Setting::query()->where('name', Setting::DOES_ENABLE_VISUAL_ENHANCEMENTS)->value('value'))
         ->toBe(0);
+
+    Setting::query()->where('name', Setting::APP_VERSION)->delete();
+
+    $response = getJson(route('api.settings.index'));
+
+    $response->assertSuccessful();
+
+    expect($response->json('appVersion'))->toBe('7.8.9');
 });
 
 it('rate limits the settings endpoint', function () {

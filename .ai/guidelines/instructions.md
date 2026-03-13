@@ -35,6 +35,7 @@ This shared source code base is representing the web version primarily, the one 
   - The patching is build-time only and externalized to `goodm4ven/nativephp-muttasiq-patches`, enabled by [app/Providers/NativeServiceProvider.php], and ran as Android pre-complile hook.
   - Toggle local development of that plugin using [.scripts/composer-local-plugins-switch.sh], which targets [~/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches] by default.
 - Preferred container workflow is [`lara-stacker`](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker), expected to be located at [~/Code/Scripts/CLI_LARAVEL_lara-stacker/], and including scripts to import this project and to setup the local development environment.
+- You can check out what Laravel setup requires for this application to work in [composer.json]'s `setup` script.
 
 ## Testing
 - Do not write tests unless explicitely told to. And if you see doing a test for the feature is essential, then ask to do it.

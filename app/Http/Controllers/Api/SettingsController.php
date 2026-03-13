@@ -23,7 +23,7 @@ class SettingsController extends Controller
                 array_replace($settingDefaults, $storedSettings),
             ),
             'mainTextSizeLimits' => Setting::mainTextSizeLimits(),
-            'appVersion' => Setting::configuredAppVersion(),
+            'appVersion' => Setting::appVersion(),
         ]);
     }
 }

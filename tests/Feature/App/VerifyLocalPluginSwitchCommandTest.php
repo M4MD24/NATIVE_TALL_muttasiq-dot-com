@@ -45,6 +45,30 @@ it('reports local plugin switch status for enabled and disabled composer reposit
         @unlink($manifestPath);
     }
 
+    $manifestPath = createComposerManifestFixture([
+        [
+            'name' => 'nativephp-muttasiq-patches',
+            'type' => 'path',
+            'url' => '/tmp/local-native-plugin',
+            'options' => [
+                'symlink' => true,
+                'versions' => [
+                    'goodm4ven/nativephp-muttasiq-patches' => '1.0.999999',
+                ],
+            ],
+        ],
+    ]);
+
+    try {
+        artisan("app:verify-local-plugin-switch --skip-prompt --composer-file={$manifestPath}")
+            ->expectsOutputToContain('Local plugin switch reminder')
+            ->expectsOutputToContain('ENABLED')
+            ->expectsOutputToContain('/tmp/local-native-plugin')
+            ->assertExitCode(0);
+    } finally {
+        @unlink($manifestPath);
+    }
+
     $manifestPath = createComposerManifestFixture([]);
 
     try {
@@ -58,9 +82,15 @@ it('reports local plugin switch status for enabled and disabled composer reposit
 
 it('honors confirmation flow when local plugin path override is enabled', function () {
     $declinedManifestPath = createComposerManifestFixture([
-        'nativephp-muttasiq-patches' => [
+        [
+            'name' => 'nativephp-muttasiq-patches',
             'type' => 'path',
             'url' => '/tmp/local-native-plugin',
+            'options' => [
+                'versions' => [
+                    'goodm4ven/nativephp-muttasiq-patches' => '1.0.999999',
+                ],
+            ],
         ],
     ]);
 
@@ -76,9 +106,15 @@ it('honors confirmation flow when local plugin path override is enabled', functi
     }
 
     $acceptedManifestPath = createComposerManifestFixture([
-        'nativephp-muttasiq-patches' => [
+        [
+            'name' => 'nativephp-muttasiq-patches',
             'type' => 'path',
             'url' => '/tmp/local-native-plugin',
+            'options' => [
+                'versions' => [
+                    'goodm4ven/nativephp-muttasiq-patches' => '1.0.999999',
+                ],
+            ],
         ],
     ]);
 

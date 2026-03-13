@@ -5,9 +5,6 @@ watchman shutdown-server
 
 ./.scripts/support/prepare.sh
 ./.scripts/native/mobile/ios/support/prepare.sh
-./.scripts/native/mobile/support/patches/edge-components.sh
-./.scripts/native/mobile/ios/patches/system-ui.sh
-./.scripts/native/mobile/ios/patches/back-handler.sh
 
 simulator_udid="$("./.scripts/native/mobile/ios/support/select-simulator.sh")"
 echo "[native-watch:ios] using simulator ${simulator_udid}"

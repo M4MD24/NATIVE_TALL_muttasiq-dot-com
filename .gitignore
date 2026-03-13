@@ -15,11 +15,15 @@
 /vendor
 
 # Custom
+/.codex
+/.claude
+/.agents
+/credentials
 /build
 /public/css
 /public/fonts
 /public/js
-native-log-ios.txt
-
-# Credential files (keystores, private keys, etc.)
-/credentials/
+.mcp.json
+AGENTS.md
+boost.json
+CLAUDE.md
