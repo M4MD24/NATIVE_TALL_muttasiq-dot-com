@@ -8,6 +8,16 @@ temp_dir="${root_dir}/vendor/pestphp/pest-plugin-browser/.temp"
 project_playwright_bin="${root_dir}/node_modules/.bin/playwright"
 project_name="$(basename "${root_dir}")"
 
+read_lines_into_array() {
+    local __target_name="$1"
+    local __line=""
+    eval "${__target_name}=()"
+
+    while IFS= read -r __line; do
+        eval "${__target_name}+=(\"\${__line}\")"
+    done
+}
+
 detect_runtime_mode() {
     if [[ -f /.dockerenv ]]; then
         printf '%s\n' "docker"
@@ -30,7 +40,7 @@ collect_descendant_pids() {
     local pid="$1"
     local children=()
 
-    mapfile -t children < <(pgrep -P "${pid}" || true)
+    read_lines_into_array children < <(pgrep -P "${pid}" || true)
 
     if [[ "${#children[@]}" -eq 0 ]]; then
         return
@@ -48,7 +58,7 @@ kill_process_tree() {
     local descendants=()
     local targets=()
 
-    mapfile -t descendants < <(collect_descendant_pids "${root_pid}" || true)
+    read_lines_into_array descendants < <(collect_descendant_pids "${root_pid}" || true)
 
     if [[ "${#descendants[@]}" -gt 0 ]]; then
         targets=("${descendants[@]}" "${root_pid}")
@@ -60,7 +70,7 @@ kill_process_tree() {
     sleep 0.3
 
     local survivors=()
-    mapfile -t survivors < <(ps -o pid= -p "${targets[@]}" 2>/dev/null | awk '{print $1}' || true)
+    read_lines_into_array survivors < <(ps -o pid= -p "${targets[@]}" 2>/dev/null | awk '{print $1}' || true)
 
     if [[ "${#survivors[@]}" -gt 0 ]]; then
         kill -KILL "${survivors[@]}" >/dev/null 2>&1 || true
@@ -78,16 +88,16 @@ fi
 
 if [[ "${OSTYPE:-}" != "msys" && "${OSTYPE:-}" != "cygwin" && "${OSTYPE:-}" != "win32" ]]; then
     if command -v pgrep >/dev/null 2>&1; then
-        mapfile -t playwright_pids < <(pgrep -f "${project_playwright_bin} run-server" || true)
+        read_lines_into_array playwright_pids < <(pgrep -f "${project_playwright_bin} run-server" || true)
 
         if [[ "${#playwright_pids[@]}" -eq 0 ]]; then
-            mapfile -t playwright_pids < <(pgrep -f "\\./node_modules/\\.bin/playwright run-server --host .* --port .* --mode launchServer" || true)
+            read_lines_into_array playwright_pids < <(pgrep -f "\\./node_modules/\\.bin/playwright run-server --host .* --port .* --mode launchServer" || true)
         fi
 
         if [[ -n "${state_port}" ]] && command -v lsof >/dev/null 2>&1; then
-            mapfile -t state_port_pids < <(lsof -tiTCP:"${state_port}" -sTCP:LISTEN 2>/dev/null || true)
+            read_lines_into_array state_port_pids < <(lsof -tiTCP:"${state_port}" -sTCP:LISTEN 2>/dev/null || true)
             if [[ "${#state_port_pids[@]}" -gt 0 ]]; then
-                mapfile -t playwright_pids < <(
+                read_lines_into_array playwright_pids < <(
                     printf '%s\n' "${playwright_pids[@]}" "${state_port_pids[@]}" \
                         | awk 'NF && !seen[$1]++'
                 )
@@ -100,7 +110,7 @@ if [[ "${OSTYPE:-}" != "msys" && "${OSTYPE:-}" != "cygwin" && "${OSTYPE:-}" != "
             done
         fi
 
-        mapfile -t orphan_browser_pids < <(pgrep -f 'chrome-headless-shell.*--user-data-dir=/tmp/playwright_' || true)
+        read_lines_into_array orphan_browser_pids < <(pgrep -f 'chrome-headless-shell.*--user-data-dir=/tmp/playwright_' || true)
 
         if [[ "${#orphan_browser_pids[@]}" -gt 0 ]]; then
             kill -TERM "${orphan_browser_pids[@]}" >/dev/null 2>&1 || true
@@ -121,7 +131,7 @@ if [[ -z "${container_lines}" ]]; then
     exit 0
 fi
 
-mapfile -t lara_stacker_app_containers < <(
+read_lines_into_array lara_stacker_app_containers < <(
     awk '$2 == "app" && $3 == "lara-stacker" { print $1 }' <<<"${container_lines}"
 )
 

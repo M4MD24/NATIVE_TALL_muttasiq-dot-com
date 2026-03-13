@@ -43,7 +43,8 @@ run_testcov_in_current_shell() (
         backup_file="${plugin_cache_file}.testcov.bak.$$"
         cp "${plugin_cache_file}" "${backup_file}"
         trap 'if [[ -n "${backup_file}" && -f "${backup_file}" ]]; then mv "${backup_file}" "${plugin_cache_file}"; fi' EXIT INT TERM
-        sed -i '/"Pest\\\\Browser\\\\Plugin"/d' "${plugin_cache_file}"
+        sed -i.bak '/"Pest\\\\Browser\\\\Plugin"/d' "${plugin_cache_file}"
+        rm -f "${plugin_cache_file}.bak"
     fi
 
     PEST_ENABLE_BROWSER_PLUGIN=0 XDEBUG_MODE=coverage run_pest_coverage "$@"
@@ -96,7 +97,8 @@ docker exec \
             backup_file="${plugin_cache_file}.testcov.bak.$$"
             cp "${plugin_cache_file}" "${backup_file}"
             trap '"'"'if [ -n "${backup_file}" ] && [ -f "${backup_file}" ]; then mv "${backup_file}" "${plugin_cache_file}"; fi'"'"' EXIT INT TERM
-            sed -i '"'"'/"Pest\\\\Browser\\\\Plugin"/d'"'"' "${plugin_cache_file}"
+            sed -i.bak '"'"'/"Pest\\\\Browser\\\\Plugin"/d'"'"' "${plugin_cache_file}"
+            rm -f "${plugin_cache_file}.bak"
         fi
 
         .scripts/testing/support/run-clean.sh \

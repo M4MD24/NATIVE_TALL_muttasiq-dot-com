@@ -133,7 +133,8 @@ run_local() (
         backup_file="${plugin_cache_file}.testel.bak.$$"
         cp "${plugin_cache_file}" "${backup_file}"
         trap 'if [[ -n "${backup_file}" && -f "${backup_file}" ]]; then mv "${backup_file}" "${plugin_cache_file}"; fi' EXIT INT TERM
-        sed -i '/"Pest\\\\Browser\\\\Plugin"/d' "${plugin_cache_file}"
+        sed -i.bak '/"Pest\\\\Browser\\\\Plugin"/d' "${plugin_cache_file}"
+        rm -f "${plugin_cache_file}.bak"
     fi
 
     PEST_ENABLE_BROWSER_PLUGIN=0 "${run_clean_script}" vendor/bin/pest --parallel --processes="${parallel_processes}" --exclude-group=browser "$@"
@@ -213,7 +214,8 @@ run_in_container() {
                 backup_file="${plugin_cache_file}.testel.bak.$$"
                 cp "${plugin_cache_file}" "${backup_file}"
                 trap '"'"'if [ -n "${backup_file}" ] && [ -f "${backup_file}" ]; then mv "${backup_file}" "${plugin_cache_file}"; fi'"'"' EXIT INT TERM
-                sed -i '"'"'/"Pest\\\\Browser\\\\Plugin"/d'"'"' "${plugin_cache_file}"
+                sed -i.bak '"'"'/"Pest\\\\Browser\\\\Plugin"/d'"'"' "${plugin_cache_file}"
+                rm -f "${plugin_cache_file}.bak"
             fi
 
             echo "[testing:${TESTING_SCRIPT_NAME}] mode=docker container=${TESTING_CONTAINER_NAME} cpu=${cpu_cores} processes=${parallel_processes}" >&2

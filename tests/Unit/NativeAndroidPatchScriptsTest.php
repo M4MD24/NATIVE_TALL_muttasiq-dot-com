@@ -29,14 +29,24 @@ test('native patches plugin is registered for android builds', function () {
 test('native patches hook command is registered with artisan', function () {
     $providersPath = dirname(__DIR__, 2).'/bootstrap/providers.php';
     $providersContents = file_get_contents($providersPath);
-    $commandOutput = [];
-    $status = null;
+    $dispatcherOutput = [];
+    $dispatcherStatus = null;
+    $androidOutput = [];
+    $androidStatus = null;
+    $iosOutput = [];
+    $iosStatus = null;
 
-    exec('php artisan nativephp:muttasiq:patches --help', $commandOutput, $status);
+    exec('php artisan nativephp:muttasiq:patches --help', $dispatcherOutput, $dispatcherStatus);
+    exec('php artisan nativephp:muttasiq:patches-android --help', $androidOutput, $androidStatus);
+    exec('php artisan nativephp:muttasiq:patches-ios --help', $iosOutput, $iosStatus);
 
     expect($providersContents)->toContain('Goodm4ven\\NativePatches\\NativePatchesServiceProvider::class');
-    expect($status)->toBe(0);
-    expect(implode("\n", $commandOutput))->toContain('nativephp:muttasiq:patches');
+    expect($dispatcherStatus)->toBe(0);
+    expect($androidStatus)->toBe(0);
+    expect($iosStatus)->toBe(0);
+    expect(implode("\n", $dispatcherOutput))->toContain('nativephp:muttasiq:patches');
+    expect(implode("\n", $androidOutput))->toContain('nativephp:muttasiq:patches-android');
+    expect(implode("\n", $iosOutput))->toContain('nativephp:muttasiq:patches-ios');
 });
 
 test('native run script relies on plugin patches', function () {
@@ -58,6 +68,64 @@ test('native run script relies on plugin patches', function () {
 
     $nativeShareContents = file_get_contents($root.'/.scripts/share-android.sh');
     expect($nativeShareContents)->toContain('.scripts/native/mobile/support/patches/jump-status-texts.sh');
+});
+
+test('native ios scripts rely on plugin patches', function () {
+    $root = dirname(__DIR__, 2);
+    $iosScripts = [
+        $root.'/.scripts/run-ios.sh',
+        $root.'/.scripts/watch-ios.sh',
+        $root.'/.scripts/share-ios.sh',
+    ];
+
+    foreach ($iosScripts as $script) {
+        expect(file_exists($script))->toBeTrue();
+
+        $contents = file_get_contents($script);
+
+        expect($contents)->not()->toContain('.scripts/native/mobile/ios/patches/');
+        expect($contents)->not()->toContain('.scripts/native/mobile/support/patches/edge-components.sh');
+    }
+
+    expect(file_exists($root.'/.scripts/native/mobile/ios/patches/back-handler.sh'))->toBeFalse();
+    expect(file_exists($root.'/.scripts/native/mobile/ios/patches/system-ui.sh'))->toBeFalse();
+    expect(file_exists($root.'/.scripts/native/mobile/support/patches/edge-components.sh'))->toBeFalse();
+
+    $nativeShareContents = file_get_contents($root.'/.scripts/share-ios.sh');
+    expect($nativeShareContents)->toContain('.scripts/native/mobile/support/patches/jump-status-texts.sh');
+});
+
+test('native patches plugin supports ios content view patching', function () {
+    $dispatcherPath = dirname(__DIR__, 2).'/vendor/goodm4ven/nativephp-muttasiq-patches/src/Commands/RunNativePatchesCommand.php';
+    $androidCommandPath = dirname(__DIR__, 2).'/vendor/goodm4ven/nativephp-muttasiq-patches/src/Commands/ApplyAndroidPatchesCommand.php';
+    $iosCommandPath = dirname(__DIR__, 2).'/vendor/goodm4ven/nativephp-muttasiq-patches/src/Commands/ApplyIosPatchesCommand.php';
+    $iosTraitPath = dirname(__DIR__, 2).'/vendor/goodm4ven/nativephp-muttasiq-patches/src/Commands/Concerns/PatchesIosContentView.php';
+    $helpersTraitPath = dirname(__DIR__, 2).'/vendor/goodm4ven/nativephp-muttasiq-patches/src/Commands/Concerns/InteractsWithPatchFiles.php';
+
+    expect(file_exists($dispatcherPath))->toBeTrue();
+    expect(file_exists($androidCommandPath))->toBeTrue();
+    expect(file_exists($iosCommandPath))->toBeTrue();
+    expect(file_exists($iosTraitPath))->toBeTrue();
+    expect(file_exists($helpersTraitPath))->toBeTrue();
+
+    $dispatcherContents = file_get_contents($dispatcherPath);
+    $androidContents = file_get_contents($androidCommandPath);
+    $iosContents = file_get_contents($iosCommandPath);
+    $iosTraitContents = file_get_contents($iosTraitPath);
+    $helpersTraitContents = file_get_contents($helpersTraitPath);
+
+    expect($dispatcherContents)->toContain('nativephp:muttasiq:patches-android');
+    expect($dispatcherContents)->toContain('nativephp:muttasiq:patches-ios');
+    expect($androidContents)->toContain('use PatchesAndroidMainActivity;');
+    expect($androidContents)->toContain('use PatchesAndroidWebViewManager;');
+    expect($androidContents)->toContain('use PatchesAndroidLaravelEnvironment;');
+    expect($iosContents)->toContain('use PatchesIosContentView;');
+    expect($iosTraitContents)->toContain('verifyIosSystemUi');
+    expect($iosTraitContents)->toContain('patchIosBackHandler');
+    expect($iosTraitContents)->toContain('NativePHPBackEdgeGesture');
+    expect($iosTraitContents)->toContain('WKWebsiteDataStore.default()');
+    expect($helpersTraitContents)->toContain('setSwiftFunctionBody');
+    expect($helpersTraitContents)->toContain('locateSwiftFunction');
 });
 
 test('app service provider leaves livewire routes untouched', function () {

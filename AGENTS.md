@@ -46,7 +46,7 @@ This shared source code base is representing the web version primarily, the one 
 
 ## Testing
 
-- Do not write tests unless explicitely told to.
+- Do not write tests unless explicitely told to. And if you see doing a test for the feature is essential, then ask to do it.
 - When told to write tests, try to find first a related feature test and try to add to it, if it was suitable and simple enough to do.
 - Feature tests must be put inside either App or Browser folders, where Browser is for PestPHP browser testing.
 - PestPHP browser testing is buggy currently, and our setup is in a docker container, so make sure you're using [.scripts/testing] scripts that account for the setup.
@@ -72,7 +72,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.3.6
+- php - 8.5.4
 - filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v12
 - laravel/nightwatch (NIGHTWATCH) - v1

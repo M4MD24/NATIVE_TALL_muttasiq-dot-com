@@ -10,6 +10,10 @@ use function Laravel\Prompts\confirm;
 
 class VerifyLocalPluginSwitch extends Command
 {
+    private const PACKAGE_NAME = 'goodm4ven/nativephp-muttasiq-patches';
+
+    private const REPOSITORY_NAME = 'nativephp-muttasiq-patches';
+
     /**
      * The name and signature of the console command.
      *
@@ -48,18 +52,19 @@ class VerifyLocalPluginSwitch extends Command
             return self::FAILURE;
         }
 
-        $packageName = 'goodm4ven/nativephp-muttasiq-patches';
-        $repositoryKey = 'nativephp-muttasiq-patches';
-        $repository = $decoded['repositories'][$repositoryKey] ?? null;
-        $repositoryType = strtolower((string) ($repository['type'] ?? ''));
-        $isLocalPathRepositoryEnabled = is_array($repository) && $repositoryType === 'path';
+        $matchingRepository = $this->findMatchingRepository($decoded['repositories'] ?? null);
+        $isLocalPathRepositoryEnabled = $matchingRepository !== null;
 
         $this->line('Local plugin switch check:');
-        $this->line(' - package: '.$packageName);
-        $this->line(' - repository key: '.$repositoryKey);
+        $this->line(' - package: '.self::PACKAGE_NAME);
+        $this->line(' - repository key: '.self::REPOSITORY_NAME);
         $this->line(
             ' - local path repository: '.($isLocalPathRepositoryEnabled ? 'ENABLED' : 'disabled'),
         );
+
+        if ($matchingRepository !== null) {
+            $this->line(' - repository url: '.(string) ($matchingRepository['url'] ?? '(missing)'));
+        }
 
         if (! $isLocalPathRepositoryEnabled) {
             $this->info('Local plugin switch reminder: looks good.');
@@ -76,7 +81,7 @@ class VerifyLocalPluginSwitch extends Command
         }
 
         $confirmed = confirm(
-            'Local path plugin repository for goodm4ven/nativephp-muttasiq-patches is still enabled. Continue anyway?',
+            'Local path plugin repository for '.self::PACKAGE_NAME.' is still enabled. Continue anyway?',
             default: false,
         );
 
@@ -102,5 +107,50 @@ class VerifyLocalPluginSwitch extends Command
         }
 
         return base_path($composerFileOption);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function findMatchingRepository(mixed $repositories): ?array
+    {
+        if (! is_array($repositories)) {
+            return null;
+        }
+
+        if (! array_is_list($repositories)) {
+            $repository = $repositories[self::REPOSITORY_NAME] ?? null;
+
+            if (is_array($repository) && strtolower((string) ($repository['type'] ?? '')) === 'path') {
+                return $repository;
+            }
+        }
+
+        foreach ($repositories as $repository) {
+            if ($this->isMatchingPathRepository($repository)) {
+                return $repository;
+            }
+        }
+
+        return null;
+    }
+
+    private function isMatchingPathRepository(mixed $repository): bool
+    {
+        if (! is_array($repository)) {
+            return false;
+        }
+
+        if (strtolower((string) ($repository['type'] ?? '')) !== 'path') {
+            return false;
+        }
+
+        if (strtolower((string) ($repository['name'] ?? '')) === self::REPOSITORY_NAME) {
+            return true;
+        }
+
+        $versions = $repository['options']['versions'] ?? null;
+
+        return is_array($versions) && array_key_exists(self::PACKAGE_NAME, $versions);
     }
 }

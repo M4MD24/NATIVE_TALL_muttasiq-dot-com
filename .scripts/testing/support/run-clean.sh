@@ -5,6 +5,16 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 script_name="$(basename "${BASH_SOURCE[0]}")"
 preflight_script="${root_dir}/.scripts/testing/support/preflight.sh"
 
+read_lines_into_array() {
+    local __target_name="$1"
+    local __line=""
+    eval "${__target_name}=()"
+
+    while IFS= read -r __line; do
+        eval "${__target_name}+=(\"\${__line}\")"
+    done
+}
+
 if [[ ! -x "${preflight_script}" ]]; then
     echo "Missing executable preflight script at ${preflight_script}" >&2
     exit 1
@@ -42,7 +52,7 @@ collect_descendant_pids() {
     local pid="$1"
     local children=()
 
-    mapfile -t children < <(pgrep -P "${pid}" 2>/dev/null || true)
+    read_lines_into_array children < <(pgrep -P "${pid}" 2>/dev/null || true)
 
     if [[ "${#children[@]}" -eq 0 ]]; then
         return
@@ -60,7 +70,7 @@ kill_process_tree() {
     local descendants=()
     local targets=()
 
-    mapfile -t descendants < <(collect_descendant_pids "${root_pid}" || true)
+    read_lines_into_array descendants < <(collect_descendant_pids "${root_pid}" || true)
 
     if [[ "${#descendants[@]}" -gt 0 ]]; then
         targets=("${descendants[@]}" "${root_pid}")
@@ -72,7 +82,7 @@ kill_process_tree() {
     sleep 0.4
 
     local survivors=()
-    mapfile -t survivors < <(ps -o pid= -p "${targets[@]}" 2>/dev/null | awk '{print $1}' || true)
+    read_lines_into_array survivors < <(ps -o pid= -p "${targets[@]}" 2>/dev/null | awk '{print $1}' || true)
 
     if [[ "${#survivors[@]}" -gt 0 ]]; then
         kill -KILL "${survivors[@]}" >/dev/null 2>&1 || true
