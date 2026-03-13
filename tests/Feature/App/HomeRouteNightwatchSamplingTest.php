@@ -72,6 +72,13 @@ it('tracks hits and unique visitors for web requests when metrics are enabled', 
         'unique_visitors' => 2,
     ])->and($series['hits'])->toBe([3])
         ->and($series['unique_visitors'])->toBe([2]);
+
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-03-12 10:17:30'));
+
+    expect($tracker->todaySummary())->toBe([
+        'hits' => 3,
+        'unique_visitors' => 2,
+    ]);
 });
 
 it('skips web home metrics tracking when disabled or when request platform is non-web', function () {

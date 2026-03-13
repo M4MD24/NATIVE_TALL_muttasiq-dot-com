@@ -13,6 +13,8 @@ class WebHomeActivityChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $maxHeight = '320px';
+
     protected ?string $pollingInterval = '30s';
 
     protected static bool $isLazy = false;
