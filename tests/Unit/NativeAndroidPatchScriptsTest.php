@@ -165,12 +165,17 @@ test('composer local plugin switch script toggles the muttasiq patches package b
 
     expect($script)->toContain('goodm4ven/nativephp-muttasiq-patches');
     expect($script)->toContain('${HOME}/Code/LaravelPackages/NATIVE_PLUGIN_muttasiq-patches');
-    expect($script)->toContain('current_repository="$(composer config "repositories.${repository_key}" 2>/dev/null || true)"');
-    expect($script)->toContain('grep -Fq \'"type":"path"\' <<<"${current_repository}"');
-    expect($script)->toContain('composer config --unset "repositories.${repository_key}"');
+    expect($script)->toContain('action="toggle"');
+    expect($script)->toContain('if [[ "${1:-}" == "on" || "${1:-}" == "off" || "${1:-}" == "toggle" ]]; then');
+    expect($script)->toContain('matching_repository_keys="$(find_matching_repository_keys)"');
+    expect($script)->toContain('while IFS= read -r matching_repository_key; do');
+    expect($script)->toContain('composer config --unset "repositories.${matching_repository_key}"');
+    expect($script)->toContain('if [[ "${action}" == "off" ]]; then');
+    expect($script)->toContain('if [[ "${action}" == "toggle" && -n "${matching_repository_keys}" ]]; then');
     expect($script)->toContain('composer config "repositories.${repository_key}" --json "$(cat <<JSON');
     expect($script)->toContain('"type": "path"');
     expect($script)->toContain('"${package_name}": "${local_forced_version}"');
+    expect($script)->toContain('run_package_update');
     expect($script)->toContain('composer update "${package_name}" --with-dependencies');
 });
 
