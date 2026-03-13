@@ -134,12 +134,12 @@ class WebHomeActivityTracker
 
     private function dailyCounterTtlSeconds(CarbonImmutable $timestamp): int
     {
-        return max(60, $timestamp->endOfDay()->addDays($this->retentionDays())->diffInSeconds($timestamp));
+        return max(60, (int) $timestamp->endOfDay()->addDays($this->retentionDays())->diffInSeconds($timestamp, true));
     }
 
     private function hourlyCounterTtlSeconds(CarbonImmutable $timestamp): int
     {
-        return max(60, $timestamp->endOfHour()->addDays(2)->diffInSeconds($timestamp));
+        return max(60, (int) $timestamp->endOfHour()->addDays(2)->diffInSeconds($timestamp, true));
     }
 
     private function cache(): Repository
